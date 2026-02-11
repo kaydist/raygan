@@ -257,12 +257,16 @@ All other config (Supabase keys, Stripe keys, feature flags) is fetched from bac
 - Use `type` for object shapes, `interface` for extendable contracts
 
 ### Naming Conventions
-- Components: `PascalCase.tsx`
-- Hooks: `useCamelCase.ts`
-- Utilities/helpers: `kebab-case.ts`
-- Constants: `kebab-case.ts`
-- Types: `kebab-case.types.ts`
-- Stores: `kebab-case-store.ts`
+- **API response keys**: `snake_case` (e.g., `user_id`, `created_at`)
+- **Classes/Functions**: `PascalCase` (e.g., `UserService`, `CreateProject`)
+- **Methods**: `camelCase` (e.g., `getUserById`, `createProject`)
+- **Components**: `PascalCase.tsx`
+- **Hooks**: `useCamelCase.ts`
+- **Utilities/helpers**: `kebab-case.ts`
+- **Constants**: `kebab-case.ts`
+- **Types**: `kebab-case.types.ts`
+- **Stores**: `kebab-case-store.ts`
+- **Database columns**: `snake_case` (e.g., `created_on`, `deleted_flag`)
 
 ### Import Order
 1. React/Next.js imports
