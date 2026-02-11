@@ -17,7 +17,7 @@ February 8, 2026  |  Version 5.0
 
 Rork.com is an AI-powered, no-code mobile app builder that generates production-ready React Native (Expo) applications from natural language prompts. Founded in 2024, the company raised $2.8M from a16z and attracts over 743,000 monthly visits with an 85% growth rate. It operates with approximately 3 employees.
 
-This document provides a complete audit of the Rork product and specifies the architecture for a personal product that would be first-in-market to combine: (1) a dual-mode interface pairing AI Agent chat with Figma-like visual Builder, (2) an integrated code workspace with file explorer, Monaco editor, and terminal, (3) a provider-agnostic Multi-Model AI Gateway supporting Claude, GPT-5, Grok, Gemini, and any future model from a single backend configuration, (4) a Backend Integration Hub supporting Supabase, Firebase, Appwrite, and custom API endpoints with full OpenAPI import, (5) pre-tested native device feature templates with Expo Go and development build flagging, (6) QR code preview via Expo Go as a core MVP feature, and (7) Africa-first optimizations including Paystack, Flutterwave, Mono, M-Pesa, and offline-first patterns.
+This document provides a complete audit of the Rork product and specifies the architecture for a personal product that would be first-in-market to combine: (1) a dual-mode interface pairing AI Agent chat with Figma-like visual Builder, (2) an integrated code workspace with file explorer, Monaco editor, and terminal, (3) a provider-agnostic Multi-Model AI Gateway supporting Claude, GPT-5, Grok, Gemini, and any future model from a single backend configuration, (4) a Backend Integration Hub supporting Supabase, Firebase, Appwrite, and custom API endpoints with full OpenAPI import, (5) pre-tested native device feature templates with Expo Go and development build flagging, (6) QR code preview via Expo Go as a core MVP feature, (7) Africa-first optimizations including Paystack, Flutterwave, Mono, M-Pesa, and offline-first patterns, and (8) enterprise-ready multi-tenant organization model allowing users to belong to multiple organizations with role-based access control.
 
 No existing product combines all of these capabilities. Rork validated the market. This product will capture it.
 
@@ -362,6 +362,7 @@ Capability-by-capability comparison against every relevant competitor:
 | Dual Mode (AI \+ Visual) | No | No | No | No | No | **YES** |
 | Bidirectional AST Sync | No | No | No | No | No | **YES** |
 | QR Code Device Preview | Yes | No | No | Yes | No | **YES** |
+| Multi-Tenant Orgs | No | No | No | Partial | Yes | **YES** |
 | Free Tier | Limited | Yes | Yes | Yes | Yes | **YES** |
 | Africa Optimized | No | No | No | No | No | **YES** |
 
@@ -392,6 +393,8 @@ Dreamflow is the closest to this product vision: AI chat combined with drag-and-
 * Bidirectional AST bridge across four modes: agent, builder, code editor, and terminal. No competitor has this.
 
 * Credit efficiency: visual edits and code edits are free. Chat-based competitors charge for every tiny layout fix.
+
+* Enterprise-ready multi-tenant architecture: users can belong to multiple organizations (personal, work, clients) with role-based access control. Enables team collaboration, agency workflows, and enterprise adoption from day one.
 
 * Africa-first positioning: Paystack and Mpesa payment integrations, offline-first patterns, local developer ecosystem.
 

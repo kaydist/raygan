@@ -116,13 +116,37 @@ features/
 
 ### 5. Database Conventions (Backend)
 All entities extend `BaseEntity` with standard audit columns:
-- `id` (uuid PK)
-- `meta` (jsonb)
-- `created_on`, `created_by`
-- `updated_on`, `updated_by`
-- `deleted_flag`, `deleted_on`, `deleted_by` (soft delete)
+- `id` (integer PK, auto-increment, unsigned) - internal primary key
+- `uuid` (uuid, unique) - external identifier for API responses
+- `meta` (jsonb) - flexible metadata
+- `created_on`, `created_by` - creation audit
+- `updated_on`, `updated_by` - update audit
+- `deleted_flag`, `deleted_on`, `deleted_by` - soft delete
+
+**Important:** All entity properties use `snake_case` to match database columns directly, reducing mapping complexity.
 
 Scoped repositories auto-filter `deleted_flag = false`.
+
+### 5.1 Multi-Tenant Organization Model
+The platform uses an organization-based multi-tenant architecture:
+
+```
+┌─────────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│   users     │────▶│  organization_members │◀────│  organizations  │
+└─────────────┘     └──────────────────────┘     └─────────────────┘
+                              │                           │
+                              │                           │
+                              ▼                           ▼
+                    (user_id, org_id, role)         ┌──────────┐
+                                                    │ projects │
+                                                    └──────────┘
+```
+
+- **organizations**: Holds organization data (name, slug, plan, billing)
+- **organization_members**: Junction table linking users to organizations with roles
+- **projects**: Belong to organizations, not directly to users
+- Users can belong to multiple organizations with different roles
+- Roles: `owner`, `admin`, `member`, `viewer`
 
 ### 6. AI Adapter Pattern
 Each LLM provider has an adapter implementing `BaseAIAdapter`:
@@ -257,6 +281,8 @@ All other config (Supabase keys, Stripe keys, feature flags) is fetched from bac
 - Use `type` for object shapes, `interface` for extendable contracts
 
 ### Naming Conventions
+- **Database columns**: `snake_case` (e.g., `created_on`, `deleted_flag`)
+- **Entity properties**: `snake_case` - match database columns directly (e.g., `user.first_name`, `project.organization_id`)
 - **API response keys**: `snake_case` (e.g., `user_id`, `created_at`)
 - **Classes/Functions**: `PascalCase` (e.g., `UserService`, `CreateProject`)
 - **Methods**: `camelCase` (e.g., `getUserById`, `createProject`)
@@ -266,7 +292,6 @@ All other config (Supabase keys, Stripe keys, feature flags) is fetched from bac
 - **Constants**: `kebab-case.ts`
 - **Types**: `kebab-case.types.ts`
 - **Stores**: `kebab-case-store.ts`
-- **Database columns**: `snake_case` (e.g., `created_on`, `deleted_flag`)
 
 ### Import Order
 1. React/Next.js imports
@@ -305,19 +330,23 @@ pnpm --filter=api migration:generate
 
 ## Critical Implementation Notes
 
-1. **Credits System**: One prompt = 1 credit. Tracked in `subscription_usage` table. Builder edits are free.
+1. **Multi-Tenant Model**: Users belong to organizations via `organization_members` junction table. Projects belong to organizations, not users. Users can be members of multiple organizations with different roles.
 
-2. **Plan Gating**: Features gated via `plan-gate` middleware and `requirePlan()`.
+2. **Organization Roles**: `owner` (full control + billing), `admin` (manage members + projects), `member` (create/edit projects), `viewer` (read-only access).
 
-3. **Admin Separation**: Admins stored in separate `admins` table, not `users`.
+3. **Credits System**: One prompt = 1 credit. Tracked in `subscription_usage` table at the organization level. Builder edits are free.
 
-4. **Encryption**: API keys and secrets encrypted with AES-256-GCM at rest.
+4. **Plan Gating**: Plans are set at the organization level. Features gated via `plan-gate` middleware and `requirePlan()`.
 
-5. **Soft Delete**: All entities use `deleted_flag`, never physical delete.
+5. **Admin Separation**: Platform admins stored in separate `admins` table, not `users`. Different from organization admins.
 
-6. **Settings Table**: All runtime config stored in `settings` table, fetched by frontend on init.
+6. **Encryption**: API keys and secrets encrypted with AES-256-GCM at rest.
 
-7. **Preview Modes**:
+7. **Soft Delete**: All entities use `deleted_flag`, never physical delete.
+
+8. **Settings Table**: All runtime config stored in `settings` table, fetched by frontend on init.
+
+9. **Preview Modes**:
    - Browser: Sandpack (React Native Web)
    - Device: Expo Go via QR code
 

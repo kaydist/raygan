@@ -681,66 +681,63 @@ Public GET /settings returns frontend-safe config only. Server secrets are never
 
 # **6\. Database Schema (PostgreSQL via Supabase)**
 
-All tables use uuid PKs (generated via uuid\_generate\_v4()). The ORM is TypeORM with DataSource configured against Supabase PostgreSQL. Entities extend a shared BaseEntity that defines the standard audit columns. RLS is enabled on every table as a defense-in-depth layer on top of TypeORM query scoping.
+All tables use an auto-incrementing integer PK plus a UUID column for external references. The ORM is TypeORM with DataSource configured against Supabase PostgreSQL. Entities extend a shared BaseEntity that defines the standard audit columns. RLS is enabled on every table as a defense-in-depth layer on top of TypeORM query scoping.
 
 ## **6.1 Standard Audit Columns (BaseEntity)**
 
 Every entity extends a shared BaseEntity abstract class. These columns are inherited automatically and never repeated in individual table definitions. All TypeORM repositories use a custom scoped repository that appends deleted\_flag \= false to every query unless explicitly bypassed (e.g. audit reports).
 
+**Important:** All entity properties use snake\_case to match database columns directly, reducing mapping complexity.
+
+```typescript
 // db/entities/base.entity.ts
 
 @Entity()
-
 export abstract class BaseEntity {
+  @PrimaryGeneratedColumn('increment', { type: 'integer', unsigned: true })
+  id: number;
 
-  @PrimaryGeneratedColumn('uuid')
-
-  id: string;
+  @Column({ type: 'uuid', default: () => 'uuid_generate_v4()', unique: true })
+  uuid: string;
 
   @Column({ type: 'jsonb', default: {} })
+  meta: Record<string, unknown>;
 
-  meta: Record\<string, any\>;
+  @CreateDateColumn({ type: 'timestamptz' })
+  created_on: Date;
 
-  @CreateDateColumn({ name: 'created\_on' })
+  @Column({ type: 'uuid', nullable: true })
+  created_by: string | null;
 
-  createdOn: Date;
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updated_on: Date;
 
-  @Column({ name: 'created\_by', type: 'uuid', nullable: true })
+  @Column({ type: 'uuid', nullable: true })
+  updated_by: string | null;
 
-  createdBy: string | null;
+  @Column({ type: 'boolean', default: false })
+  deleted_flag: boolean;
 
-  @UpdateDateColumn({ name: 'updated\_on' })
+  @Column({ type: 'timestamptz', nullable: true })
+  deleted_on: Date | null;
 
-  updatedOn: Date;
-
-  @Column({ name: 'updated\_by', type: 'uuid', nullable: true })
-
-  updatedBy: string | null;
-
-  @Column({ name: 'deleted\_flag', default: false })
-
-  deletedFlag: boolean;
-
-  @Column({ name: 'deleted\_on', type: 'timestamptz', nullable: true })
-
-  deletedOn: Date | null;
-
-  @Column({ name: 'deleted\_by', type: 'uuid', nullable: true })
-
-  deletedBy: string | null;
-
+  @Column({ type: 'uuid', nullable: true })
+  deleted_by: string | null;
 }
+```
 
 | Column | Type | Constraints | Description |
 | :---- | :---- | :---- | :---- |
+| id | integer | PK, AUTO INCREMENT, UNSIGNED | Internal primary key for joins and indexing |
+| uuid | uuid | NOT NULL, UNIQUE, DEFAULT uuid\_generate\_v4() | External identifier for API responses and references |
 | meta | jsonb | NOT NULL, DEFAULT '{}' | Flexible metadata (extensible per-table without migrations) |
-| created\_on | timestamptz | NOT NULL, DEFAULT now() | Record creation timestamp (TypeORM @CreateDateColumn) |
-| created\_by | uuid | FK to users(id), NULLABLE | User who created the record (null for system-created) |
-| updated\_on | timestamptz | NOT NULL, DEFAULT now() | Last modification (TypeORM @UpdateDateColumn) |
-| updated\_by | uuid | FK to users(id), NULLABLE | User who last modified the record |
+| created\_on | timestamptz | NOT NULL, DEFAULT now() | Record creation timestamp |
+| created\_by | uuid | FK to users(uuid), NULLABLE | User who created the record (null for system-created) |
+| updated\_on | timestamptz | NOT NULL, DEFAULT now() | Last modification timestamp |
+| updated\_by | uuid | FK to users(uuid), NULLABLE | User who last modified the record |
 | deleted\_flag | boolean | NOT NULL, DEFAULT false | Soft delete flag. True \= logically deleted. |
 | deleted\_on | timestamptz | NULLABLE | When the record was soft-deleted |
-| deleted\_by | uuid | FK to users(id), NULLABLE | User who deleted the record |
+| deleted\_by | uuid | FK to users(uuid), NULLABLE | User who deleted the record |
 
 * Soft delete: DELETE endpoints set deleted\_flag \= true, deleted\_on \= now(), deleted\_by \= req.user.id. No physical deletes except cleanup jobs (30+ days).
 
@@ -776,67 +773,113 @@ export const dataSource \= new DataSource({
 
 });
 
-## **6.2 users**
+## **6.2 Multi-Tenant Organization Model**
 
-Regular platform users. Does not include admin accounts (see 6.9 admins). User identity is linked to Supabase Auth via auth\_user\_id.
+The platform uses an organization-based multi-tenant architecture that allows users to belong to multiple organizations with different roles. This is essential for enterprise scalability and team collaboration.
 
+```
+┌─────────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│   users     │────▶│  organization_members │◀────│  organizations  │
+└─────────────┘     └──────────────────────┘     └─────────────────┘
+                              │                           │
+                              │                           │
+                              ▼                           ▼
+                    (user_id, org_id, role)         ┌──────────┐
+                                                    │ projects │
+                                                    └──────────┘
+```
+
+**Key Benefits:**
+- Users can belong to multiple organizations (personal + work + clients)
+- Role-based access control per organization
+- Billing and plans are at the organization level
+- Projects are scoped to organizations, not individual users
+- Enables enterprise features like team management
+
+## **6.3 organizations**
+
+Organizations are the primary tenant unit. Every user has a personal organization created on signup. Users can create additional organizations or be invited to existing ones.
+
+| Column | Type | Constraints | Description |
+| :---- | :---- | :---- | :---- |
+| name | varchar(255) | NOT NULL | Organization display name |
+| slug | varchar(255) | NOT NULL, UNIQUE | URL-safe identifier |
+| logo\_url | text | NULLABLE | Organization logo URL |
+| plan | plan\_tier | NOT NULL, DEFAULT 'free' | free, starter, pro, team, enterprise |
+| is\_personal | boolean | NOT NULL, DEFAULT false | True for auto-created personal orgs |
+
+\+ standard audit columns (id, uuid, meta, created\_on, created\_by, updated\_on, updated\_by, deleted\_flag, deleted\_on, deleted\_by)
+
+RLS: SELECT, UPDATE where user is member of org AND deleted\_flag \= false. Indexes: (slug), (is\_personal, deleted\_flag).
+
+## **6.4 organization\_members**
+
+Junction table linking users to organizations with role-based access. Users can be members of multiple organizations with different roles in each.
+
+| Column | Type | Constraints | Description |
+| :---- | :---- | :---- | :---- |
+| organization\_id | integer | FK to organizations(id), NOT NULL | Parent organization |
+| user\_id | integer | FK to users(id), NOT NULL | Member user |
+| role | org\_role | NOT NULL, DEFAULT 'member' | owner, admin, member, viewer |
+| invited\_by | integer | FK to users(id), NULLABLE | User who sent the invitation |
+| invited\_at | timestamptz | NULLABLE | When the invitation was sent |
+| joined\_at | timestamptz | NULLABLE | When the user accepted |
+| status | varchar(20) | NOT NULL, DEFAULT 'active' | active, pending, suspended |
+
+\+ standard audit columns (id, uuid, meta, created\_on, created\_by, updated\_on, updated\_by, deleted\_flag, deleted\_on, deleted\_by)
+
+**Role Permissions:**
+- **owner**: Full control including billing, plan changes, delete org. Only one owner per org.
+- **admin**: Manage members, create/delete projects, manage settings. Cannot change billing.
+- **member**: Create projects, edit own projects, view all org projects.
+- **viewer**: Read-only access to all org projects.
+
+RLS: SELECT where auth.uid() is member of same org AND deleted\_flag \= false. INSERT/UPDATE/DELETE restricted by role. Unique: (organization\_id, user\_id) WHERE deleted\_flag \= false. Indexes: (user\_id, status), (organization\_id, role).
+
+## **6.5 users**
+
+Regular platform users. Does not include admin accounts (see 6.11 admins). User identity is linked to Supabase Auth via auth\_user\_id.
+
+```typescript
 // db/entities/user.entity.ts
 
 @Entity('users')
-
 export class User extends BaseEntity {
+  @Column({ type: 'uuid', unique: true })
+  auth_user_id: string;  // FK to auth.users(id)
 
-  @Column({ name: 'auth\_user\_id', type: 'uuid', unique: true })
+  @Column({ type: 'varchar', length: 100 })
+  first_name: string;
 
-  authUserId: string;  // FK to auth.users(id)
+  @Column({ type: 'varchar', length: 100 })
+  last_name: string;
 
-  @Column({ name: 'first\_name' })
+  @Column({ type: 'varchar', length: 200 })
+  display_name: string;
 
-  firstName: string;
-
-  @Column({ name: 'last\_name' })
-
-  lastName: string;
-
-  @Column({ name: 'display\_name' })
-
-  displayName: string;
-
-  @Column({ unique: true })
-
+  @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Column({ name: 'avatar\_url', nullable: true })
+  @Column({ type: 'text', nullable: true })
+  avatar_url: string | null;
 
-  avatarUrl: string | null;
+  @Column({ type: 'boolean', default: false })
+  activated_flag: boolean;
 
-  @Column({ name: 'activated\_flag', default: false })
+  @Column({ type: 'timestamptz', nullable: true })
+  activated_on: Date | null;
 
-  activatedFlag: boolean;
+  @Column({ type: 'uuid', nullable: true })
+  activated_by: string | null;
 
-  @Column({ name: 'activated\_on', type: 'timestamptz', nullable: true })
-
-  activatedOn: Date | null;
-
-  @Column({ name: 'activated\_by', type: 'uuid', nullable: true })
-
-  activatedBy: string | null;
-
-  @Column({ name: 'onboarding\_completed', default: false })
-
-  onboardingCompleted: boolean;
+  @Column({ type: 'boolean', default: false })
+  onboarding_completed: boolean;
 
   // Relations
-
-  @OneToMany(() \=\> Project, (p) \=\> p.user)
-
-  projects: Project\[\];
-
-  @OneToMany(() \=\> Subscription, (s) \=\> s.user)
-
-  subscriptions: Subscription\[\];
-
+  @OneToMany(() => OrganizationMember, (om) => om.user)
+  organization_memberships: OrganizationMember[];
 }
+```
 
 | Column | Type | Constraints | Description |
 | :---- | :---- | :---- | :---- |
@@ -855,28 +898,29 @@ export class User extends BaseEntity {
 
 RLS: SELECT, UPDATE where auth.uid() \= auth\_user\_id AND deleted\_flag \= false. Trigger: on auth.users INSERT, create public.users row. Credits are tracked in subscription\_usage (see 6.8), not on the user.
 
-## **6.3 projects**
+## **6.6 projects**
+
+Projects belong to organizations, not individual users. Access is controlled via organization membership and roles.
 
 | Column | Type | Constraints | Description |
 | :---- | :---- | :---- | :---- |
-| id | uuid | PK, DEFAULT gen\_random\_uuid() | Project identifier |
-| user\_id | uuid | FK to users(id), NOT NULL | Project owner |
-| name | text | NOT NULL | Project display name |
+| organization\_id | integer | FK to organizations(id), NOT NULL | Parent organization |
+| name | varchar(255) | NOT NULL | Project display name |
 | description | text | NULLABLE | Project description |
-| slug | text | NOT NULL | URL-safe identifier, unique per user |
-| framework\_version | text | NOT NULL, DEFAULT 'expo-52' | Expo SDK version |
+| slug | varchar(255) | NOT NULL | URL-safe identifier, unique per org |
+| framework\_version | varchar(20) | NOT NULL, DEFAULT 'expo-52' | Expo SDK version |
 | ast\_snapshot | jsonb | NOT NULL, DEFAULT '{}' | Latest AST checkpoint |
 | file\_tree | jsonb | NOT NULL, DEFAULT '\[\]' | File structure metadata |
 | settings | jsonb | NOT NULL, DEFAULT '{}' | Project config (theme, nav, app.json) |
-| backend\_provider | text | NULLABLE | supabase, firebase, appwrite, custom |
+| backend\_provider | varchar(50) | NULLABLE | supabase, firebase, appwrite, custom |
 | backend\_config | text | NULLABLE | Encrypted (AES-256-GCM) backend connection config |
-| default\_model\_id | uuid | FK to ai\_models(id), NULLABLE | Default AI model for this project |
+| default\_model\_id | integer | FK to ai\_models(id), NULLABLE | Default AI model for this project |
 | last\_generated\_at | timestamptz | NULLABLE | Last AI generation timestamp |
 | is\_archived | boolean | NOT NULL, DEFAULT false | Soft archive (not deleted, just hidden) |
 
-\+ standard audit columns
+\+ standard audit columns (id, uuid, meta, created\_on, created\_by, updated\_on, updated\_by, deleted\_flag, deleted\_on, deleted\_by)
 
-RLS: ALL where auth.uid() \= user\_id AND deleted\_flag \= false. Indexes: (user\_id, is\_archived, deleted\_flag), (user\_id, updated\_on DESC). Unique: (user\_id, slug) WHERE deleted\_flag \= false.
+RLS: ALL where user is member of organization AND deleted\_flag \= false. Write operations restricted by org role (member+ can edit, viewer cannot). Indexes: (organization\_id, is\_archived, deleted\_flag), (organization\_id, updated\_on DESC). Unique: (organization\_id, slug) WHERE deleted\_flag \= false.
 
 ## **6.4 conversations**
 
@@ -939,19 +983,19 @@ RLS: SELECT where is\_enabled \= true AND deleted\_flag \= false (auth users). A
 
 Unique: (project\_id, path) WHERE deleted\_flag \= false. RLS: ALL where user owns project AND deleted\_flag \= false. Index: (project\_id, deleted\_flag).
 
-## **6.7 subscriptions**
+## **6.9 subscriptions**
 
-Tracks all user subscriptions. Each user can have one active subscription at a time. Historical subscriptions are preserved (deleted\_flag \= false, status \= 'cancelled' or 'expired') for billing audit.
+Tracks all organization subscriptions. Each organization can have one active subscription at a time. Historical subscriptions are preserved (deleted\_flag \= false, status \= 'cancelled' or 'expired') for billing audit. Subscriptions are managed by organization owners.
 
 @Entity('subscriptions')
 
 export class Subscription extends BaseEntity {
 
-  @ManyToOne(() \=\> User, (u) \=\> u.subscriptions)
+  @ManyToOne(() \=\> Organization, (o) \=\> o.subscriptions)
 
-  @JoinColumn({ name: 'user\_id' })
+  @JoinColumn({ name: 'organization\_id' })
 
-  user: User;
+  organization: Organization;
 
   @Column({ name: 'plan', default: 'free' })
 
@@ -1001,8 +1045,8 @@ export class Subscription extends BaseEntity {
 
 | Column | Type | Constraints | Description |
 | :---- | :---- | :---- | :---- |
-| user\_id | uuid | FK to users(id), NOT NULL | Subscriber |
-| plan | text | NOT NULL, DEFAULT 'free' | Plan tier: free, starter, pro, team |
+| organization\_id | uuid | FK to organizations(id), NOT NULL | Subscribing organization |
+| plan | text | NOT NULL, DEFAULT 'free' | Plan tier: free, starter, pro, team, enterprise |
 | status | text | NOT NULL, DEFAULT 'active' | active, past\_due, cancelled, expired, trialing |
 | payment\_provider | text | NULLABLE | stripe or paystack (null for free plan) |
 | provider\_subscription\_id | text | NULLABLE | Stripe subscription ID or Paystack subscription code |
@@ -1011,15 +1055,15 @@ export class Subscription extends BaseEntity {
 | current\_period\_start | timestamptz | NOT NULL | Billing period start |
 | current\_period\_end | timestamptz | NOT NULL | Billing period end (credits reset here) |
 | cancel\_at\_period\_end | boolean | NOT NULL, DEFAULT false | If true, downgrade to free at period end |
-| cancelled\_on | timestamptz | NULLABLE | When the user initiated cancellation |
+| cancelled\_on | timestamptz | NULLABLE | When the org owner initiated cancellation |
 
 \+ standard audit columns
 
-RLS: SELECT where auth.uid() \= user\_id AND deleted\_flag \= false. Index: (user\_id, status, deleted\_flag). Unique: only one subscription per user with status \= 'active' (enforced via partial unique index).
+RLS: SELECT where user is owner of organization AND deleted\_flag \= false. Only org owners can manage subscriptions. Index: (organization\_id, status, deleted\_flag). Unique: only one subscription per organization with status \= 'active' (enforced via partial unique index).
 
-## **6.8 subscription\_usage**
+## **6.10 subscription\_usage**
 
-Tracks credit consumption per subscription period. Each row represents one credit event (used or refunded). The current balance is computed as subscription.credits\_total \- SUM(credits\_used WHERE NOT refunded) for the active period.
+Tracks credit consumption per subscription period at the organization level. Each row represents one credit event (used or refunded). The current balance is computed as subscription.credits\_total \- SUM(credits\_used WHERE NOT refunded) for the active period. Usage is tracked per-user within the organization for analytics.
 
 @Entity('subscription\_usage')
 
@@ -1031,11 +1075,17 @@ export class SubscriptionUsage extends BaseEntity {
 
   subscription: Subscription;
 
+  @ManyToOne(() \=\> Organization)
+
+  @JoinColumn({ name: 'organization\_id' })
+
+  organization: Organization;
+
   @ManyToOne(() \=\> User)
 
   @JoinColumn({ name: 'user\_id' })
 
-  user: User;
+  user: User;  // Which user consumed the credit (for per-user analytics)
 
   @Column({ name: 'event\_type' })
 
@@ -1082,7 +1132,8 @@ export class SubscriptionUsage extends BaseEntity {
 | Column | Type | Constraints | Description |
 | :---- | :---- | :---- | :---- |
 | subscription\_id | uuid | FK to subscriptions(id), NOT NULL | Parent subscription |
-| user\_id | uuid | FK to users(id), NOT NULL | User (denormalized for fast queries) |
+| organization\_id | uuid | FK to organizations(id), NOT NULL | Organization (denormalized for fast queries) |
+| user\_id | uuid | FK to users(id), NOT NULL | User who consumed the credit (for analytics) |
 | event\_type | text | NOT NULL | credit\_used, credit\_refunded |
 | credits\_delta | integer | NOT NULL, DEFAULT 0 | Credit change (-1 \= consumed, \+1 \= refunded) |
 | model\_id | uuid | FK to ai\_models(id), NULLABLE | AI model used for this generation |
@@ -1095,11 +1146,11 @@ export class SubscriptionUsage extends BaseEntity {
 
 \+ standard audit columns
 
-RLS: SELECT where auth.uid() \= user\_id AND deleted\_flag \= false. Indexes: (subscription\_id, created\_on DESC), (user\_id, event\_type, created\_on), (subscription\_id, event\_type) for credit balance computation.
+RLS: SELECT where user is member of organization AND deleted\_flag \= false. Indexes: (subscription\_id, created\_on DESC), (organization\_id, event\_type, created\_on), (subscription\_id, event\_type) for credit balance computation, (organization\_id, user\_id) for per-user analytics.
 
 ### **Credit Balance Computation**
 
-\-- Get remaining credits for a user's active subscription
+\-- Get remaining credits for an organization's active subscription
 
 SELECT s.credits\_total \- COALESCE(SUM(ABS(su.credits\_delta)) FILTER (WHERE su.event\_type \= 'credit\_used'), 0\)
 
@@ -1111,13 +1162,13 @@ FROM subscriptions s
 
 LEFT JOIN subscription\_usage su ON su.subscription\_id \= s.id AND su.deleted\_flag \= false
 
-WHERE s.user\_id \= $1 AND s.status \= 'active' AND s.deleted\_flag \= false
+WHERE s.organization\_id \= $1 AND s.status \= 'active' AND s.deleted\_flag \= false
 
 GROUP BY s.id;
 
-This query is wrapped in a TypeORM custom repository method: subscriptionRepo.getCreditsRemaining(userId). The result is cached in Redis (user:{id}:credits, 30s TTL) and invalidated on every credit\_used or credit\_refunded event.
+This query is wrapped in a TypeORM custom repository method: subscriptionRepo.getCreditsRemaining(organizationId). The result is cached in Redis (org:{id}:credits, 30s TTL) and invalidated on every credit\_used or credit\_refunded event.
 
-## **6.9 admins**
+## **6.11 admins**
 
 Admin accounts are stored separately from regular users. This ensures admin privileges cannot be escalated through the users table. An admin can also be a regular user (dual accounts via same auth.users entry), but admin operations use this table.
 
@@ -1966,13 +2017,13 @@ The billing engine supports Stripe (international) and Paystack (Africa-focused)
 
 \-- Atomic credit reservation (TypeORM raw query in SubscriptionRepository)
 
-async reserveCredit(userId: string): Promise\<SubscriptionUsage | null\> {
+async reserveCredit(organizationId: string, userId: string): Promise\<SubscriptionUsage | null\> {
 
   return this.manager.transaction(async (em) \=\> {
 
     const sub \= await em.findOne(Subscription, {
 
-      where: { user: { id: userId }, status: 'active', deletedFlag: false },
+      where: { organization: { id: organizationId }, status: 'active', deletedFlag: false },
 
       lock: { mode: 'pessimistic\_write' },
 
@@ -1980,13 +2031,17 @@ async reserveCredit(userId: string): Promise\<SubscriptionUsage | null\> {
 
     if (\!sub) return null;
 
-    const remaining \= await this.getCreditsRemaining(userId);
+    const remaining \= await this.getCreditsRemaining(organizationId);
 
     if (remaining \<= 0\) return null;
 
     const usage \= em.create(SubscriptionUsage, {
 
-      subscription: sub, user: { id: userId },
+      subscription: sub,
+
+      organization: { id: organizationId },
+
+      user: { id: userId },  // Track which user consumed the credit
 
       eventType: 'credit\_used', creditsDelta: \-1,
 

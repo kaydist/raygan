@@ -1,2 +1,5 @@
-// Types will be defined in Day 2
-export type PlanTier = "free" | "starter" | "pro" | "team";
+// Database types (generated from migrations)
+export * from './database.types';
+
+// API types (request/response DTOs)
+export * from './api.types';

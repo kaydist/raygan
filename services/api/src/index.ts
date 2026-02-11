@@ -1,7 +1,10 @@
 import { createApp } from "./app";
 import { env, logger } from "./config";
+import { initializeDatabase, closeDatabase } from "./db";
 
 async function main() {
+  await initializeDatabase();
+
   const app = createApp();
 
   app.listen(env.PORT, env.HOST, () => {
@@ -14,7 +17,7 @@ async function main() {
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
-    // TODO: Close database connections, redis, etc.
+    await closeDatabase();
     process.exit(0);
   };
 

@@ -7,10 +7,8 @@ const envSchema = z.object({
   PORT: z.string().default("4000"),
   HOST: z.string().default("0.0.0.0"),
 
-  // Database (will be added in Day 2)
   DATABASE_URL: z.string().optional(),
 
-  // Supabase (will be added in Day 2)
   SUPABASE_URL: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 
