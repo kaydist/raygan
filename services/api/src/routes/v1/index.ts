@@ -1,16 +1,19 @@
-import { Router } from "express";
+import { Router, type IRouter } from "express";
 
 import { healthRoutes } from "./health.routes";
+import { authRoutes } from "./auth.routes";
+import { usersRoutes } from "./users.routes";
+import { organizationsRoutes } from "./organizations.routes";
+import { projectsRoutes } from "./projects.routes";
+import { conversationsRoutes } from "./conversations.routes";
 
 const router = Router();
 
-// Health check routes
 router.use(healthRoutes);
+router.use(authRoutes);
+router.use(usersRoutes);
+router.use(organizationsRoutes);
+router.use(projectsRoutes);
+router.use(conversationsRoutes);
 
-// Project routes will be added in Day 3
-// router.use('/projects', projectRoutes);
-
-// Generate routes will be added in Day 6
-// router.use('/generate', generateRoutes);
-
-export const v1Routes = router;
+export const v1Routes: IRouter = router;

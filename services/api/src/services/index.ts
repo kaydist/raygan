@@ -1,4 +1,4 @@
-// Services will be added here
-// export * from "./ai-gateway";
-// export * from "./backend-hub";
-// export * from "./ast-engine";
+export { UserService } from "./user.service";
+export { OrganizationService } from "./organization.service";
+export { ProjectService } from "./project.service";
+export { ConversationService } from "./conversation.service";

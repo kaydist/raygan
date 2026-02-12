@@ -10,5 +10,4 @@ export {
 // Entities
 export * from "./entities";
 
-// Repositories will be added here
-// export * from "./repositories";
+export * from "./repositories";

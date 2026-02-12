@@ -386,3 +386,4 @@ pnpm --filter=api migration:generate
 - AI design suggestions
 - Collaborative editing
 - White-label mode
+- avoid adding comments except when necessary or code complexity is high
