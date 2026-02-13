@@ -6,6 +6,7 @@ import { usersRoutes } from "./users.routes";
 import { organizationsRoutes } from "./organizations.routes";
 import { projectsRoutes } from "./projects.routes";
 import { conversationsRoutes } from "./conversations.routes";
+import { generateRoutes } from "./generate.routes";
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use(usersRoutes);
 router.use(organizationsRoutes);
 router.use(projectsRoutes);
 router.use(conversationsRoutes);
+router.use(generateRoutes);
 
 export const v1Routes: IRouter = router;

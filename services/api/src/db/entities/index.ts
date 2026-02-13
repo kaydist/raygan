@@ -11,3 +11,7 @@ export {
   type MessageRole,
   type ConversationStatus,
 } from "./conversation.entity";
+
+// AI Gateway entities
+export { AIProvider, type ProviderSlug } from "./ai-provider.entity";
+export { AIModel } from "./ai-model.entity";
