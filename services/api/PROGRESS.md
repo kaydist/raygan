@@ -160,9 +160,29 @@ GET    /api/v1/health/ready
 ## Next Steps (Day 5+)
 
 ### Tasks
-- [ ] Add Zod validation schemas for request bodies
-- [ ] Add rate limiting middleware
-- [ ] Add credits middleware for AI operations
-- [ ] Socket.io setup for real-time AST sync
-- [ ] Backend Hub adapters (Supabase, Firebase)
-- [ ] Add more AI providers (OpenAI, xAI, Google) as needed
+## Day 05 — Feb 14, 2026 (Saturday)
+**Sprint:** 1 | **Phase:** Validation | **Focus:** AI Gateway
+**Estimated hours:** 7
+
+### Tasks
+- [ ] Build 5-layer prompt builder: platform context, project context, code quality rules, output format, backend awareness
+- [ ] Build response parser: extract code blocks, AST operations, conversational text from LLM stream
+- [ ] Write few-shot examples for the system prompt
+- [ ] Write comprehensive tests for parser edge cases
+
+### Key Files
+- `services/api/src/services/ai-gateway/prompt-builder.ts`
+- `services/api/src/services/ai-gateway/response-parser.ts`
+- `services/api/src/services/ai-gateway/prompts/`
+
+### Acceptance Criteria
+- [ ] Prompt builder produces well-structured multi-layer system prompt
+- [ ] Parser correctly extracts code blocks from streamed markdown
+- [ ] Parser handles malformed AI output gracefully
+- [ ] Few-shot examples produce valid React Native code
+
+### Dependencies
+Blocked by: #4
+
+### Notes
+This is the most critical piece. Quality of prompts directly determines product quality. Reference spec Section 7.4.
