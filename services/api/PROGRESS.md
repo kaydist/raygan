@@ -157,32 +157,72 @@ GET    /api/v1/health/ready
 
 ---
 
-## Next Steps (Day 5+)
+## Day 5: Prompt Builder & Response Parser (COMPLETED)
 
-### Tasks
-## Day 05 — Feb 14, 2026 (Saturday)
-**Sprint:** 1 | **Phase:** Validation | **Focus:** AI Gateway
-**Estimated hours:** 7
+### Completed Tasks
 
-### Tasks
-- [ ] Build 5-layer prompt builder: platform context, project context, code quality rules, output format, backend awareness
-- [ ] Build response parser: extract code blocks, AST operations, conversational text from LLM stream
-- [ ] Write few-shot examples for the system prompt
-- [ ] Write comprehensive tests for parser edge cases
+#### 1. 5-Layer Prompt Builder
+- [x] Platform context - Staq AI capabilities and identity
+- [x] Project context - Current project state, file tree, selected code
+- [x] Code quality rules - TypeScript, React Native best practices
+- [x] Output format - Code block structure with filenames
+- [x] Backend awareness - Schema and endpoint context
+
+#### 2. Response Parser
+- [x] Extract code blocks from markdown with language and filename
+- [x] Infer filenames from component names (Screen → screens/, others → components/)
+- [x] Parse filename from comment (// filename: path/to/file.tsx)
+- [x] Extract conversational text separate from code
+- [x] Infer AST operations (create/update) from code blocks
+- [x] Streaming support with `appendChunk` for real-time parsing
+
+#### 3. Few-Shot Examples
+- [x] Login screen example (forms, validation, keyboard handling)
+- [x] Product list example (FlatList, images, callbacks)
+- [x] Supabase hook example (React Query, CRUD operations)
+- [x] Tag-based example retrieval for context-aware prompts
+
+#### 4. Comprehensive Tests
+- [x] Single and multiple code block extraction
+- [x] Filename inference from component names
+- [x] Streaming chunk accumulation
+- [x] Edge cases (empty blocks, malformed input, unclosed fences)
 
 ### Key Files
-- `services/api/src/services/ai-gateway/prompt-builder.ts`
-- `services/api/src/services/ai-gateway/response-parser.ts`
-- `services/api/src/services/ai-gateway/prompts/`
+```
+src/services/ai-gateway/
+├── prompt-builder.ts          # 5-layer system prompt construction
+├── response-parser.ts         # Code extraction & AST inference
+├── prompts/
+│   ├── few-shot-examples.ts   # Example conversations
+│   └── index.ts
+└── __tests__/
+    └── response-parser.test.ts
+```
+
+---
+
+## Next Steps (Day 6+)
+
+### Tasks
+- [ ] Implement POST /api/v1/generate route with SSE streaming
+- [ ] Wire up: receive prompt → build context → call Claude adapter → stream response → emit SSE events
+- [ ] SSE event types: text, ast_operation, file_update, done, error
+- [ ] Store conversation messages in PostgreSQL
+- [ ] Write integration tests
+
+### Key Files
+- `services/api/src/routes/v1/generate.routes.ts`
+- `services/api/src/services/generation.service.ts`
 
 ### Acceptance Criteria
-- [ ] Prompt builder produces well-structured multi-layer system prompt
-- [ ] Parser correctly extracts code blocks from streamed markdown
-- [ ] Parser handles malformed AI output gracefully
-- [ ] Few-shot examples produce valid React Native code
+- [ ] curl POST to /generate streams back SSE events with generated code
+- [ ] Conversation messages persisted to database
+- [ ] SSE connection stays alive during generation
+- [ ] Error events sent on failures
 
 ### Dependencies
-Blocked by: #4
+Blocked by: #5
 
 ### Notes
-This is the most critical piece. Quality of prompts directly determines product quality. Reference spec Section 7.4.
+Use standard SSE format (text/event-stream). Keep connection alive with heartbeat comments.
