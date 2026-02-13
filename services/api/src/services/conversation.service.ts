@@ -97,8 +97,8 @@ export class ConversationService {
     return { conversation, role: membership.role };
   }
 
-  async checkProjectAccess(userId: number, projectId: number): Promise<{ project: Project; role: string } | null> {
-    const project = await this.projects.findById(projectId);
+  async checkProjectAccess(userId: number, projectId: string): Promise<{ project: Project; role: string } | null> {
+    const project = await this.projects.findByUuid(projectId);
     if (!project) return null;
 
     const membership = await AppDataSource.getRepository(OrganizationMember).findOne({

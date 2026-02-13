@@ -2,9 +2,10 @@ import type { Request, Response } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth";
 import { logger } from "../config";
 import { ERROR_CODES } from "../constants";
-import { UserService } from "../services";
+import { UserService, OrganizationService } from "../services";
 
 const userService = new UserService();
+const organizationService = new OrganizationService();
 
 export async function getProfile(req: Request, res: Response): Promise<void> {
   try {
@@ -34,7 +35,10 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function updateProfile(req: Request, res: Response): Promise<void> {
+export async function updateProfile(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { first_name, last_name, display_name, avatar_url } = req.body;
@@ -73,7 +77,10 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
   }
 }
 
-export async function completeOnboarding(req: Request, res: Response): Promise<void> {
+export async function completeOnboarding(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
 
@@ -89,7 +96,10 @@ export async function completeOnboarding(req: Request, res: Response): Promise<v
   }
 }
 
-export async function deleteAccount(req: Request, res: Response): Promise<void> {
+export async function deleteAccount(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
 
@@ -98,6 +108,76 @@ export async function deleteAccount(req: Request, res: Response): Promise<void> 
     res.json({ data: { success: true }, error: null });
   } catch (err) {
     logger.error({ err }, "Delete account failed");
+    res.status(500).json({
+      data: null,
+      error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },
+    });
+  }
+}
+
+export async function switchOrganization(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const authReq = req as AuthenticatedRequest;
+    const { organization_id } = req.body;
+
+    if (!organization_id) {
+      res.status(400).json({
+        data: null,
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: "organization_id is required",
+        },
+      });
+      return;
+    }
+
+    const org = await organizationService.findByUuid(organization_id);
+    if (!org) {
+      logger.error(`User failed to switch to orgainzation ${organization_id}`);
+      res.status(404).json({
+        data: null,
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Unable to switch organizations",
+        },
+      });
+      return;
+    }
+
+    const membership = await organizationService.getMembership(
+      org.id,
+      authReq.dbUser.id,
+    );
+    if (!membership) {
+      logger.error(`User is not a member of organization ${organization_id}`);
+      res.status(403).json({
+        data: null,
+        error: {
+          code: ERROR_CODES.FORBIDDEN,
+          message: "Unable to switch organizations",
+        },
+      });
+      return;
+    }
+
+    await userService.setCurrentOrganization(authReq.dbUser.id, org.id);
+
+    res.json({
+      data: {
+        current_organization: {
+          id: org.uuid,
+          name: org.name,
+          slug: org.slug,
+          plan: org.plan,
+        },
+      },
+      error: null,
+    });
+  } catch (err) {
+    logger.error({ err }, "Switch organization failed");
     res.status(500).json({
       data: null,
       error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },

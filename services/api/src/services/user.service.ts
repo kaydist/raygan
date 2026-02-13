@@ -15,6 +15,13 @@ export class UserService {
     });
   }
 
+  async findByAuthIdWithCurrentOrg(authUserId: string) {
+    return this.users.findOne({
+      where: { auth_user_id: authUserId },
+      relations: ["current_organization"],
+    });
+  }
+
   async findById(id: number) {
     return this.users.findById(id);
   }
@@ -40,6 +47,10 @@ export class UserService {
 
   async update(id: number, data: Partial<User>, updatedBy?: number) {
     return this.users.update(id, data, updatedBy);
+  }
+
+  async setCurrentOrganization(userId: number, organizationId: number) {
+    return this.users.update(userId, { current_organization_id: organizationId }, userId);
   }
 
   async completeOnboarding(id: number) {

@@ -1,7 +1,8 @@
-import { Entity, Column, OneToMany } from "typeorm";
+import { Entity, Column, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 
 import { BaseEntity } from "./base.entity";
 import type { OrganizationMember } from "./organization-member.entity";
+import type { Organization } from "./organization.entity";
 
 @Entity("users")
 export class User extends BaseEntity {
@@ -35,7 +36,14 @@ export class User extends BaseEntity {
   @Column({ type: "boolean", default: false })
   onboarding_completed!: boolean;
 
+  @Column({ type: "integer" })
+  current_organization_id!: number;
+
   // Relations
   @OneToMany("OrganizationMember", "user")
   organization_memberships!: OrganizationMember[];
+
+  @ManyToOne("Organization")
+  @JoinColumn({ name: "current_organization_id" })
+  current_organization!: Organization;
 }

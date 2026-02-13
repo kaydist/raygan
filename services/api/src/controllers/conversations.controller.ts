@@ -7,13 +7,19 @@ import type { ConversationStatus } from "../db/entities/conversation.entity";
 
 const conversationService = new ConversationService();
 
-export async function listConversations(req: Request, res: Response): Promise<void> {
+export async function listConversations(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { projectId } = req.params;
     const { status, page, limit } = req.query;
 
-    const access = await conversationService.checkProjectAccess(authReq.dbUser.id, parseInt(projectId));
+    const access = await conversationService.checkProjectAccess(
+      authReq.dbUser.id,
+      projectId,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -22,11 +28,14 @@ export async function listConversations(req: Request, res: Response): Promise<vo
       return;
     }
 
-    const result = await conversationService.findAllByProjectId(access.project.id, {
-      status: status as ConversationStatus | undefined,
-      page: page ? parseInt(page as string) : undefined,
-      limit: limit ? parseInt(limit as string) : undefined,
-    });
+    const result = await conversationService.findAllByProjectId(
+      access.project.id,
+      {
+        status: status as ConversationStatus | undefined,
+        page: page ? parseInt(page as string) : undefined,
+        limit: limit ? parseInt(limit as string) : undefined,
+      },
+    );
 
     res.json({
       data: result.items.map((c) => ({
@@ -58,7 +67,10 @@ export async function listConversations(req: Request, res: Response): Promise<vo
   }
 }
 
-export async function getConversation(req: Request, res: Response): Promise<void> {
+export async function getConversation(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { conversationId } = req.params;
@@ -67,12 +79,18 @@ export async function getConversation(req: Request, res: Response): Promise<void
     if (!conversation) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Conversation not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Conversation not found",
+        },
       });
       return;
     }
 
-    const access = await conversationService.checkAccess(authReq.dbUser.id, conversation.id);
+    const access = await conversationService.checkAccess(
+      authReq.dbUser.id,
+      conversation.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -106,13 +124,19 @@ export async function getConversation(req: Request, res: Response): Promise<void
   }
 }
 
-export async function createConversation(req: Request, res: Response): Promise<void> {
+export async function createConversation(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { projectId } = req.params;
     const { content, role } = req.body;
 
-    const access = await conversationService.checkProjectAccess(authReq.dbUser.id, parseInt(projectId));
+    const access = await conversationService.checkProjectAccess(
+      authReq.dbUser.id,
+      projectId,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -145,7 +169,10 @@ export async function createConversation(req: Request, res: Response): Promise<v
   }
 }
 
-export async function updateConversation(req: Request, res: Response): Promise<void> {
+export async function updateConversation(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { conversationId } = req.params;
@@ -155,12 +182,18 @@ export async function updateConversation(req: Request, res: Response): Promise<v
     if (!conversation) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Conversation not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Conversation not found",
+        },
       });
       return;
     }
 
-    const access = await conversationService.checkAccess(authReq.dbUser.id, conversation.id);
+    const access = await conversationService.checkAccess(
+      authReq.dbUser.id,
+      conversation.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -169,7 +202,11 @@ export async function updateConversation(req: Request, res: Response): Promise<v
       return;
     }
 
-    const updated = await conversationService.update(conversation.id, { content, status }, authReq.dbUser.id);
+    const updated = await conversationService.update(
+      conversation.id,
+      { content, status },
+      authReq.dbUser.id,
+    );
 
     res.json({
       data: {
@@ -189,7 +226,10 @@ export async function updateConversation(req: Request, res: Response): Promise<v
   }
 }
 
-export async function deleteConversation(req: Request, res: Response): Promise<void> {
+export async function deleteConversation(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { conversationId } = req.params;
@@ -198,12 +238,18 @@ export async function deleteConversation(req: Request, res: Response): Promise<v
     if (!conversation) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Conversation not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Conversation not found",
+        },
       });
       return;
     }
 
-    const access = await conversationService.checkAccess(authReq.dbUser.id, conversation.id);
+    const access = await conversationService.checkAccess(
+      authReq.dbUser.id,
+      conversation.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,

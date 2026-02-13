@@ -10,32 +10,9 @@ const organizationService = new OrganizationService();
 export async function listProjects(req: Request, res: Response): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { orgId } = req.query;
+    const currentOrg = authReq.currentOrganization;
 
-    let projects;
-    if (orgId) {
-      const org = await organizationService.findByUuid(orgId as string);
-      if (!org) {
-        res.status(404).json({
-          data: null,
-          error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
-        });
-        return;
-      }
-
-      const membership = await organizationService.getMembership(org.id, authReq.dbUser.id);
-      if (!membership) {
-        res.status(403).json({
-          data: null,
-          error: { code: ERROR_CODES.FORBIDDEN, message: "Access denied" },
-        });
-        return;
-      }
-
-      projects = await projectService.findAllByOrgId(org.id);
-    } else {
-      projects = await projectService.findAllByUserId(authReq.dbUser.id);
-    }
+    const projects = await projectService.findAllByOrgId(currentOrg.id);
 
     res.json({
       data: projects.map((p) => ({
@@ -113,27 +90,10 @@ export async function getProject(req: Request, res: Response): Promise<void> {
 export async function createProject(req: Request, res: Response): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { organization_id, name, slug, description, framework_version, backend_provider } = req.body;
+    const currentOrg = authReq.currentOrganization;
+    const { name, slug, description, framework_version, backend_provider } = req.body;
 
-    const org = await organizationService.findByUuid(organization_id);
-    if (!org) {
-      res.status(404).json({
-        data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
-      });
-      return;
-    }
-
-    const membership = await organizationService.getMembership(org.id, authReq.dbUser.id);
-    if (!membership) {
-      res.status(403).json({
-        data: null,
-        error: { code: ERROR_CODES.FORBIDDEN, message: "Access denied" },
-      });
-      return;
-    }
-
-    const existing = await projectService.findBySlug(org.id, slug);
+    const existing = await projectService.findBySlug(currentOrg.id, slug);
     if (existing) {
       res.status(409).json({
         data: null,
@@ -144,7 +104,7 @@ export async function createProject(req: Request, res: Response): Promise<void> 
 
     const project = await projectService.create(
       {
-        organization_id: org.id,
+        organization_id: currentOrg.id,
         name,
         slug,
         description,

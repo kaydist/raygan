@@ -41,6 +41,8 @@ export async function register(req: Request, res: Response): Promise<void> {
       user.id
     );
 
+    await userService.setCurrentOrganization(user.id, personalOrg.id);
+
     res.status(201).json({
       data: {
         user: {
@@ -54,6 +56,12 @@ export async function register(req: Request, res: Response): Promise<void> {
           id: personalOrg.uuid,
           name: personalOrg.name,
           slug: personalOrg.slug,
+        },
+        current_organization: {
+          id: personalOrg.uuid,
+          name: personalOrg.name,
+          slug: personalOrg.slug,
+          plan: personalOrg.plan,
         },
         ...session,
       },
@@ -96,7 +104,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const user = await userService.findByAuthId(authUser.id);
+    const user = await userService.findByAuthIdWithCurrentOrg(authUser.id);
     if (!user || user.deleted_flag) {
       res.status(401).json({
         data: null,
@@ -105,7 +113,17 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    if (!user.current_organization) {
+      logger.warn({ userId: user.id }, "Login attempt for user without organization");
+      res.status(401).json({
+        data: null,
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Invalid credentials" },
+      });
+      return;
+    }
+
     const organizations = await organizationService.findAllByUserId(user.id);
+    const currentOrg = user.current_organization;
 
     res.json({
       data: {
@@ -124,6 +142,12 @@ export async function login(req: Request, res: Response): Promise<void> {
           slug: org.slug,
           role: org.role,
         })),
+        current_organization: {
+          id: currentOrg.uuid,
+          name: currentOrg.name,
+          slug: currentOrg.slug,
+          plan: currentOrg.plan,
+        },
         ...session,
       },
       error: null,
@@ -170,8 +194,9 @@ export async function oauthLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    let user = await userService.findByAuthId(authUser.id);
+    let user = await userService.findByAuthIdWithCurrentOrg(authUser.id);
     let isNewUser = false;
+    let currentOrg;
 
     if (!user) {
       isNewUser = true;
@@ -189,18 +214,31 @@ export async function oauthLogin(req: Request, res: Response): Promise<void> {
         avatar_url: metadata.avatar_url || metadata.picture || null,
       });
 
-      await organizationService.create(
+      currentOrg = await organizationService.create(
         { name: `${firstName}'s Workspace`, slug: `${user.uuid}-personal`, is_personal: true },
         user.id
       );
-    }
 
-    if (user.deleted_flag) {
-      res.status(401).json({
-        data: null,
-        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication failed" },
-      });
-      return;
+      await userService.setCurrentOrganization(user.id, currentOrg.id);
+    } else {
+      if (user.deleted_flag) {
+        res.status(401).json({
+          data: null,
+          error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication failed" },
+        });
+        return;
+      }
+
+      if (!user.current_organization) {
+        logger.warn({ userId: user.id }, "OAuth login attempt for user without organization");
+        res.status(401).json({
+          data: null,
+          error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication failed" },
+        });
+        return;
+      }
+
+      currentOrg = user.current_organization;
     }
 
     const organizations = await organizationService.findAllByUserId(user.id);
@@ -222,6 +260,12 @@ export async function oauthLogin(req: Request, res: Response): Promise<void> {
           slug: org.slug,
           role: org.role,
         })),
+        current_organization: {
+          id: currentOrg.uuid,
+          name: currentOrg.name,
+          slug: currentOrg.slug,
+          plan: currentOrg.plan,
+        },
         ...session,
         is_new_user: isNewUser,
       },
@@ -315,6 +359,7 @@ export async function getMe(req: Request, res: Response): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const user = authReq.dbUser;
+    const currentOrganization = authReq.currentOrganization;
 
     const organizations = await organizationService.findAllByUserId(user.id);
 
@@ -336,6 +381,12 @@ export async function getMe(req: Request, res: Response): Promise<void> {
           role: org.role,
           is_personal: org.is_personal,
         })),
+        current_organization: {
+          id: currentOrganization.uuid,
+          name: currentOrganization.name,
+          slug: currentOrganization.slug,
+          plan: currentOrganization.plan,
+        },
       },
       error: null,
     });

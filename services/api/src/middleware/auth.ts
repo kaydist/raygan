@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { getSupabaseClient } from "../config/supabase";
 import { logger } from "../config";
 import { ERROR_CODES } from "../constants";
-import { AppDataSource, User } from "../db";
+import { AppDataSource, User, Organization } from "../db";
 
 export interface AuthUser {
   id: string;
@@ -15,6 +15,7 @@ export interface AuthenticatedRequest extends Request {
   user: AuthUser;
   userId: number;
   dbUser: User;
+  currentOrganization: Organization;
 }
 
 export async function authenticate(
@@ -67,6 +68,7 @@ export async function authenticate(
     const userRepo = AppDataSource.getRepository(User);
     const dbUser = await userRepo.findOne({
       where: { auth_user_id: data.user.id },
+      relations: ["current_organization"],
     });
 
     if (!dbUser || dbUser.deleted_flag) {
@@ -80,15 +82,29 @@ export async function authenticate(
       return;
     }
 
+    if (!dbUser.current_organization) {
+      logger.warn({ userId: dbUser.id }, "Auth rejected: user has no current organization");
+      res.status(401).json({
+        data: null,
+        error: {
+          code: ERROR_CODES.UNAUTHORIZED,
+          message: "Authentication required",
+        },
+      });
+      return;
+    }
+
+    const currentOrganization = dbUser.current_organization;
+
     const authReq = req as AuthenticatedRequest;
     authReq.user = {
-      ...dbUser,
       id: data.user.id,
       email: data.user.email || "",
       app_metadata: data.user.app_metadata || {},
       user_metadata: data.user.user_metadata || {},
     };
     authReq.dbUser = dbUser;
+    authReq.currentOrganization = currentOrganization;
 
     next();
   } catch (err) {
@@ -127,9 +143,10 @@ export async function optionalAuth(
       const userRepo = AppDataSource.getRepository(User);
       const dbUser = await userRepo.findOne({
         where: { auth_user_id: data.user.id },
+        relations: ["current_organization"],
       });
 
-      if (dbUser && !dbUser.deleted_flag) {
+      if (dbUser && !dbUser.deleted_flag && dbUser.current_organization) {
         const authReq = req as AuthenticatedRequest;
         authReq.user = {
           id: data.user.id,
@@ -137,8 +154,8 @@ export async function optionalAuth(
           app_metadata: data.user.app_metadata || {},
           user_metadata: data.user.user_metadata || {},
         };
-        (authReq.dbUser.id, dbUser.id);
         authReq.dbUser = dbUser;
+        authReq.currentOrganization = dbUser.current_organization;
       }
     }
   } catch {

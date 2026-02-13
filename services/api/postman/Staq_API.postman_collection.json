@@ -20,6 +20,11 @@
       "key": "refreshToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "currentOrgId",
+      "value": "",
+      "type": "string"
     }
   ],
   "auth": {
@@ -93,7 +98,6 @@
                   "if (pm.response.code === 201) {",
                   "    const response = pm.response.json();",
                   "    if (response.data && response.data.access_token) {",
-                  "        // Remove 'Bearer ' prefix for storage (Postman auth adds it)",
                   "        const token = response.data.access_token.replace('Bearer ', '');",
                   "        pm.environment.set('accessToken', token);",
                   "        pm.collectionVariables.set('accessToken', token);",
@@ -102,6 +106,10 @@
                   "    if (response.data && response.data.refresh_token) {",
                   "        pm.environment.set('refreshToken', response.data.refresh_token);",
                   "        pm.collectionVariables.set('refreshToken', response.data.refresh_token);",
+                  "    }",
+                  "    if (response.data && response.data.current_organization) {",
+                  "        pm.environment.set('currentOrgId', response.data.current_organization.id);",
+                  "        pm.collectionVariables.set('currentOrgId', response.data.current_organization.id);",
                   "    }",
                   "}"
                 ],
@@ -133,7 +141,7 @@
               "name": "Success",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\"\n    },\n    \"organization\": {\n      \"id\": \"uuid\",\n      \"name\": \"John's Workspace\",\n      \"slug\": \"uuid-personal\"\n    },\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200\n  },\n  \"error\": null\n}"
+              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\"\n    },\n    \"organization\": {\n      \"id\": \"uuid\",\n      \"name\": \"John's Workspace\",\n      \"slug\": \"uuid-personal\"\n    },\n    \"current_organization\": {\n      \"id\": \"uuid\",\n      \"name\": \"John's Workspace\",\n      \"slug\": \"uuid-personal\",\n      \"plan\": \"free\"\n    },\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200\n  },\n  \"error\": null\n}"
             }
           ]
         },
@@ -147,7 +155,6 @@
                   "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
                   "    if (response.data && response.data.access_token) {",
-                  "        // Remove 'Bearer ' prefix for storage (Postman auth adds it)",
                   "        const token = response.data.access_token.replace('Bearer ', '');",
                   "        pm.environment.set('accessToken', token);",
                   "        pm.collectionVariables.set('accessToken', token);",
@@ -156,6 +163,10 @@
                   "    if (response.data && response.data.refresh_token) {",
                   "        pm.environment.set('refreshToken', response.data.refresh_token);",
                   "        pm.collectionVariables.set('refreshToken', response.data.refresh_token);",
+                  "    }",
+                  "    if (response.data && response.data.current_organization) {",
+                  "        pm.environment.set('currentOrgId', response.data.current_organization.id);",
+                  "        pm.collectionVariables.set('currentOrgId', response.data.current_organization.id);",
                   "    }",
                   "}"
                 ],
@@ -187,7 +198,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\",\n      \"avatar_url\": null,\n      \"onboarding_completed\": false\n    },\n    \"organizations\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"John's Workspace\",\n        \"slug\": \"uuid-personal\",\n        \"role\": \"owner\"\n      }\n    ],\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200\n  },\n  \"error\": null\n}"
+              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\",\n      \"avatar_url\": null,\n      \"onboarding_completed\": false\n    },\n    \"organizations\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"John's Workspace\",\n        \"slug\": \"uuid-personal\",\n        \"role\": \"owner\"\n      }\n    ],\n    \"current_organization\": {\n      \"id\": \"uuid\",\n      \"name\": \"John's Workspace\",\n      \"slug\": \"uuid-personal\",\n      \"plan\": \"free\"\n    },\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200\n  },\n  \"error\": null\n}"
             }
           ]
         },
@@ -201,7 +212,6 @@
                   "if (pm.response.code === 200) {",
                   "    const response = pm.response.json();",
                   "    if (response.data && response.data.access_token) {",
-                  "        // Remove 'Bearer ' prefix for storage (Postman auth adds it)",
                   "        const token = response.data.access_token.replace('Bearer ', '');",
                   "        pm.environment.set('accessToken', token);",
                   "        pm.collectionVariables.set('accessToken', token);",
@@ -210,6 +220,10 @@
                   "    if (response.data && response.data.refresh_token) {",
                   "        pm.environment.set('refreshToken', response.data.refresh_token);",
                   "        pm.collectionVariables.set('refreshToken', response.data.refresh_token);",
+                  "    }",
+                  "    if (response.data && response.data.current_organization) {",
+                  "        pm.environment.set('currentOrgId', response.data.current_organization.id);",
+                  "        pm.collectionVariables.set('currentOrgId', response.data.current_organization.id);",
                   "    }",
                   "}"
                 ],
@@ -241,7 +255,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"data\": {\n    \"user\": { ... },\n    \"organizations\": [ ... ],\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200,\n    \"is_new_user\": true\n  },\n  \"error\": null\n}"
+              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\",\n      \"avatar_url\": \"https://example.com/avatar.jpg\",\n      \"onboarding_completed\": false\n    },\n    \"organizations\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"John's Workspace\",\n        \"slug\": \"uuid-personal\",\n        \"role\": \"owner\"\n      }\n    ],\n    \"current_organization\": {\n      \"id\": \"uuid\",\n      \"name\": \"John's Workspace\",\n      \"slug\": \"uuid-personal\",\n      \"plan\": \"free\"\n    },\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200,\n    \"is_new_user\": true\n  },\n  \"error\": null\n}"
             }
           ]
         },
@@ -397,7 +411,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\",\n      \"avatar_url\": null,\n      \"onboarding_completed\": true\n    },\n    \"organizations\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"John's Workspace\",\n        \"slug\": \"uuid-personal\",\n        \"role\": \"owner\",\n        \"is_personal\": true\n      }\n    ]\n  },\n  \"error\": null\n}"
+              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\",\n      \"avatar_url\": null,\n      \"onboarding_completed\": true\n    },\n    \"organizations\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"John's Workspace\",\n        \"slug\": \"uuid-personal\",\n        \"role\": \"owner\",\n        \"is_personal\": true\n      }\n    ],\n    \"current_organization\": {\n      \"id\": \"uuid\",\n      \"name\": \"John's Workspace\",\n      \"slug\": \"uuid-personal\",\n      \"plan\": \"free\"\n    }\n  },\n  \"error\": null\n}"
             }
           ]
         }
@@ -475,6 +489,60 @@
               "status": "OK",
               "code": 200,
               "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Switch Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.current_organization) {",
+                  "        pm.environment.set('currentOrgId', response.data.current_organization.id);",
+                  "        pm.collectionVariables.set('currentOrgId', response.data.current_organization.id);",
+                  "        console.log('Current organization switched to: ' + response.data.current_organization.name);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": \"{{currentOrgId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/me/switch-organization",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me", "switch-organization"]
+            },
+            "description": "Switch the user's current active organization. The user must be a member of the target organization."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"current_organization\": {\n      \"id\": \"uuid\",\n      \"name\": \"Acme Corp\",\n      \"slug\": \"acme-corp\",\n      \"plan\": \"pro\"\n    }\n  },\n  \"error\": null\n}"
+            },
+            {
+              "name": "Not a Member",
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"data\": null,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"You are not a member of this organization\"\n  }\n}"
             }
           ]
         },
@@ -790,18 +858,11 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/projects?orgId=uuid",
+              "raw": "{{baseUrl}}/projects",
               "host": ["{{baseUrl}}"],
-              "path": ["projects"],
-              "query": [
-                {
-                  "key": "orgId",
-                  "value": "uuid",
-                  "description": "Optional. Filter by organization ID."
-                }
-              ]
+              "path": ["projects"]
             },
-            "description": "List all projects the user has access to. Optionally filter by organization."
+            "description": "List all projects in the user's current organization."
           },
           "response": [
             {
@@ -824,14 +885,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"organization_id\": \"uuid\",\n  \"name\": \"My App\",\n  \"slug\": \"my-app\",\n  \"description\": \"A mobile app built with Staq\",\n  \"framework_version\": \"SDK 52\",\n  \"backend_provider\": \"supabase\"\n}"
+              "raw": "{\n  \"name\": \"My App\",\n  \"slug\": \"my-app\",\n  \"description\": \"A mobile app built with Staq\",\n  \"framework_version\": \"SDK 52\",\n  \"backend_provider\": \"supabase\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/projects",
               "host": ["{{baseUrl}}"],
               "path": ["projects"]
             },
-            "description": "Create a new project in an organization.\n\nBackend providers: supabase, firebase, appwrite, custom, none"
+            "description": "Create a new project in the user's current organization.\n\nBackend providers: supabase, firebase, appwrite, custom, none"
           },
           "response": [
             {
