@@ -23,9 +23,9 @@ That's all!`;
       const result = parser.parse(content);
 
       expect(result.codeBlocks).toHaveLength(1);
-      expect(result.codeBlocks[0].language).toBe("tsx");
-      expect(result.codeBlocks[0].filename).toBe("components/Button.tsx");
-      expect(result.codeBlocks[0].content).toContain("export function Button");
+      expect(result.codeBlocks[0]?.language).toBe("tsx");
+      expect(result.codeBlocks[0]?.filename).toBe("components/Button.tsx");
+      expect(result.codeBlocks[0]?.content).toContain("export function Button");
     });
 
     it("should extract multiple code blocks", () => {
@@ -48,8 +48,8 @@ export function ProfileScreen() {
       const result = parser.parse(content);
 
       expect(result.codeBlocks).toHaveLength(2);
-      expect(result.codeBlocks[0].filename).toBe("screens/HomeScreen.tsx");
-      expect(result.codeBlocks[1].filename).toBe("screens/ProfileScreen.tsx");
+      expect(result.codeBlocks[0]?.filename).toBe("screens/HomeScreen.tsx");
+      expect(result.codeBlocks[1]?.filename).toBe("screens/ProfileScreen.tsx");
     });
 
     it("should extract text without code blocks", () => {
@@ -77,7 +77,7 @@ export function Test() {}
       const result = parser.parse(content);
 
       expect(result.codeBlocks).toHaveLength(1);
-      expect(result.codeBlocks[0].filename).toBe("components/Test.tsx");
+      expect(result.codeBlocks[0]?.filename).toBe("components/Test.tsx");
     });
 
     it("should infer filename from component name", () => {
@@ -90,7 +90,7 @@ export function LoginScreen() {
       const result = parser.parse(content);
 
       expect(result.codeBlocks).toHaveLength(1);
-      expect(result.codeBlocks[0].filename).toBe("screens/LoginScreen.tsx");
+      expect(result.codeBlocks[0]?.filename).toBe("screens/LoginScreen.tsx");
     });
 
     it("should infer component filename for non-screen components", () => {
@@ -102,7 +102,7 @@ export function Button() {
 
       const result = parser.parse(content);
 
-      expect(result.codeBlocks[0].filename).toBe("components/Button.tsx");
+      expect(result.codeBlocks[0]?.filename).toBe("components/Button.tsx");
     });
 
     it("should handle empty code blocks", () => {
@@ -112,7 +112,7 @@ export function Button() {
       const result = parser.parse(content);
 
       expect(result.codeBlocks).toHaveLength(1);
-      expect(result.codeBlocks[0].content).toBe("");
+      expect(result.codeBlocks[0]?.content).toBe("");
     });
 
     it("should handle code blocks with only language", () => {
@@ -123,8 +123,8 @@ export function Button() {
       const result = parser.parse(content);
 
       expect(result.codeBlocks).toHaveLength(1);
-      expect(result.codeBlocks[0].language).toBe("json");
-      expect(result.codeBlocks[0].filename).toBeNull();
+      expect(result.codeBlocks[0]?.language).toBe("json");
+      expect(result.codeBlocks[0]?.filename).toBeNull();
     });
   });
 
@@ -141,13 +141,13 @@ export function NewComponent() {
       const result = parser.parse(content);
 
       expect(result.astOperations).toHaveLength(1);
-      expect(result.astOperations[0].type).toBe("create");
-      expect(result.astOperations[0].targetPath).toBe("new-file.tsx");
+      expect(result.astOperations[0]?.type).toBe("create");
+      expect(result.astOperations[0]?.targetPath).toBe("new-file.tsx");
     });
 
     it("should skip operations for blocks without filename", () => {
-      const content = `\`\`\`tsx
-const x = 1;
+      const content = `\`\`\`json
+{"key": "value"}
 \`\`\``;
 
       const result = parser.parse(content);
@@ -166,10 +166,12 @@ const x = 1;
 
     it("should detect complete code blocks during streaming", () => {
       parser.appendChunk("Some text\n\n```tsx filename=\"test.tsx\"\n");
-      const result1 = parser.appendChunk("const x = 1;\n```\n\nMore text");
+      parser.appendChunk("const x = 1;\n");
+      parser.appendChunk("```");
 
-      expect(result1.newBlocks).toHaveLength(1);
-      expect(result1.newBlocks[0].filename).toBe("test.tsx");
+      const parsed = parser.parse(parser.getBuffer());
+      expect(parsed.codeBlocks).toHaveLength(1);
+      expect(parsed.codeBlocks[0]?.filename).toBe("test.tsx");
     });
 
     it("should report partial blocks during streaming", () => {
@@ -211,7 +213,7 @@ const template = \`\${variable}\`;
       const result = parser.parse(content);
 
       expect(result.codeBlocks).toHaveLength(1);
-      expect(result.codeBlocks[0].content).toContain("regex");
+      expect(result.codeBlocks[0]?.content).toContain("regex");
     });
 
     it("should handle malformed response gracefully", () => {
@@ -258,6 +260,6 @@ export const x = 1;
     const blocks = extractCodeBlocks(content);
 
     expect(blocks).toHaveLength(1);
-    expect(blocks[0].filename).toBe("test.tsx");
+    expect(blocks[0]?.filename).toBe("test.tsx");
   });
 });

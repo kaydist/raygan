@@ -4,8 +4,10 @@ import { logger } from "../config";
 import { ERROR_CODES } from "../constants";
 import { getAIGateway } from "../services/ai-gateway";
 import { AIProviderService } from "../services";
+import { GenerationService } from "../services/generation.service";
 
 const providerService = new AIProviderService();
+const generationService = new GenerationService();
 
 export async function listModels(_req: Request, res: Response): Promise<void> {
   try {
@@ -132,5 +134,52 @@ export async function streamGenerate(req: Request, res: Response): Promise<void>
       res.write(`data: ${JSON.stringify({ type: "error", error: "Stream interrupted" })}\n\n`);
       res.end();
     }
+  }
+}
+
+export async function generateForProject(req: Request, res: Response): Promise<void> {
+  const authReq = req as AuthenticatedRequest;
+  const projectId = req.params.projectId as string;
+  const { prompt, model, current_file, selected_code, max_tokens, temperature } = req.body;
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+
+  const heartbeatInterval = setInterval(() => {
+    res.write(": heartbeat\n\n");
+  }, 15000);
+
+  try {
+    const stream = generationService.generate({
+      projectId,
+      prompt,
+      userId: authReq.userId,
+      model,
+      currentFile: current_file,
+      selectedCode: selected_code,
+      maxTokens: max_tokens,
+      temperature,
+    });
+
+    for await (const event of stream) {
+      res.write(`event: ${event.type}\n`);
+      res.write(`data: ${JSON.stringify(event.data)}\n\n`);
+
+      if (event.type === "done" || event.type === "error") {
+        break;
+      }
+    }
+
+    res.write("event: close\ndata: {}\n\n");
+  } catch (err) {
+    logger.error({ err, projectId }, "Project generation failed");
+
+    res.write(`event: error\n`);
+    res.write(`data: ${JSON.stringify({ message: "Generation failed", code: "INTERNAL_ERROR" })}\n\n`);
+  } finally {
+    clearInterval(heartbeatInterval);
+    res.end();
   }
 }

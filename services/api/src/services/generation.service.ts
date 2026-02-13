@@ -1,0 +1,260 @@
+import { logger } from "../config";
+import { ProjectService } from "./project.service";
+import { ConversationService } from "./conversation.service";
+import { AIProviderService } from "./ai-provider.service";
+import { getAIGateway, PromptBuilder, ResponseParser } from "./ai-gateway";
+import type { CodeBlock, ASTOperation } from "./ai-gateway/response-parser";
+import type { Project } from "../db";
+
+export type SSEEventType = "text" | "code_block" | "ast_operation" | "usage" | "done" | "error";
+
+export interface SSEEvent {
+  type: SSEEventType;
+  data: unknown;
+}
+
+export interface TextEvent {
+  type: "text";
+  data: { content: string };
+}
+
+export interface CodeBlockEvent {
+  type: "code_block";
+  data: CodeBlock;
+}
+
+export interface ASTOperationEvent {
+  type: "ast_operation";
+  data: ASTOperation;
+}
+
+export interface UsageEvent {
+  type: "usage";
+  data: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    generation_time_ms: number;
+    cost_usd?: number;
+  };
+}
+
+export interface DoneEvent {
+  type: "done";
+  data: {
+    conversation_id: string;
+    finish_reason: string;
+  };
+}
+
+export interface ErrorEvent {
+  type: "error";
+  data: { message: string; code?: string };
+}
+
+export interface GenerateOptions {
+  projectId: string;
+  prompt: string;
+  userId: number;
+  model?: string;
+  currentFile?: string;
+  selectedCode?: string;
+  maxTokens?: number;
+  temperature?: number;
+}
+
+export class GenerationService {
+  private projectService = new ProjectService();
+  private conversationService = new ConversationService();
+  private providerService = new AIProviderService();
+
+  async *generate(options: GenerateOptions): AsyncGenerator<SSEEvent> {
+    const { projectId, prompt, userId, model, currentFile, selectedCode, maxTokens, temperature } = options;
+
+    const startTime = Date.now();
+    let userConversation;
+    let assistantConversation;
+    let fullContent = "";
+
+    try {
+      const project = await this.projectService.findByUuid(projectId);
+      if (!project) {
+        yield { type: "error", data: { message: "Project not found", code: "PROJECT_NOT_FOUND" } };
+        return;
+      }
+
+      const access = await this.projectService.checkAccess(userId, project.id);
+      if (!access) {
+        yield { type: "error", data: { message: "Access denied", code: "FORBIDDEN" } };
+        return;
+      }
+
+      userConversation = await this.conversationService.create(
+        { project_id: project.id, content: prompt, role: "user" },
+        userId
+      );
+
+      const selectedModel = model || (await this.providerService.getDefaultModel())?.model_id;
+      if (!selectedModel) {
+        yield { type: "error", data: { message: "No model available", code: "NO_MODEL" } };
+        return;
+      }
+
+      const modelConfig = await this.providerService.getModelById(selectedModel);
+      if (!modelConfig) {
+        yield { type: "error", data: { message: "Invalid model", code: "INVALID_MODEL" } };
+        return;
+      }
+
+      const { system, messages } = this.buildPrompt(project, prompt, currentFile, selectedCode);
+
+      const gateway = getAIGateway();
+      const parser = new ResponseParser();
+
+      const stream = gateway.stream({
+        provider: modelConfig.provider.slug as "anthropic",
+        model: selectedModel,
+        messages,
+        system_prompt: system,
+        max_tokens: maxTokens || modelConfig.max_output_tokens,
+        temperature: temperature ?? 0.7,
+        metadata: { user_id: userId, project_id: projectId },
+      });
+
+      let totalInputTokens = 0;
+      let totalOutputTokens = 0;
+
+      for await (const chunk of stream) {
+        if (chunk.type === "text_delta" && chunk.content) {
+          fullContent += chunk.content;
+
+          yield { type: "text", data: { content: chunk.content } };
+
+          const { newBlocks } = parser.appendChunk(chunk.content);
+          for (const block of newBlocks) {
+            yield { type: "code_block", data: block };
+
+            if (block.filename) {
+              const operation = this.inferOperation(block);
+              yield { type: "ast_operation", data: operation };
+            }
+          }
+        }
+
+        if (chunk.type === "usage" && chunk.usage) {
+          totalInputTokens = chunk.usage.input_tokens;
+          totalOutputTokens = chunk.usage.output_tokens;
+        }
+
+        if (chunk.type === "error") {
+          yield { type: "error", data: { message: chunk.error || "Generation failed" } };
+          await this.conversationService.markError(userConversation.id, userId);
+          return;
+        }
+      }
+
+      const generationTimeMs = Date.now() - startTime;
+      const costUsd = this.calculateCost(modelConfig, totalInputTokens, totalOutputTokens);
+
+      const parsed = parser.parse(fullContent);
+
+      assistantConversation = await this.conversationService.createAssistantMessage(
+        {
+          project_id: project.id,
+          content: fullContent,
+          model_id: modelConfig.id,
+          tokens_in: totalInputTokens,
+          tokens_out: totalOutputTokens,
+          generation_time_ms: generationTimeMs,
+          cost_usd: costUsd,
+          ast_diff: parsed.astOperations.length > 0 ? { operations: parsed.astOperations } : undefined,
+        },
+        userId
+      );
+
+      await this.conversationService.markCompleted(userConversation.id, userId);
+
+      yield {
+        type: "usage",
+        data: {
+          input_tokens: totalInputTokens,
+          output_tokens: totalOutputTokens,
+          total_tokens: totalInputTokens + totalOutputTokens,
+          generation_time_ms: generationTimeMs,
+          cost_usd: costUsd,
+        },
+      };
+
+      yield {
+        type: "done",
+        data: {
+          conversation_id: assistantConversation.uuid,
+          finish_reason: "stop",
+        },
+      };
+    } catch (error) {
+      logger.error({ error, projectId, userId }, "Generation failed");
+
+      if (userConversation) {
+        await this.conversationService.markError(userConversation.id, userId);
+      }
+
+      yield {
+        type: "error",
+        data: {
+          message: error instanceof Error ? error.message : "An unexpected error occurred",
+          code: "INTERNAL_ERROR",
+        },
+      };
+    }
+  }
+
+  private buildPrompt(
+    project: Project,
+    userMessage: string,
+    currentFile?: string,
+    selectedCode?: string
+  ): { system: string; messages: Array<{ role: "user" | "assistant"; content: string }> } {
+    const builder = new PromptBuilder()
+      .setProject(project)
+      .setFileTree((project.file_tree as Record<string, unknown>) || {});
+
+    if (currentFile) {
+      builder.setCurrentFile(currentFile);
+    }
+
+    if (selectedCode) {
+      builder.setSelectedCode(selectedCode);
+    }
+
+    if (project.backend_provider) {
+      builder.setBackendSchema({
+        provider: project.backend_provider,
+      });
+    }
+
+    return builder.build(userMessage);
+  }
+
+  private inferOperation(block: CodeBlock): ASTOperation {
+    const hasImports = block.content.includes("import ");
+    const hasExport = block.content.includes("export ");
+    const isFullFile = hasImports || (hasExport && block.content.length > 100);
+
+    return {
+      type: isFullFile ? "create" : "update",
+      targetPath: block.filename!,
+      content: block.content,
+    };
+  }
+
+  private calculateCost(
+    model: { input_cost_per_1m?: number | null; output_cost_per_1m?: number | null },
+    inputTokens: number,
+    outputTokens: number
+  ): number {
+    const inputCost = ((model.input_cost_per_1m || 0) / 1_000_000) * inputTokens;
+    const outputCost = ((model.output_cost_per_1m || 0) / 1_000_000) * outputTokens;
+    return Math.round((inputCost + outputCost) * 1_000_000) / 1_000_000;
+  }
+}
