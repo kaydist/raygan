@@ -59,7 +59,7 @@ export async function generate(req: Request, res: Response): Promise<void> {
       system_prompt,
       max_tokens,
       temperature,
-      metadata: { user_id: authReq.userId },
+      metadata: { user_id: authReq.dbUser.id, },
     });
 
     res.json({
@@ -109,7 +109,7 @@ export async function streamGenerate(req: Request, res: Response): Promise<void>
       system_prompt,
       max_tokens,
       temperature,
-      metadata: { user_id: authReq.userId },
+      metadata: { user_id: authReq.dbUser.id, },
     });
 
     for await (const chunk of stream) {
@@ -155,7 +155,7 @@ export async function generateForProject(req: Request, res: Response): Promise<v
     const stream = generationService.generate({
       projectId,
       prompt,
-      userId: authReq.userId,
+      userId: authReq.dbUser.id,
       model,
       currentFile: current_file,
       selectedCode: selected_code,

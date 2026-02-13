@@ -1,0 +1,1355 @@
+{
+  "info": {
+    "name": "Staq API",
+    "description": "API documentation for Staq - AI-powered mobile app builder\n\n## Authentication\nAll authenticated endpoints require a Bearer token in the Authorization header:\n```\nAuthorization: Bearer <access_token>\n```\n\n## Response Format\nAll responses follow this envelope:\n```json\n{\n  \"data\": <response_data> | null,\n  \"error\": { \"code\": \"string\", \"message\": \"string\", \"details\": {} } | null,\n  \"meta\": { \"total\": number, \"page\": number, \"limit\": number } // for paginated responses\n}\n```",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "staq-api"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Basic health check endpoint. Returns server status."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"status\": \"ok\",\n    \"timestamp\": \"2024-01-15T10:30:00.000Z\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Readiness check for load balancers. Verifies database and Redis connections."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"status\": \"ready\",\n    \"database\": \"connected\",\n    \"redis\": \"connected\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.access_token) {",
+                  "        // Remove 'Bearer ' prefix for storage (Postman auth adds it)",
+                  "        const token = response.data.access_token.replace('Bearer ', '');",
+                  "        pm.environment.set('accessToken', token);",
+                  "        pm.collectionVariables.set('accessToken', token);",
+                  "        console.log('Access token saved successfully');",
+                  "    }",
+                  "    if (response.data && response.data.refresh_token) {",
+                  "        pm.environment.set('refreshToken', response.data.refresh_token);",
+                  "        pm.collectionVariables.set('refreshToken', response.data.refresh_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"securePassword123\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"display_name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user account. Creates a personal workspace automatically."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\"\n    },\n    \"organization\": {\n      \"id\": \"uuid\",\n      \"name\": \"John's Workspace\",\n      \"slug\": \"uuid-personal\"\n    },\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.access_token) {",
+                  "        // Remove 'Bearer ' prefix for storage (Postman auth adds it)",
+                  "        const token = response.data.access_token.replace('Bearer ', '');",
+                  "        pm.environment.set('accessToken', token);",
+                  "        pm.collectionVariables.set('accessToken', token);",
+                  "        console.log('Access token saved successfully');",
+                  "    }",
+                  "    if (response.data && response.data.refresh_token) {",
+                  "        pm.environment.set('refreshToken', response.data.refresh_token);",
+                  "        pm.collectionVariables.set('refreshToken', response.data.refresh_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"securePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with email and password."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\",\n      \"avatar_url\": null,\n      \"onboarding_completed\": false\n    },\n    \"organizations\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"John's Workspace\",\n        \"slug\": \"uuid-personal\",\n        \"role\": \"owner\"\n      }\n    ],\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "OAuth Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.access_token) {",
+                  "        // Remove 'Bearer ' prefix for storage (Postman auth adds it)",
+                  "        const token = response.data.access_token.replace('Bearer ', '');",
+                  "        pm.environment.set('accessToken', token);",
+                  "        pm.collectionVariables.set('accessToken', token);",
+                  "        console.log('Access token saved successfully');",
+                  "    }",
+                  "    if (response.data && response.data.refresh_token) {",
+                  "        pm.environment.set('refreshToken', response.data.refresh_token);",
+                  "        pm.collectionVariables.set('refreshToken', response.data.refresh_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"google\",\n  \"id_token\": \"eyJ...\",\n  \"access_token\": \"ya29...\",\n  \"nonce\": \"optional-nonce\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/oauth",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "oauth"]
+            },
+            "description": "Login or register via OAuth provider (Google, Apple, GitHub)."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"user\": { ... },\n    \"organizations\": [ ... ],\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200,\n    \"is_new_user\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.access_token) {",
+                  "        // Remove 'Bearer ' prefix for storage (Postman auth adds it)",
+                  "        const token = response.data.access_token.replace('Bearer ', '');",
+                  "        pm.environment.set('accessToken', token);",
+                  "        pm.collectionVariables.set('accessToken', token);",
+                  "        console.log('Access token refreshed successfully');",
+                  "    }",
+                  "    if (response.data && response.data.refresh_token) {",
+                  "        pm.environment.set('refreshToken', response.data.refresh_token);",
+                  "        pm.collectionVariables.set('refreshToken', response.data.refresh_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Refresh the access token using a refresh token."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"access_token\": \"Bearer eyJ...\",\n    \"refresh_token\": \"eyJ...\",\n    \"expires_in\": 3600,\n    \"expires_at\": 1705312200\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "forgot-password"]
+            },
+            "description": "Send a password reset email."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"newSecurePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password"]
+            },
+            "description": "Reset password using the token from the reset email."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout the current user. Requires authentication."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get the current authenticated user with their organizations."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"email\": \"user@example.com\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Doe\",\n      \"display_name\": \"John Doe\",\n      \"avatar_url\": null,\n      \"onboarding_completed\": true\n    },\n    \"organizations\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"John's Workspace\",\n        \"slug\": \"uuid-personal\",\n        \"role\": \"owner\",\n        \"is_personal\": true\n      }\n    ]\n  },\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Get the current user's profile details."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"email\": \"user@example.com\",\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"display_name\": \"John Doe\",\n    \"avatar_url\": null,\n    \"onboarding_completed\": true,\n    \"activated_flag\": true,\n    \"created_on\": \"2024-01-15T10:30:00.000Z\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Johnny\",\n  \"last_name\": \"Doe\",\n  \"display_name\": \"Johnny D\",\n  \"avatar_url\": \"https://example.com/avatar.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Update the current user's profile. All fields are optional."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"email\": \"user@example.com\",\n    \"first_name\": \"Johnny\",\n    \"last_name\": \"Doe\",\n    \"display_name\": \"Johnny D\",\n    \"avatar_url\": \"https://example.com/avatar.jpg\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Complete Onboarding",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me/onboarding",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me", "onboarding"]
+            },
+            "description": "Mark the user's onboarding as completed."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Soft delete the current user's account."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "item": [
+        {
+          "name": "List Organizations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations"]
+            },
+            "description": "List all organizations the current user is a member of."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"name\": \"John's Workspace\",\n      \"slug\": \"uuid-personal\",\n      \"logo_url\": null,\n      \"plan\": \"free\",\n      \"is_personal\": true,\n      \"role\": \"owner\",\n      \"joined_at\": \"2024-01-15T10:30:00.000Z\"\n    },\n    {\n      \"id\": \"uuid\",\n      \"name\": \"Acme Corp\",\n      \"slug\": \"acme-corp\",\n      \"logo_url\": \"https://example.com/logo.png\",\n      \"plan\": \"pro\",\n      \"is_personal\": false,\n      \"role\": \"member\",\n      \"joined_at\": \"2024-01-20T14:00:00.000Z\"\n    }\n  ],\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"slug\": \"acme-corp\",\n  \"logo_url\": \"https://example.com/logo.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations"]
+            },
+            "description": "Create a new organization. The current user becomes the owner."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"Acme Corp\",\n    \"slug\": \"acme-corp\",\n    \"logo_url\": \"https://example.com/logo.png\",\n    \"plan\": \"free\",\n    \"is_personal\": false\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Organization",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations/:orgId",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", ":orgId"],
+              "variable": [
+                {
+                  "key": "orgId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Get organization details. User must be a member."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"Acme Corp\",\n    \"slug\": \"acme-corp\",\n    \"logo_url\": \"https://example.com/logo.png\",\n    \"plan\": \"pro\",\n    \"is_personal\": false,\n    \"role\": \"owner\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Organization",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corporation\",\n  \"slug\": \"acme-corporation\",\n  \"logo_url\": \"https://example.com/new-logo.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations/:orgId",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", ":orgId"],
+              "variable": [
+                {
+                  "key": "orgId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Update organization details. Requires owner or admin role."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"Acme Corporation\",\n    \"slug\": \"acme-corporation\",\n    \"logo_url\": \"https://example.com/new-logo.png\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Organization",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations/:orgId",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", ":orgId"],
+              "variable": [
+                {
+                  "key": "orgId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Delete an organization. Requires owner role. Cannot delete personal workspace."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations/:orgId/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", ":orgId", "members"],
+              "variable": [
+                {
+                  "key": "orgId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "List all members of an organization."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"email\": \"owner@example.com\",\n      \"display_name\": \"John Doe\",\n      \"avatar_url\": null,\n      \"role\": \"owner\",\n      \"status\": \"active\",\n      \"joined_at\": \"2024-01-15T10:30:00.000Z\"\n    },\n    {\n      \"id\": \"uuid\",\n      \"email\": \"member@example.com\",\n      \"display_name\": \"Jane Smith\",\n      \"avatar_url\": \"https://example.com/avatar.jpg\",\n      \"role\": \"member\",\n      \"status\": \"active\",\n      \"joined_at\": \"2024-01-20T14:00:00.000Z\"\n    }\n  ],\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Invite Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 123,\n  \"role\": \"member\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations/:orgId/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", ":orgId", "members"],
+              "variable": [
+                {
+                  "key": "orgId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Add a user to the organization. Requires owner or admin role.\n\nRoles: owner, admin, member, viewer"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Member Role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizations/:orgId/members/:memberId",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", ":orgId", "members", ":memberId"],
+              "variable": [
+                {
+                  "key": "orgId",
+                  "value": "uuid"
+                },
+                {
+                  "key": "memberId",
+                  "value": "123"
+                }
+              ]
+            },
+            "description": "Update a member's role. Requires owner role."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Remove Member",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/organizations/:orgId/members/:memberId",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", ":orgId", "members", ":memberId"],
+              "variable": [
+                {
+                  "key": "orgId",
+                  "value": "uuid"
+                },
+                {
+                  "key": "memberId",
+                  "value": "123"
+                }
+              ]
+            },
+            "description": "Remove a member from the organization. Requires owner or admin role."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects?orgId=uuid",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects"],
+              "query": [
+                {
+                  "key": "orgId",
+                  "value": "uuid",
+                  "description": "Optional. Filter by organization ID."
+                }
+              ]
+            },
+            "description": "List all projects the user has access to. Optionally filter by organization."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"name\": \"My App\",\n      \"slug\": \"my-app\",\n      \"description\": \"A mobile app built with Staq\",\n      \"framework_version\": \"SDK 52\",\n      \"backend_provider\": \"supabase\",\n      \"is_archived\": false,\n      \"last_generated_at\": \"2024-01-20T14:00:00.000Z\",\n      \"updated_on\": \"2024-01-20T14:00:00.000Z\",\n      \"created_on\": \"2024-01-15T10:30:00.000Z\"\n    }\n  ],\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization_id\": \"uuid\",\n  \"name\": \"My App\",\n  \"slug\": \"my-app\",\n  \"description\": \"A mobile app built with Staq\",\n  \"framework_version\": \"SDK 52\",\n  \"backend_provider\": \"supabase\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects"]
+            },
+            "description": "Create a new project in an organization.\n\nBackend providers: supabase, firebase, appwrite, custom, none"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"My App\",\n    \"slug\": \"my-app\",\n    \"description\": \"A mobile app built with Staq\",\n    \"framework_version\": \"SDK 52\",\n    \"backend_provider\": \"supabase\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Get project details including AST snapshot and file tree."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"My App\",\n    \"slug\": \"my-app\",\n    \"description\": \"A mobile app built with Staq\",\n    \"framework_version\": \"SDK 52\",\n    \"backend_provider\": \"supabase\",\n    \"ast_snapshot\": { },\n    \"file_tree\": { },\n    \"is_archived\": false,\n    \"last_generated_at\": \"2024-01-20T14:00:00.000Z\",\n    \"updated_on\": \"2024-01-20T14:00:00.000Z\",\n    \"created_on\": \"2024-01-15T10:30:00.000Z\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Awesome App\",\n  \"description\": \"Updated description\",\n  \"backend_provider\": \"firebase\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Update project details."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"My Awesome App\",\n    \"slug\": \"my-app\",\n    \"description\": \"Updated description\",\n    \"framework_version\": \"SDK 52\",\n    \"backend_provider\": \"firebase\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Archive Project",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId/archive",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId", "archive"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Archive a project. Archived projects are hidden from default list."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unarchive Project",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId/unarchive",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId", "unarchive"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Unarchive a previously archived project."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Soft delete a project. Requires owner or admin role."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update AST",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ast_snapshot\": {\n    \"components\": [\n      {\n        \"id\": \"comp-1\",\n        \"type\": \"Button\",\n        \"props\": { \"label\": \"Click me\" }\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId/ast",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId", "ast"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Update the project's AST snapshot. Used by the visual builder."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update File Tree",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"file_tree\": {\n    \"src\": {\n      \"components\": {\n        \"Button.tsx\": null\n      },\n      \"screens\": {\n        \"HomeScreen.tsx\": null\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId/file-tree",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId", "file-tree"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Update the project's file tree structure."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Conversations",
+      "item": [
+        {
+          "name": "List Conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId/conversations?status=completed&page=1&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId", "conversations"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completed",
+                  "description": "Filter by status: active, completed, error"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Items per page (max 100)"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "List conversation messages for a project."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"role\": \"user\",\n      \"content\": \"Create a login screen\",\n      \"status\": \"completed\",\n      \"model_id\": null,\n      \"tokens_in\": null,\n      \"tokens_out\": null,\n      \"generation_time_ms\": null,\n      \"cost_usd\": null,\n      \"created_on\": \"2024-01-20T14:00:00.000Z\"\n    },\n    {\n      \"id\": \"uuid\",\n      \"role\": \"assistant\",\n      \"content\": \"Here's a login screen component...\",\n      \"status\": \"completed\",\n      \"model_id\": 1,\n      \"tokens_in\": 150,\n      \"tokens_out\": 500,\n      \"generation_time_ms\": 3200,\n      \"cost_usd\": 0.002475,\n      \"created_on\": \"2024-01-20T14:00:03.000Z\"\n    }\n  ],\n  \"error\": null,\n  \"meta\": {\n    \"total\": 2,\n    \"page\": 1,\n    \"limit\": 50,\n    \"hasMore\": false\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Create a login screen with email and password fields\",\n  \"role\": \"user\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId", "conversations"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Create a new conversation message. Use this for manual message creation."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"role\": \"user\",\n    \"content\": \"Create a login screen with email and password fields\",\n    \"status\": \"active\",\n    \"created_on\": \"2024-01-20T14:00:00.000Z\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Conversation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/:conversationId",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", ":conversationId"],
+              "variable": [
+                {
+                  "key": "conversationId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Get a single conversation message with full details including AST diff."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"role\": \"assistant\",\n    \"content\": \"Here's a login screen component...\",\n    \"status\": \"completed\",\n    \"model_id\": 1,\n    \"tokens_in\": 150,\n    \"tokens_out\": 500,\n    \"generation_time_ms\": 3200,\n    \"cost_usd\": 0.002475,\n    \"ast_diff\": {\n      \"operations\": [\n        {\n          \"type\": \"create\",\n          \"targetPath\": \"screens/LoginScreen.tsx\",\n          \"content\": \"...\"\n        }\n      ]\n    },\n    \"created_on\": \"2024-01-20T14:00:03.000Z\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Conversation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated content\",\n  \"status\": \"completed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/conversations/:conversationId",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", ":conversationId"],
+              "variable": [
+                {
+                  "key": "conversationId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Update a conversation message."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"role\": \"user\",\n    \"content\": \"Updated content\",\n    \"status\": \"completed\"\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Conversation",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/conversations/:conversationId",
+              "host": ["{{baseUrl}}"],
+              "path": ["conversations", ":conversationId"],
+              "variable": [
+                {
+                  "key": "conversationId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Soft delete a conversation message."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"success\": true\n  },\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI Generation",
+      "item": [
+        {
+          "name": "List Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/models",
+              "host": ["{{baseUrl}}"],
+              "path": ["models"]
+            },
+            "description": "List all available AI models."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"claude-sonnet-4-20250514\",\n      \"name\": \"Claude Sonnet 4\",\n      \"description\": \"Balanced, excellent coding\",\n      \"provider\": \"anthropic\",\n      \"context_window\": 200000,\n      \"max_output_tokens\": 16000,\n      \"supports_vision\": true,\n      \"supports_streaming\": true,\n      \"is_default\": true\n    },\n    {\n      \"id\": \"claude-opus-4-20250514\",\n      \"name\": \"Claude Opus 4\",\n      \"description\": \"Complex reasoning, coding\",\n      \"provider\": \"anthropic\",\n      \"context_window\": 200000,\n      \"max_output_tokens\": 32000,\n      \"supports_vision\": true,\n      \"supports_streaming\": true,\n      \"is_default\": false\n    }\n  ],\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate (Non-streaming)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Create a button component\"\n    }\n  ],\n  \"system_prompt\": \"You are a React Native expert.\",\n  \"max_tokens\": 4096,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["generate"]
+            },
+            "description": "Generate a completion without streaming. Returns the full response at once."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"id\": \"msg_01ABC...\",\n    \"model\": \"claude-sonnet-4-20250514\",\n    \"content\": \"Here's a Button component...\\n\\n```tsx filename=\\\"components/Button.tsx\\\"\\nexport function Button() { ... }\\n```\",\n    \"finish_reason\": \"stop\",\n    \"usage\": {\n      \"input_tokens\": 50,\n      \"output_tokens\": 200,\n      \"total_tokens\": 250\n    },\n    \"generation_time_ms\": 2500\n  },\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Generate Stream (Raw SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Create a button component\"\n    }\n  ],\n  \"system_prompt\": \"You are a React Native expert.\",\n  \"max_tokens\": 4096,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/generate/stream",
+              "host": ["{{baseUrl}}"],
+              "path": ["generate", "stream"]
+            },
+            "description": "Generate a completion with SSE streaming. Returns chunks as they're generated.\n\n**Response Format (SSE):**\n```\ndata: {\"type\": \"text_delta\", \"content\": \"Here's\"}\n\ndata: {\"type\": \"text_delta\", \"content\": \" a Button\"}\n\ndata: {\"type\": \"usage\", \"usage\": {\"input_tokens\": 50, \"output_tokens\": 200}}\n\ndata: {\"type\": \"done\", \"finish_reason\": \"stop\"}\n\ndata: [DONE]\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate for Project (SSE)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Create a login screen with email and password fields\",\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"current_file\": \"screens/HomeScreen.tsx\",\n  \"selected_code\": \"const [email, setEmail] = useState('');\",\n  \"max_tokens\": 8192,\n  \"temperature\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/projects/:projectId/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":projectId", "generate"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "uuid"
+                }
+              ]
+            },
+            "description": "Generate code for a specific project with full context. Uses SSE streaming with rich event types.\n\n**Request Body:**\n- `prompt` (required): The user's request\n- `model` (optional): AI model to use\n- `current_file` (optional): File user is viewing\n- `selected_code` (optional): Code user has selected\n- `max_tokens` (optional): Max output tokens\n- `temperature` (optional): Creativity (0-2)\n\n**SSE Event Types:**\n\n```\nevent: text\ndata: {\"content\": \"Here's a login screen...\"}\n\nevent: code_block\ndata: {\"language\": \"tsx\", \"filename\": \"screens/LoginScreen.tsx\", \"content\": \"...\"}\n\nevent: ast_operation\ndata: {\"type\": \"create\", \"targetPath\": \"screens/LoginScreen.tsx\", \"content\": \"...\"}\n\nevent: usage\ndata: {\"input_tokens\": 150, \"output_tokens\": 500, \"total_tokens\": 650, \"generation_time_ms\": 3200, \"cost_usd\": 0.002475}\n\nevent: done\ndata: {\"conversation_id\": \"uuid\", \"finish_reason\": \"stop\"}\n\nevent: error\ndata: {\"message\": \"Rate limit exceeded\", \"code\": \"RATE_LIMITED\"}\n\nevent: close\ndata: {}\n```\n\n**Heartbeat:** The connection sends `: heartbeat` comments every 15 seconds to keep the connection alive."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -13,7 +13,7 @@ export async function listConversations(req: Request, res: Response): Promise<vo
     const { projectId } = req.params;
     const { status, page, limit } = req.query;
 
-    const access = await conversationService.checkProjectAccess(authReq.userId, parseInt(projectId));
+    const access = await conversationService.checkProjectAccess(authReq.dbUser.id, parseInt(projectId));
     if (!access) {
       res.status(403).json({
         data: null,
@@ -72,7 +72,7 @@ export async function getConversation(req: Request, res: Response): Promise<void
       return;
     }
 
-    const access = await conversationService.checkAccess(authReq.userId, conversation.id);
+    const access = await conversationService.checkAccess(authReq.dbUser.id, conversation.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -112,7 +112,7 @@ export async function createConversation(req: Request, res: Response): Promise<v
     const { projectId } = req.params;
     const { content, role } = req.body;
 
-    const access = await conversationService.checkProjectAccess(authReq.userId, parseInt(projectId));
+    const access = await conversationService.checkProjectAccess(authReq.dbUser.id, parseInt(projectId));
     if (!access) {
       res.status(403).json({
         data: null,
@@ -123,7 +123,7 @@ export async function createConversation(req: Request, res: Response): Promise<v
 
     const conversation = await conversationService.create(
       { project_id: access.project.id, content, role },
-      authReq.userId
+      authReq.dbUser.id,
     );
 
     res.status(201).json({
@@ -160,7 +160,7 @@ export async function updateConversation(req: Request, res: Response): Promise<v
       return;
     }
 
-    const access = await conversationService.checkAccess(authReq.userId, conversation.id);
+    const access = await conversationService.checkAccess(authReq.dbUser.id, conversation.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -169,7 +169,7 @@ export async function updateConversation(req: Request, res: Response): Promise<v
       return;
     }
 
-    const updated = await conversationService.update(conversation.id, { content, status }, authReq.userId);
+    const updated = await conversationService.update(conversation.id, { content, status }, authReq.dbUser.id);
 
     res.json({
       data: {
@@ -203,7 +203,7 @@ export async function deleteConversation(req: Request, res: Response): Promise<v
       return;
     }
 
-    const access = await conversationService.checkAccess(authReq.userId, conversation.id);
+    const access = await conversationService.checkAccess(authReq.dbUser.id, conversation.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -212,7 +212,7 @@ export async function deleteConversation(req: Request, res: Response): Promise<v
       return;
     }
 
-    await conversationService.delete(conversation.id, authReq.userId);
+    await conversationService.delete(conversation.id, authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {

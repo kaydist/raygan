@@ -23,7 +23,7 @@ export async function listProjects(req: Request, res: Response): Promise<void> {
         return;
       }
 
-      const membership = await organizationService.getMembership(org.id, authReq.userId);
+      const membership = await organizationService.getMembership(org.id, authReq.dbUser.id);
       if (!membership) {
         res.status(403).json({
           data: null,
@@ -34,7 +34,7 @@ export async function listProjects(req: Request, res: Response): Promise<void> {
 
       projects = await projectService.findAllByOrgId(org.id);
     } else {
-      projects = await projectService.findAllByUserId(authReq.userId);
+      projects = await projectService.findAllByUserId(authReq.dbUser.id);
     }
 
     res.json({
@@ -75,7 +75,7 @@ export async function getProject(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.userId, project.id);
+    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -124,7 +124,7 @@ export async function createProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const membership = await organizationService.getMembership(org.id, authReq.userId);
+    const membership = await organizationService.getMembership(org.id, authReq.dbUser.id);
     if (!membership) {
       res.status(403).json({
         data: null,
@@ -151,7 +151,7 @@ export async function createProject(req: Request, res: Response): Promise<void> 
         framework_version,
         backend_provider,
       },
-      authReq.userId
+      authReq.dbUser.id,
     );
 
     res.status(201).json({
@@ -189,7 +189,7 @@ export async function updateProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.userId, project.id);
+    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -212,7 +212,7 @@ export async function updateProject(req: Request, res: Response): Promise<void> 
     const updated = await projectService.update(
       project.id,
       { name, slug, description, framework_version, backend_provider },
-      authReq.userId
+      authReq.dbUser.id,
     );
 
     res.json({
@@ -249,7 +249,7 @@ export async function archiveProject(req: Request, res: Response): Promise<void>
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.userId, project.id);
+    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -258,7 +258,7 @@ export async function archiveProject(req: Request, res: Response): Promise<void>
       return;
     }
 
-    await projectService.archive(project.id, authReq.userId);
+    await projectService.archive(project.id, authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {
@@ -284,7 +284,7 @@ export async function unarchiveProject(req: Request, res: Response): Promise<voi
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.userId, project.id);
+    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -293,7 +293,7 @@ export async function unarchiveProject(req: Request, res: Response): Promise<voi
       return;
     }
 
-    await projectService.unarchive(project.id, authReq.userId);
+    await projectService.unarchive(project.id, authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {
@@ -319,7 +319,7 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const membership = await organizationService.getMembership(project.organization_id, authReq.userId);
+    const membership = await organizationService.getMembership(project.organization_id, authReq.dbUser.id);
     if (!membership || !organizationService.hasPermission(membership.role, ["owner", "admin"])) {
       res.status(403).json({
         data: null,
@@ -328,7 +328,7 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    await projectService.delete(project.id, authReq.userId);
+    await projectService.delete(project.id, authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {
@@ -355,7 +355,7 @@ export async function updateAst(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.userId, project.id);
+    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -364,7 +364,7 @@ export async function updateAst(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    await projectService.updateAst(project.id, ast_snapshot, authReq.userId);
+    await projectService.updateAst(project.id, ast_snapshot, authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {
@@ -391,7 +391,7 @@ export async function updateFileTree(req: Request, res: Response): Promise<void>
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.userId, project.id);
+    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
     if (!access) {
       res.status(403).json({
         data: null,
@@ -400,7 +400,7 @@ export async function updateFileTree(req: Request, res: Response): Promise<void>
       return;
     }
 
-    await projectService.updateFileTree(project.id, file_tree, authReq.userId);
+    await projectService.updateFileTree(project.id, file_tree, authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {

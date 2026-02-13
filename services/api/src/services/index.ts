@@ -4,4 +4,10 @@ export { ProjectService } from "./project.service";
 export { ConversationService } from "./conversation.service";
 export { AIProviderService } from "./ai-provider.service";
 export { GenerationService } from "./generation.service";
+export {
+  SupabaseAuthService,
+  SupabaseUnavailableError,
+  SupabaseAuthError,
+  type FormattedSession,
+} from "./supabase-auth.service";
 export * from "./ai-gateway";

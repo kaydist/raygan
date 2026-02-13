@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { type ZodSchema, ZodError } from "zod";
-import { ErrorCodes } from "../constants";
+import { ERROR_CODES } from "../constants";
 
 type ValidationTarget = "body" | "query" | "params";
 
@@ -32,7 +32,7 @@ export function validate(schemas: ValidateOptions) {
       res.status(400).json({
         data: null,
         error: {
-          code: ErrorCodes.VALIDATION_ERROR,
+          code: ERROR_CODES.VALIDATION_ERROR,
           message: "Validation failed",
           details: errors,
         },

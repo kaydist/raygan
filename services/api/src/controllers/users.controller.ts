@@ -40,9 +40,9 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
     const { first_name, last_name, display_name, avatar_url } = req.body;
 
     const updated = await userService.update(
-      authReq.userId,
+      authReq.dbUser.id,
       { first_name, last_name, display_name, avatar_url },
-      authReq.userId
+      authReq.dbUser.id,
     );
 
     if (!updated) {
@@ -77,7 +77,7 @@ export async function completeOnboarding(req: Request, res: Response): Promise<v
   try {
     const authReq = req as AuthenticatedRequest;
 
-    await userService.completeOnboarding(authReq.userId);
+    await userService.completeOnboarding(authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {
@@ -93,7 +93,7 @@ export async function deleteAccount(req: Request, res: Response): Promise<void> 
   try {
     const authReq = req as AuthenticatedRequest;
 
-    await userService.delete(authReq.userId, authReq.userId);
+    await userService.delete(authReq.dbUser.id, authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {

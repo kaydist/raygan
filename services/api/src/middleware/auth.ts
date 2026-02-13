@@ -20,14 +20,17 @@ export interface AuthenticatedRequest extends Request {
 export async function authenticate(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(401).json({
       data: null,
-      error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication required" },
+      error: {
+        code: ERROR_CODES.UNAUTHORIZED,
+        message: "Authentication required",
+      },
     });
     return;
   }
@@ -39,7 +42,10 @@ export async function authenticate(
     logger.warn("Supabase not configured");
     res.status(503).json({
       data: null,
-      error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      error: {
+        code: ERROR_CODES.SERVICE_UNAVAILABLE,
+        message: "Service temporarily unavailable",
+      },
     });
     return;
   }
@@ -50,29 +56,39 @@ export async function authenticate(
     if (error || !data.user) {
       res.status(401).json({
         data: null,
-        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication required" },
+        error: {
+          code: ERROR_CODES.UNAUTHORIZED,
+          message: "Authentication required",
+        },
       });
       return;
     }
 
     const userRepo = AppDataSource.getRepository(User);
-    const dbUser = await userRepo.findOne({ where: { auth_user_id: data.user.id } });
+    const dbUser = await userRepo.findOne({
+      where: { auth_user_id: data.user.id },
+    });
 
     if (!dbUser || dbUser.deleted_flag) {
       res.status(401).json({
         data: null,
-        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication required" },
+        error: {
+          code: ERROR_CODES.UNAUTHORIZED,
+          message: "Authentication required",
+        },
       });
       return;
     }
 
     const authReq = req as AuthenticatedRequest;
     authReq.user = {
+      ...dbUser,
       id: data.user.id,
       email: data.user.email || "",
       app_metadata: data.user.app_metadata || {},
       user_metadata: data.user.user_metadata || {},
     };
+    authReq.dbUser = dbUser;
 
     next();
   } catch (err) {
@@ -87,7 +103,7 @@ export async function authenticate(
 export async function optionalAuth(
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   const authHeader = req.headers.authorization;
 
@@ -109,7 +125,9 @@ export async function optionalAuth(
 
     if (!error && data.user) {
       const userRepo = AppDataSource.getRepository(User);
-      const dbUser = await userRepo.findOne({ where: { auth_user_id: data.user.id } });
+      const dbUser = await userRepo.findOne({
+        where: { auth_user_id: data.user.id },
+      });
 
       if (dbUser && !dbUser.deleted_flag) {
         const authReq = req as AuthenticatedRequest;
@@ -119,7 +137,7 @@ export async function optionalAuth(
           app_metadata: data.user.app_metadata || {},
           user_metadata: data.user.user_metadata || {},
         };
-        authReq.userId = dbUser.id;
+        (authReq.dbUser.id, dbUser.id);
         authReq.dbUser = dbUser;
       }
     }

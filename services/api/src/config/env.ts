@@ -20,6 +20,9 @@ const envSchema = z.object({
 
   // Allowed origins for CORS
   ALLOWED_ORIGINS: z.string().default("http://localhost:3000"),
+
+  // Frontend app URL (for redirects)
+  APP_URL: z.string().default("http://localhost:3000"),
 });
 
 const parsed = envSchema.safeParse(process.env);

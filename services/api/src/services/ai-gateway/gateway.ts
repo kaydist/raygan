@@ -4,6 +4,7 @@ import { AnthropicAdapter } from "./adapters";
 import type { BaseAdapter } from "./adapters";
 import type { GenerateRequest, GenerateResponse, StreamChunk } from "./types";
 import type { AIModel, AIProvider } from "../../db";
+import { decryptKey } from "@/helpers";
 
 export class AIGateway {
   private adapters: Map<string, BaseAdapter> = new Map();
@@ -21,7 +22,10 @@ export class AIGateway {
 
     for (const provider of providers) {
       if (!provider.api_key_encrypted) {
-        logger.warn({ provider: provider.slug }, "Provider has no API key configured");
+        logger.error(
+          { provider: provider.slug },
+          "Provider has no API key configured",
+        );
         continue;
       }
 
@@ -32,7 +36,10 @@ export class AIGateway {
           logger.info({ provider: provider.slug }, "AI adapter initialized");
         }
       } catch (error) {
-        logger.error({ provider: provider.slug, error }, "Failed to initialize adapter");
+        logger.error(
+          { provider: provider.slug, error },
+          "Failed to initialize adapter",
+        );
       }
     }
 
@@ -40,11 +47,18 @@ export class AIGateway {
   }
 
   private createAdapter(provider: AIProvider): BaseAdapter | null {
-    const apiKey = provider.api_key_encrypted || "";
+    if (!provider.api_key_encrypted) {
+      throw new Error(`API Encryption key not configured for ${provider.name}`);
+    }
+    const apiKey = decryptKey(provider.api_key_encrypted) || "";
 
     switch (provider.slug) {
       case "anthropic":
-        return new AnthropicAdapter(apiKey, provider.base_url || undefined, provider.timeout_ms);
+        return new AnthropicAdapter(
+          apiKey,
+          provider.base_url || undefined,
+          provider.timeout_ms,
+        );
       default:
         logger.warn({ provider: provider.slug }, "Unknown provider, skipping");
         return null;
@@ -78,7 +92,10 @@ export class AIGateway {
 
     const adapter = this.adapters.get(model.provider.slug);
     if (!adapter) {
-      yield { type: "error", error: `Provider not configured: ${model.provider.slug}` };
+      yield {
+        type: "error",
+        error: `Provider not configured: ${model.provider.slug}`,
+      };
       return;
     }
 

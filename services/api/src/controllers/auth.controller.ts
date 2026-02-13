@@ -1,41 +1,35 @@
 import type { Request, Response } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth";
-import { getSupabaseClient } from "../config/supabase";
-import { logger } from "../config";
+import { logger, env } from "../config";
 import { ERROR_CODES } from "../constants";
-import { UserService, OrganizationService } from "../services";
+import {
+  UserService,
+  OrganizationService,
+  SupabaseAuthService,
+  SupabaseUnavailableError,
+  SupabaseAuthError,
+} from "../services";
 
 const userService = new UserService();
 const organizationService = new OrganizationService();
+const supabaseAuth = new SupabaseAuthService();
 
 export async function register(req: Request, res: Response): Promise<void> {
   try {
     const { email, password, first_name, last_name, display_name } = req.body;
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      res.status(503).json({
-        data: null,
-        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
-      });
-      return;
-    }
+    const { user: authUser, session } = await supabaseAuth.signUp(email, password);
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (authError || !authData.user) {
+    if (!authUser) {
       res.status(400).json({
         data: null,
-        error: { code: ERROR_CODES.BAD_REQUEST, message: authError?.message || "Registration failed" },
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "Registration failed" },
       });
       return;
     }
 
     const user = await userService.create({
-      auth_user_id: authData.user.id,
+      auth_user_id: authUser.id,
       email,
       first_name,
       last_name,
@@ -61,11 +55,25 @@ export async function register(req: Request, res: Response): Promise<void> {
           name: personalOrg.name,
           slug: personalOrg.slug,
         },
-        session: authData.session,
+        ...session,
       },
       error: null,
     });
   } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
+      res.status(503).json({
+        data: null,
+        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseAuthError) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: err.message },
+      });
+      return;
+    }
     logger.error({ err }, "Registration failed");
     res.status(500).json({
       data: null,
@@ -78,18 +86,9 @@ export async function login(req: Request, res: Response): Promise<void> {
   try {
     const { email, password } = req.body;
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      res.status(503).json({
-        data: null,
-        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
-      });
-      return;
-    }
+    const { user: authUser, session } = await supabaseAuth.signInWithPassword(email, password);
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error || !data.user) {
+    if (!authUser || !session) {
       res.status(401).json({
         data: null,
         error: { code: ERROR_CODES.UNAUTHORIZED, message: "Invalid credentials" },
@@ -97,7 +96,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const user = await userService.findByAuthId(data.user.id);
+    const user = await userService.findByAuthId(authUser.id);
     if (!user || user.deleted_flag) {
       res.status(401).json({
         data: null,
@@ -125,11 +124,25 @@ export async function login(req: Request, res: Response): Promise<void> {
           slug: org.slug,
           role: org.role,
         })),
-        session: data.session,
+        ...session,
       },
       error: null,
     });
   } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
+      res.status(503).json({
+        data: null,
+        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseAuthError) {
+      res.status(401).json({
+        data: null,
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Invalid credentials" },
+      });
+      return;
+    }
     logger.error({ err }, "Login failed");
     res.status(500).json({
       data: null,
@@ -142,23 +155,14 @@ export async function oauthLogin(req: Request, res: Response): Promise<void> {
   try {
     const { provider, id_token, access_token, nonce } = req.body;
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      res.status(503).json({
-        data: null,
-        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
-      });
-      return;
-    }
-
-    const { data, error } = await supabase.auth.signInWithIdToken({
+    const { user: authUser, session } = await supabaseAuth.signInWithIdToken({
       provider,
       token: id_token,
       access_token,
       nonce,
     });
 
-    if (error || !data.user) {
+    if (!authUser || !session) {
       res.status(401).json({
         data: null,
         error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication failed" },
@@ -166,18 +170,18 @@ export async function oauthLogin(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    let user = await userService.findByAuthId(data.user.id);
+    let user = await userService.findByAuthId(authUser.id);
     let isNewUser = false;
 
     if (!user) {
       isNewUser = true;
-      const metadata = data.user.user_metadata || {};
-      const email = data.user.email || "";
+      const metadata = authUser.user_metadata || {};
+      const email = authUser.email || "";
       const firstName = metadata.full_name?.split(" ")[0] || metadata.name?.split(" ")[0] || "User";
       const lastName = metadata.full_name?.split(" ").slice(1).join(" ") || "";
 
       user = await userService.create({
-        auth_user_id: data.user.id,
+        auth_user_id: authUser.id,
         email,
         first_name: firstName,
         last_name: lastName,
@@ -218,12 +222,26 @@ export async function oauthLogin(req: Request, res: Response): Promise<void> {
           slug: org.slug,
           role: org.role,
         })),
-        session: data.session,
-        isNewUser,
+        ...session,
+        is_new_user: isNewUser,
       },
       error: null,
     });
   } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
+      res.status(503).json({
+        data: null,
+        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseAuthError) {
+      res.status(401).json({
+        data: null,
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication failed" },
+      });
+      return;
+    }
     logger.error({ err }, "OAuth login failed");
     res.status(500).json({
       data: null,
@@ -236,18 +254,9 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
   try {
     const { refresh_token } = req.body;
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      res.status(503).json({
-        data: null,
-        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
-      });
-      return;
-    }
+    const { session } = await supabaseAuth.refreshSession(refresh_token);
 
-    const { data, error } = await supabase.auth.refreshSession({ refresh_token });
-
-    if (error || !data.session) {
+    if (!session) {
       res.status(401).json({
         data: null,
         error: { code: ERROR_CODES.UNAUTHORIZED, message: "Invalid refresh token" },
@@ -255,8 +264,25 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    res.json({ data: { session: data.session }, error: null });
+    res.json({
+      data: session,
+      error: null,
+    });
   } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
+      res.status(503).json({
+        data: null,
+        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseAuthError) {
+      res.status(401).json({
+        data: null,
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Invalid refresh token" },
+      });
+      return;
+    }
     logger.error({ err }, "Token refresh failed");
     res.status(500).json({
       data: null,
@@ -267,19 +293,16 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
 
 export async function logout(_req: Request, res: Response): Promise<void> {
   try {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
+    await supabaseAuth.signOut();
+    res.json({ data: { success: true }, error: null });
+  } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
       res.status(503).json({
         data: null,
         error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
       });
       return;
     }
-
-    await supabase.auth.signOut();
-
-    res.json({ data: { success: true }, error: null });
-  } catch (err) {
     logger.error({ err }, "Logout failed");
     res.status(500).json({
       data: null,
@@ -328,22 +351,19 @@ export async function getMe(req: Request, res: Response): Promise<void> {
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
   try {
     const { email } = req.body;
+    const redirectTo = `${env.APP_URL || "http://localhost:3000"}/auth/reset-password`;
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
+    await supabaseAuth.resetPasswordForEmail(email, redirectTo);
+
+    res.json({ data: { success: true }, error: null });
+  } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
       res.status(503).json({
         data: null,
         error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
       });
       return;
     }
-
-    const redirectTo = `${process.env.APP_URL || "http://localhost:3000"}/auth/reset-password`;
-
-    await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-
-    res.json({ data: { success: true }, error: null });
-  } catch (err) {
     logger.error({ err }, "Forgot password failed");
     res.status(500).json({
       data: null,
@@ -356,27 +376,24 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   try {
     const { password } = req.body;
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
+    await supabaseAuth.updateUserPassword(password);
+
+    res.json({ data: { success: true }, error: null });
+  } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
       res.status(503).json({
         data: null,
         error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
       });
       return;
     }
-
-    const { error } = await supabase.auth.updateUser({ password });
-
-    if (error) {
+    if (err instanceof SupabaseAuthError) {
       res.status(400).json({
         data: null,
-        error: { code: ERROR_CODES.BAD_REQUEST, message: error.message },
+        error: { code: ERROR_CODES.BAD_REQUEST, message: err.message },
       });
       return;
     }
-
-    res.json({ data: { success: true }, error: null });
-  } catch (err) {
     logger.error({ err }, "Reset password failed");
     res.status(500).json({
       data: null,

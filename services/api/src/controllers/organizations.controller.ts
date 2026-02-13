@@ -7,11 +7,16 @@ import type { OrgRole } from "../db/entities/organization-member.entity";
 
 const organizationService = new OrganizationService();
 
-export async function listOrganizations(req: Request, res: Response): Promise<void> {
+export async function listOrganizations(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
 
-    const organizations = await organizationService.findAllByUserId(authReq.userId);
+    const organizations = await organizationService.findAllByUserId(
+      authReq.dbUser.id,
+    );
 
     res.json({
       data: organizations.map((org) => ({
@@ -35,7 +40,10 @@ export async function listOrganizations(req: Request, res: Response): Promise<vo
   }
 }
 
-export async function getOrganization(req: Request, res: Response): Promise<void> {
+export async function getOrganization(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { orgId } = req.params;
@@ -44,12 +52,18 @@ export async function getOrganization(req: Request, res: Response): Promise<void
     if (!org) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Organization not found",
+        },
       });
       return;
     }
 
-    const membership = await organizationService.getMembership(org.id, authReq.userId);
+    const membership = await organizationService.getMembership(
+      org.id,
+      authReq.dbUser.id,
+    );
     if (!membership) {
       res.status(403).json({
         data: null,
@@ -79,7 +93,10 @@ export async function getOrganization(req: Request, res: Response): Promise<void
   }
 }
 
-export async function createOrganization(req: Request, res: Response): Promise<void> {
+export async function createOrganization(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { name, slug, logo_url } = req.body;
@@ -88,12 +105,18 @@ export async function createOrganization(req: Request, res: Response): Promise<v
     if (existing) {
       res.status(409).json({
         data: null,
-        error: { code: ERROR_CODES.CONFLICT, message: "Organization slug already exists" },
+        error: {
+          code: ERROR_CODES.CONFLICT,
+          message: "Organization slug already exists",
+        },
       });
       return;
     }
 
-    const org = await organizationService.create({ name, slug, logo_url }, authReq.userId);
+    const org = await organizationService.create(
+      { name, slug, logo_url },
+      authReq.dbUser.id,
+    );
 
     res.status(201).json({
       data: {
@@ -115,7 +138,10 @@ export async function createOrganization(req: Request, res: Response): Promise<v
   }
 }
 
-export async function updateOrganization(req: Request, res: Response): Promise<void> {
+export async function updateOrganization(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { orgId } = req.params;
@@ -125,13 +151,22 @@ export async function updateOrganization(req: Request, res: Response): Promise<v
     if (!org) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Organization not found",
+        },
       });
       return;
     }
 
-    const membership = await organizationService.getMembership(org.id, authReq.userId);
-    if (!membership || !organizationService.hasPermission(membership.role, ["owner", "admin"])) {
+    const membership = await organizationService.getMembership(
+      org.id,
+      authReq.dbUser.id,
+    );
+    if (
+      !membership ||
+      !organizationService.hasPermission(membership.role, ["owner", "admin"])
+    ) {
       res.status(403).json({
         data: null,
         error: { code: ERROR_CODES.FORBIDDEN, message: "Access denied" },
@@ -144,13 +179,20 @@ export async function updateOrganization(req: Request, res: Response): Promise<v
       if (existing) {
         res.status(409).json({
           data: null,
-          error: { code: ERROR_CODES.CONFLICT, message: "Organization slug already exists" },
+          error: {
+            code: ERROR_CODES.CONFLICT,
+            message: "Organization slug already exists",
+          },
         });
         return;
       }
     }
 
-    const updated = await organizationService.update(org.id, { name, slug, logo_url }, authReq.userId);
+    const updated = await organizationService.update(
+      org.id,
+      { name, slug, logo_url },
+      authReq.dbUser.id,
+    );
 
     res.json({
       data: {
@@ -170,7 +212,10 @@ export async function updateOrganization(req: Request, res: Response): Promise<v
   }
 }
 
-export async function deleteOrganization(req: Request, res: Response): Promise<void> {
+export async function deleteOrganization(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { orgId } = req.params;
@@ -179,7 +224,10 @@ export async function deleteOrganization(req: Request, res: Response): Promise<v
     if (!org) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Organization not found",
+        },
       });
       return;
     }
@@ -187,21 +235,30 @@ export async function deleteOrganization(req: Request, res: Response): Promise<v
     if (org.is_personal) {
       res.status(400).json({
         data: null,
-        error: { code: ERROR_CODES.BAD_REQUEST, message: "Cannot delete personal workspace" },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: "Cannot delete personal workspace",
+        },
       });
       return;
     }
 
-    const membership = await organizationService.getMembership(org.id, authReq.userId);
+    const membership = await organizationService.getMembership(
+      org.id,
+      authReq.dbUser.id,
+    );
     if (!membership || membership.role !== "owner") {
       res.status(403).json({
         data: null,
-        error: { code: ERROR_CODES.FORBIDDEN, message: "Only owner can delete organization" },
+        error: {
+          code: ERROR_CODES.FORBIDDEN,
+          message: "Only owner can delete organization",
+        },
       });
       return;
     }
 
-    await organizationService.delete(org.id, authReq.userId);
+    await organizationService.delete(org.id, authReq.dbUser.id);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {
@@ -222,12 +279,18 @@ export async function listMembers(req: Request, res: Response): Promise<void> {
     if (!org) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Organization not found",
+        },
       });
       return;
     }
 
-    const membership = await organizationService.getMembership(org.id, authReq.userId);
+    const membership = await organizationService.getMembership(
+      org.id,
+      authReq.dbUser.id,
+    );
     if (!membership) {
       res.status(403).json({
         data: null,
@@ -269,13 +332,22 @@ export async function inviteMember(req: Request, res: Response): Promise<void> {
     if (!org) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Organization not found",
+        },
       });
       return;
     }
 
-    const membership = await organizationService.getMembership(org.id, authReq.userId);
-    if (!membership || !organizationService.hasPermission(membership.role, ["owner", "admin"])) {
+    const membership = await organizationService.getMembership(
+      org.id,
+      authReq.dbUser.id,
+    );
+    if (
+      !membership ||
+      !organizationService.hasPermission(membership.role, ["owner", "admin"])
+    ) {
       res.status(403).json({
         data: null,
         error: { code: ERROR_CODES.FORBIDDEN, message: "Access denied" },
@@ -283,16 +355,27 @@ export async function inviteMember(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const existingMembership = await organizationService.getMembership(org.id, user_id);
+    const existingMembership = await organizationService.getMembership(
+      org.id,
+      user_id,
+    );
     if (existingMembership) {
       res.status(409).json({
         data: null,
-        error: { code: ERROR_CODES.CONFLICT, message: "User is already a member" },
+        error: {
+          code: ERROR_CODES.CONFLICT,
+          message: "User is already a member",
+        },
       });
       return;
     }
 
-    await organizationService.addMember(org.id, user_id, role as OrgRole, authReq.userId);
+    await organizationService.addMember(
+      org.id,
+      user_id,
+      role as OrgRole,
+      authReq.dbUser.id,
+    );
 
     res.status(201).json({ data: { success: true }, error: null });
   } catch (err) {
@@ -304,7 +387,10 @@ export async function inviteMember(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function updateMemberRole(req: Request, res: Response): Promise<void> {
+export async function updateMemberRole(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const { orgId, memberId } = req.params;
@@ -314,16 +400,28 @@ export async function updateMemberRole(req: Request, res: Response): Promise<voi
     if (!org) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Organization not found",
+        },
       });
       return;
     }
 
-    const membership = await organizationService.getMembership(org.id, authReq.userId);
-    if (!membership || !organizationService.hasPermission(membership.role, ["owner"])) {
+    const membership = await organizationService.getMembership(
+      org.id,
+      authReq.dbUser.id,
+    );
+    if (
+      !membership ||
+      !organizationService.hasPermission(membership.role, ["owner"])
+    ) {
       res.status(403).json({
         data: null,
-        error: { code: ERROR_CODES.FORBIDDEN, message: "Only owner can update roles" },
+        error: {
+          code: ERROR_CODES.FORBIDDEN,
+          message: "Only owner can update roles",
+        },
       });
       return;
     }
@@ -332,7 +430,7 @@ export async function updateMemberRole(req: Request, res: Response): Promise<voi
       org.id,
       parseInt(memberId),
       role as OrgRole,
-      authReq.userId
+      authReq.dbUser.id,
     );
 
     if (!updated) {
@@ -362,13 +460,22 @@ export async function removeMember(req: Request, res: Response): Promise<void> {
     if (!org) {
       res.status(404).json({
         data: null,
-        error: { code: ERROR_CODES.NOT_FOUND, message: "Organization not found" },
+        error: {
+          code: ERROR_CODES.NOT_FOUND,
+          message: "Organization not found",
+        },
       });
       return;
     }
 
-    const membership = await organizationService.getMembership(org.id, authReq.userId);
-    if (!membership || !organizationService.hasPermission(membership.role, ["owner", "admin"])) {
+    const membership = await organizationService.getMembership(
+      org.id,
+      authReq.dbUser.id,
+    );
+    if (
+      !membership ||
+      !organizationService.hasPermission(membership.role, ["owner", "admin"])
+    ) {
       res.status(403).json({
         data: null,
         error: { code: ERROR_CODES.FORBIDDEN, message: "Access denied" },
@@ -377,15 +484,22 @@ export async function removeMember(req: Request, res: Response): Promise<void> {
     }
 
     const memberIdNum = parseInt(memberId);
-    if (memberIdNum === authReq.userId) {
+    if (memberIdNum === authReq.dbUser.id) {
       res.status(400).json({
         data: null,
-        error: { code: ERROR_CODES.BAD_REQUEST, message: "Cannot remove yourself" },
+        error: {
+          code: ERROR_CODES.BAD_REQUEST,
+          message: "Cannot remove yourself",
+        },
       });
       return;
     }
 
-    const removed = await organizationService.removeMember(org.id, memberIdNum, authReq.userId);
+    const removed = await organizationService.removeMember(
+      org.id,
+      memberIdNum,
+      authReq.dbUser.id,
+    );
     if (!removed) {
       res.status(404).json({
         data: null,
