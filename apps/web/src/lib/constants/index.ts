@@ -14,3 +14,6 @@ export {
   DEFAULT_WORKSPACE_LAYOUT,
   DEFAULT_EDITOR_OPTIONS,
 } from "./defaults";
+
+export { STORAGE_KEYS } from "./storage-keys";
+export type { StorageKey } from "./storage-keys";

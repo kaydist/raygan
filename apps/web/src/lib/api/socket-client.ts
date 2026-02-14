@@ -31,7 +31,7 @@ export const socketClient = {
       logger.info("Socket disconnected", { reason });
     });
 
-    socket.on(SOCKET_EVENTS.ERROR, (error) => {
+    socket.on(SOCKET_EVENTS.CONNECT_ERROR, (error: Error) => {
       logger.error("Socket error", error);
     });
 
