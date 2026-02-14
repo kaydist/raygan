@@ -66,3 +66,11 @@ export {
 } from './tooltip';
 
 export { Separator } from './separator';
+
+export { Label } from './label';
+
+export { Logo } from './logo';
+
+export { Heading } from './heading';
+
+export { Paragraph } from './paragraph';

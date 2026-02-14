@@ -389,3 +389,4 @@ pnpm --filter=api migration:generate
 - Collaborative editing
 - White-label mode
 - avoid adding comments except when necessary or code complexity is high
+- always refer to the projects Frontend_Architecture_Spec_v1.3.md for frontend architecture. This is means useing components if existing or creating the ones that does not exist.

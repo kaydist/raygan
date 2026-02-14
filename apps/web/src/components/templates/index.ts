@@ -1,1 +1,1 @@
-export {};
+export { AuthTemplate } from './auth-template';
