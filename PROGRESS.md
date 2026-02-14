@@ -290,8 +290,24 @@ data: {"message": "Rate limit exceeded", "code": "RATE_LIMITED"}
 ## Next Steps (Day 7+)
 
 ### Tasks
-- [ ] Add Zod validation schemas for request bodies
-- [ ] Add rate limiting middleware
-- [ ] Add credits middleware for AI operations
-- [ ] Socket.io setup for real-time AST sync
-- [ ] Backend Hub adapters (Supabase, Firebase)
+- [ ] Initialize Next.js 15 with App Router, Tailwind CSS 4, shadcn/ui
+- [ ] Route groups: (marketing), (auth), (dashboard), (workspace)
+- [ ] Basic signin page
+- [ ] Basic dashboard page: list projects, create project
+- [ ] Verify: can see project list in browser, create new project
+
+### Key Files
+- `apps/web/src/app/(dashboard)/page.tsx`
+- `apps/web/src/app/layout.tsx`
+- `apps/web/tailwind.config.ts`
+- `apps/web/src/components/ui/`
+
+### Acceptance Criteria
+- [ ] Next.js app runs on pnpm dev
+- [ ] Route groups properly organized
+- [ ] Dashboard shows project list from API
+- [ ] Create project button works
+- [ ] shadcn/ui components render correctly
+
+### Dependencies
+Blocked by: #3
