@@ -8,3 +8,4 @@ export { CreditDisplay } from './credit-display';
 export { ViewToggle } from './view-toggle';
 export { UserMenu } from './user-menu';
 export { Breadcrumb } from './breadcrumb';
+export { MobileHeader } from './mobile-header';

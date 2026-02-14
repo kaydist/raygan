@@ -1,6 +1,8 @@
 'use client';
 
+import * as React from 'react';
 import { Sidebar } from '@/components/organisms';
+import { MobileHeader } from '@/components/molecules';
 import { cn } from '@/lib/utils';
 
 interface DashboardTemplateProps {
@@ -19,22 +21,50 @@ const mockCredits = {
   total: 2000,
 };
 
-const mockTeams = [
-  { id: '1', name: "Kayode's Team", isExpanded: true },
-];
+const mockTeams = [{ id: '1', name: "Kayode's Team", isExpanded: true }];
 
-export function DashboardTemplate({ children, className }: DashboardTemplateProps) {
+export function DashboardTemplate({
+  children,
+  className,
+}: DashboardTemplateProps) {
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar
-        user={mockUser}
-        credits={mockCredits}
-        teams={mockTeams}
-        currentTeamId="1"
+    <div className="flex h-screen flex-col bg-background lg:flex-row">
+      {/* Mobile header */}
+      <MobileHeader
+        isMenuOpen={isSidebarOpen}
+        onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
-      <main className={cn('flex-1 overflow-auto', className)}>
-        {children}
-      </main>
+
+      {/* Mobile sidebar overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+
+      {/* Sidebar - hidden on mobile, shown on desktop */}
+      <div
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-60 transform transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0',
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <Sidebar
+          user={mockUser}
+          credits={mockCredits}
+          teams={mockTeams}
+          currentTeamId="1"
+          onLogout={closeSidebar}
+        />
+      </div>
+
+      {/* Main content */}
+      <main className={cn('flex-1 overflow-auto', className)}>{children}</main>
     </div>
   );
 }

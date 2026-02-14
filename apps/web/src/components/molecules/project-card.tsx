@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { MoreHorizontal, Star } from 'lucide-react';
-import { Badge, Card, IconButton, Heading, Paragraph } from '@/components/atoms';
-import { cn } from '@/lib/utils';
+import { MoreHorizontal, Star } from "lucide-react";
+import { Badge, Card, IconButton, Paragraph } from "@/components/atoms";
+import { cn } from "@/lib/utils";
 
-type ProjectStatus = 'draft' | 'deployed';
+type ProjectStatus = "draft" | "deployed";
 
 interface ProjectCardProps {
   id: string;
@@ -20,9 +20,12 @@ interface ProjectCardProps {
   className?: string;
 }
 
-const statusConfig: Record<ProjectStatus, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
-  draft: { label: 'Draft', variant: 'secondary' },
-  deployed: { label: 'Deployed', variant: 'default' },
+const statusConfig: Record<
+  ProjectStatus,
+  { label: string; variant: "default" | "secondary" | "outline" }
+> = {
+  draft: { label: "Draft", variant: "secondary" },
+  deployed: { label: "Deployed", variant: "default" },
 };
 
 export function ProjectCard({
@@ -31,7 +34,7 @@ export function ProjectCard({
   status,
   editedAt,
   screenCount,
-  color = '#3B82F6',
+  color = "#3B82F6",
   onClick,
   onMenuClick,
   onFavorite,
@@ -42,8 +45,8 @@ export function ProjectCard({
   return (
     <Card
       className={cn(
-        'group cursor-pointer overflow-hidden border-0 bg-[#f7f7f7] transition-all hover:ring-2 hover:ring-ring',
-        className
+        "group cursor-pointer overflow-hidden border-0 bg-[#f7f7f7] transition-all hover:ring-2 hover:ring-ring",
+        className,
       )}
       onClick={onClick}
     >
@@ -76,8 +79,9 @@ export function ProjectCard({
         <Badge
           variant={statusInfo.variant}
           className={cn(
-            'absolute right-2 top-2 group-hover:hidden',
-            status === 'deployed' && 'bg-emerald-500 text-white hover:bg-emerald-500'
+            "absolute right-2 top-2 group-hover:hidden",
+            status === "deployed" &&
+              "bg-emerald-500 text-white hover:bg-emerald-500",
           )}
         >
           {statusInfo.label}
@@ -108,11 +112,11 @@ export function ProjectCard({
           style={{ backgroundColor: color }}
         />
         <div className="flex-1 min-w-0">
-          <Heading level={6} weight="medium" className="truncate text-sm">
+          <Paragraph size="sm" weight="medium" className="truncate">
             {name}
-          </Heading>
+          </Paragraph>
           <Paragraph size="xs" variant="muted">
-            {editedAt} · {screenCount} screen{screenCount !== 1 ? 's' : ''}
+            {editedAt} · {screenCount} screen{screenCount !== 1 ? "s" : ""}
           </Paragraph>
         </div>
       </div>
@@ -129,8 +133,8 @@ export function NewProjectCard({ onClick, className }: NewProjectCardProps) {
   return (
     <Card
       className={cn(
-        'flex cursor-pointer flex-col items-center justify-center border border-dashed border-border bg-transparent transition-all hover:border-foreground/50',
-        className
+        "flex cursor-pointer flex-col items-center justify-center border border-dashed border-border bg-transparent transition-all hover:border-foreground/50",
+        className,
       )}
       onClick={onClick}
     >

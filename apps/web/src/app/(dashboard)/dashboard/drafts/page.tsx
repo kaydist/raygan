@@ -4,7 +4,12 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, ChevronDown } from 'lucide-react';
 import { Button, Paragraph } from '@/components/atoms';
-import { ProjectCard, NewProjectCard, ViewToggle, Breadcrumb } from '@/components/molecules';
+import {
+  ProjectCard,
+  NewProjectCard,
+  ViewToggle,
+  Breadcrumb,
+} from '@/components/molecules';
 
 type ViewMode = 'grid' | 'list';
 
@@ -70,13 +75,13 @@ export default function DraftsPage() {
   };
 
   const handleNewProject = () => {
-    // TODO: Open create project dialog
     console.log('Create new project');
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="p-4 sm:p-6">
+      {/* Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Breadcrumb
           items={[
             { label: "Kayode's Team", href: '/dashboard' },
@@ -84,31 +89,39 @@ export default function DraftsPage() {
           ]}
         />
 
-        <div className="flex items-center gap-3">
-          <ViewToggle value={viewMode} onChange={setViewMode} />
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* View toggle - hidden on smallest screens */}
+          <div className="hidden sm:block">
+            <ViewToggle value={viewMode} onChange={setViewMode} />
+          </div>
 
-          <Button variant="outline" className="gap-2">
-            Sort: Recent
+          {/* Sort button - text hidden on mobile */}
+          <Button variant="outline" size="sm" className="gap-2 sm:h-10">
+            <span className="hidden sm:inline">Sort: Recent</span>
+            <span className="sm:hidden">Sort</span>
             <ChevronDown className="h-4 w-4" />
           </Button>
 
-          <Button className="gap-2" onClick={handleNewProject}>
+          {/* New button - icon only on mobile */}
+          <Button size="sm" className="gap-2 sm:h-10" onClick={handleNewProject}>
             <Plus className="h-4 w-4" />
-            New
+            <span className="hidden sm:inline">New</span>
           </Button>
         </div>
       </div>
 
+      {/* Project count */}
       <div className="mb-4">
         <Paragraph variant="muted">
           All projects <span className="ml-1">{mockProjects.length}</span>
         </Paragraph>
       </div>
 
+      {/* Project grid */}
       <div
         className={
           viewMode === 'grid'
-            ? 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+            ? 'grid grid-cols-1 gap-3 xs:grid-cols-2 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
             : 'flex flex-col gap-2'
         }
       >
