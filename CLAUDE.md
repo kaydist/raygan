@@ -16,7 +16,7 @@ This is **Staq** - an AI-powered, no-code mobile app builder that generates prod
 2. **Multi-Model AI Gateway**: Provider-agnostic LLM routing (Claude, GPT-5, Grok, Gemini, Mistral, DeepSeek)
 3. **Backend Integration Hub**: Supabase, Firebase, Appwrite, custom API endpoints with OpenAPI import
 4. **Code Workspace**: Monaco editor, file explorer, integrated terminal
-5. **QR Code Preview**: Expo Go device preview + Sandpack browser preview
+5. **QR Code Preview**: Expo Go device preview + Expo Snack SDK browser preview
 6. **Africa-First**: Paystack, Flutterwave, Mono, M-Pesa integrations
 
 ## Tech Stack
@@ -47,7 +47,7 @@ This is **Staq** - an AI-powered, no-code mobile app builder that generates prod
 | React Query 5.x | Server state, caching |
 | Monaco Editor | Code editor panel |
 | @dnd-kit 6.x | Drag-and-drop |
-| Sandpack | Browser preview |
+| Expo Snack SDK (snack-sdk 4.x) | Browser + device preview (Snack web player + QR code) |
 | Socket.io Client | Real-time sync |
 
 ### Shared (`packages/shared/`)
@@ -108,7 +108,7 @@ features/
 ├── agent/       # Chat interface, AI generation
 ├── builder/     # Visual editor, property panel
 ├── code-editor/ # Monaco wrapper
-├── preview/     # Sandpack + QR code
+├── preview/     # Expo Snack SDK + QR code
 ├── terminal/    # xterm.js (Month 2)
 ├── project/     # Project management
 └── billing/     # Billing UI
@@ -347,8 +347,10 @@ pnpm --filter=api migration:generate
 8. **Settings Table**: All runtime config stored in `settings` table, fetched by frontend on init.
 
 9. **Preview Modes**:
-   - Browser: Sandpack (React Native Web)
-   - Device: Expo Go via QR code
+   - Browser: Expo Snack web player (full Expo SDK module support)
+   - Device: Expo Go via Snack session QR code
+
+10. **Framework Constraint**: Platform commits to Expo managed workflow only. No bare React Native CLI or custom native modules. This ensures Snack SDK preview compatibility.
 
 ## User Plans
 

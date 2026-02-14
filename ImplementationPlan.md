@@ -18,7 +18,7 @@ Create these milestones on the repository:
 
 | Milestone | Due Date | Description |
 |-----------|----------|-------------|
-| M1: Core Loop Validated | Mar 2, 2026 | Monorepo + Express + AI Gateway (Claude) + project CRUD + SSE streaming + basic chat UI + Sandpack preview. The core product works end-to-end without auth or billing. |
+| M1: Core Loop Validated | Mar 2, 2026 | Monorepo + Express + AI Gateway (Claude) + project CRUD + SSE streaming + basic chat UI + Expo Snack preview. The core product works end-to-end without auth or billing. |
 | M2: AST Engine + Builder | Mar 16, 2026 | Component AST engine, Builder Mode v1 (tree, property inspector, canvas), bidirectional AST ↔ Code sync |
 | M3: Multi-Model + Real-Time | Mar 30, 2026 | OpenAI/xAI/Google adapters, model selector, Socket.io real-time sync, Code Editor (Monaco) |
 | M4: Auth + User System | Apr 13, 2026 | Supabase Auth, JWT middleware, login/register, protected routes, user profiles, plan system |
@@ -220,16 +220,19 @@ Read the attached spec documents for full technical details — file paths, inte
 - Labels: `phase:validation`, `type:feature`, `area:frontend`, `area:ai-gateway`, `priority:critical`, `size:medium`
 - Files: `apps/web/src/features/agent/ChatPanel.tsx`, `MessageList.tsx`, `PromptInput.tsx`
 
-**Day 11 (Feb 20, Fri)** — Sandpack Preview Integration
-- Install @codesandbox/sandpack-react
-- Create Preview panel rendering React Native Web in phone-frame mockup
-- On AI generation complete, push generated files to Sandpack
-- Verify: AI generates code → preview renders the app
+**Day 11 (Feb 20, Fri)** — Expo Snack Preview Integration
+- Install snack-sdk 4.x
+- Create useSnack hook (Snack session lifecycle: create, connect, dispose)
+- Create useSnackSync hook (push AST-serialized files to Snack via updateFiles())
+- Build SnackPreview component (Snack web player in device frame mockup)
+- Build QRCodeDisplay component (QR code from Snack session URL for Expo Go)
+- Build DeviceSelector component (iOS / Android / Web platform picker)
+- Verify: AI generates code → Snack preview renders in browser AND QR code available for Expo Go
 - Labels: `phase:validation`, `type:feature`, `area:frontend`, `priority:critical`, `size:medium`
-- Files: `apps/web/src/features/preview/PreviewPanel.tsx`
+- Files: `apps/web/src/features/preview/components/SnackPreview.tsx`, `hooks/useSnack.ts`, `hooks/useSnackSync.ts`, `utils/snack-session.ts`, `utils/file-transformer.ts`
 
 **Day 12 (Feb 21, Sat)** — End-to-End Integration
-- Full flow: create project → open workspace → type prompt → AI generates → preview renders
+- Full flow: create project → open workspace → type prompt → AI generates → Snack preview renders in browser AND QR code available for Expo Go
 - Fix all integration bugs between frontend SSE handling and backend streaming
 - File storage: save generated files to project_files table
 - Load project files on workspace mount, display in preview
@@ -418,17 +421,20 @@ Read the attached spec documents for full technical details — file paths, inte
 
 **Day 38 (Mar 19, Thu)** — Preview Polish
 - Device frame mockup (iPhone 15, Pixel 8 dimensions)
-- Device selector in preview panel
-- Error overlay with file/line info from Sandpack
-- Hot-reload performance optimization (target: < 500ms)
+- Platform selector (iOS / Android / Web) in preview panel
+- Snack bundler error overlay with file/line info
+- NativeFeatureWarning badge for dev-build-only features
+- Snack session pause/resume lifecycle (30 min inactivity timeout)
+- AST→Snack file sync latency measurement and optimization (target: < 2s)
 - Labels: `phase:core`, `type:feature`, `area:frontend`, `priority:medium`, `size:medium`
 
-**Day 39 (Mar 20, Fri)** — QR Code + Expo Go Preview Stub
-- QR code generation with qrcode.react
-- Expo dev server URL placeholder (full implementation later)
-- Instructions panel for scanning with Expo Go
+**Day 39 (Mar 20, Fri)** — Preview: Advanced Features
+- Expo Go connection status indicator (connected/disconnected/loading)
+- Multiple device connection support via Snack session
+- Console log forwarding from Snack to browser DevTools panel
+- Deep link testing integration with Expo Go
 - Labels: `phase:core`, `type:feature`, `area:frontend`, `priority:low`, `size:small`
-- Files: `apps/web/src/features/preview/QRCodePanel.tsx`
+- Files: `apps/web/src/features/preview/components/ConnectionStatus.tsx`, `hooks/useSnackLogs.ts`
 
 **Day 40 (Mar 21, Sat)** — Integration Testing + Performance
 - Full end-to-end test with all AI models
@@ -623,7 +629,7 @@ Read the attached spec documents for full technical details — file paths, inte
 - Labels: `phase:launch`, `type:chore`, `area:frontend`, `priority:medium`, `size:medium`
 
 **Day 74 (Apr 24, Fri)** — Performance Optimization
-- Lighthouse 90+, bundle splitting, lazy load Monaco/Sandpack, API P95 < 200ms
+- Lighthouse 90+, bundle splitting, lazy load Monaco/Snack SDK (~45KB gzipped), API P95 < 200ms
 - Labels: `phase:launch`, `type:chore`, `priority:medium`, `size:medium`
 
 **Day 75 (Apr 25, Sat)** — Security Final Pass

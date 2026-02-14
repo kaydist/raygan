@@ -1,4 +1,4 @@
-  
+
 **BACKEND ARCHITECTURE**
 
 Technical Specification
@@ -7,7 +7,7 @@ Technical Specification
 
 Prepared by Kayode
 
-February 8, 2026  |  Version 1.0
+February 8, 2026  |  Version 1.1
 
 **Personal Product  |  Pre-Launch Planning**
 
@@ -45,7 +45,7 @@ February 8, 2026  |  Version 1.0
 
 16\. File System and Project Management
 
-17\. Preview Server
+17\. Preview Architecture (Client-Side via Expo Snack SDK)
 
 18\. Security
 
@@ -262,7 +262,7 @@ services/api/
 
       billing-engine.ts            \# Credits, Stripe, Paystack
 
-      preview-server.ts            \# Expo bundle server, QR code
+      \# preview-server.ts removed — preview handled client-side via Expo Snack SDK
 
       settings-service.ts          \# Settings table read/write \+ cache
 
@@ -280,7 +280,7 @@ services/api/
 
         ast-sync.handler.ts
 
-        preview.handler.ts
+        \# preview.handler.ts removed — preview handled client-side via Snack SDK
 
         terminal.handler.ts
 
@@ -657,14 +657,14 @@ Public GET /settings returns frontend-safe config only. Server secrets are never
 | GET | /projects/:id/backend/schema | auth | \- | { schema } |
 | POST | /projects/:id/backend/test | auth | \- | { healthy, latencyMs } |
 | DELETE | /projects/:id/backend/disconnect | auth | \- | 204 |
-| POST | /projects/:id/backend/import-spec | auth, planGate('pro'), validate | { type: openapi|postman|graphql, spec } | { schema, endpointCount } |
+| POST | /projects/:id/backend/import-spec | auth, planGate('pro'), validate | { type: openapi\|postman\|graphql, spec } | { schema, endpointCount } |
 
 ## **5.9 Billing Routes (/api/v1/billing)**
 
 | Method | Endpoint | Middleware | Body | Response |
 | :---- | :---- | :---- | :---- | :---- |
 | GET | /billing | auth | \- | { plan, creditsRemaining, creditsTotal, resetAt, invoices\[\], paymentMethods\[\] } |
-| POST | /billing/subscribe | auth, validate | { planId, paymentMethodId, provider: stripe|paystack } | { subscription } |
+| POST | /billing/subscribe | auth, validate | { planId, paymentMethodId, provider: stripe\|paystack } | { subscription } |
 | POST | /billing/change-plan | auth, validate | { newPlanId } | { subscription, proratedAmount } |
 | POST | /billing/cancel | auth | \- | { subscription, endsAt } |
 | POST | /billing/webhook/stripe | Stripe signature | Stripe event | 200 |
@@ -674,7 +674,7 @@ Public GET /settings returns frontend-safe config only. Server secrets are never
 
 | Method | Endpoint | Middleware | Body | Response |
 | :---- | :---- | :---- | :---- | :---- |
-| POST | /projects/:id/deploy/eas | auth, planGate('pro'), validate | { platform: ios|android|both, profile } | { jobId, status: queued } |
+| POST | /projects/:id/deploy/eas | auth, planGate('pro'), validate | { platform: ios\|android\|both, profile } | { jobId, status: queued } |
 | GET | /projects/:id/deploy/status | auth | \- | { builds\[\] } |
 | POST | /projects/:id/export/github | auth, planGate('starter'), validate | { repoName, isPrivate } | { jobId, repoUrl } |
 | GET | /projects/:id/export/zip | auth | \- | Binary .zip download |
@@ -781,12 +781,12 @@ The platform uses an organization-based multi-tenant architecture that allows us
 ┌─────────────┐     ┌──────────────────────┐     ┌─────────────────┐
 │   users     │────▶│  organization_members │◀────│  organizations  │
 └─────────────┘     └──────────────────────┘     └─────────────────┘
-                              │                           │
-                              │                           │
-                              ▼                           ▼
-                    (user_id, org_id, role)         ┌──────────┐
-                                                    │ projects │
-                                                    └──────────┘
+                            │                           │
+                            │                           │
+                            ▼                           ▼
+                  (user_id, org_id, role)         ┌──────────┐
+                                                  │ projects │
+                                                  └──────────┘
 ```
 
 **Key Benefits:**
@@ -2091,19 +2091,23 @@ project-name/
 
     components/, hooks/, lib/, types/, assets/
 
-# **17\. Preview Server**
+# **17\. Preview Architecture (Client-Side via Expo Snack SDK)**
 
-* Browser Preview (Sandpack): client-side. Backend provides serialized files.
+Preview is handled entirely on the frontend using the Expo Snack SDK (snack-sdk 4.x). The backend's role is limited to serving project files in the SnackFiles format when requested.
 
-* Device Preview (Expo Go): Expo dev server in sandboxed Railway container per project.
+* Browser Preview: Snack web player embedded in an iframe on the frontend. Supports the full Expo SDK module set. Bundling handled by Expo's hosted infrastructure.
 
-* QR code URL: exp://\[host\]:\[port\]. Unique port per project.
+* Device Preview (Expo Go): Snack session generates a QR code URL. Users scan with Expo Go for native rendering. No backend dev server or Railway container needed.
 
-* Container lifecycle: spin up on first QR scan, auto-shutdown 30 min inactivity. Max 50 concurrent.
+* File Serving: GET /api/v1/projects/:id/files?format=snack returns project files in SnackFiles format ({ [path]: { type: 'CODE', contents: string } }) for the frontend to push to the Snack instance.
 
-* Hot updates: file changes push updates to Expo Go via WebSocket.
+* Session Lifecycle: managed on the frontend. Snack session created on workspace load, paused after 30 min inactivity, lazily re-created when user returns.
 
-* Dev build features (push notifications, custom native) show warning badge.
+* Cost Savings: eliminates Railway preview containers ($100-300/month savings). Snack SDK is free and open-source (MIT license).
+
+* Framework Constraint: platform commits to Expo managed workflow only. No bare React Native CLI or custom native modules. This constraint ensures Snack preview compatibility.
+
+* Dev build features (push notifications, custom native modules) show a NativeFeatureWarning badge in the preview panel.
 
 # **18\. Security**
 
@@ -2187,7 +2191,7 @@ export class EncryptionService {
 | PostgreSQL | Supabase | US East | Pro. PITR. Daily backups. PgBouncer. |
 | Redis | Upstash / Railway | US East | Persistent. allkeys-lru. 256MB MVP. |
 | File Storage | Supabase \+ R2 | Global | Projects in Supabase. Assets in R2. |
-| Preview Servers | Railway | US East | On-demand containers. 30 min TTL. Max 50\. |
+| Preview | Client-side (Expo Snack SDK) | N/A | No backend infrastructure. Bundling via Expo hosted services. |
 | Monitoring | Sentry \+ Axiom | Cloud | Errors \+ structured log search. |
 | CI/CD | GitHub Actions | \- | Lint, test, build, deploy on merge. |
 
@@ -2309,11 +2313,11 @@ GET /health \-\> { status: 'ok', uptime, memory, redis: 'connected', supabase: '
 | AI generation complete | \< 60 seconds P95 | Full generation including AST \+ file write |
 | Builder edit latency | \< 50ms | Property change to preview update (client-side) |
 | AST sync (WebSocket) | \< 100ms | Client patch to broadcast to other clients |
-| Preview hot-reload | \< 500ms | Sandpack incremental reload |
-| QR preview update | \< 2 seconds | Expo Go hot update after change |
+| Preview hot-reload | \< 2000ms | Snack SDK file sync \+ Expo bundler rebuild |
+| QR preview update | \< 3 seconds | Expo Go update via Snack session |
 | Workspace page load | \< 3 seconds | Initial load with project data |
 | Uptime | 99.5% | Monthly availability (MVP) |
 | WebSocket connections | 1,000 concurrent | Per Railway instance. Horizontal via Redis adapter. |
 | Database connections | 60 pooled | Via PgBouncer. Sufficient for 500+ concurrent users. |
 
-*End of Backend Architecture Specification  |  Version 1.0  |  February 2026*
+*End of Backend Architecture Specification  |  Version 1.1  |  February 2026*

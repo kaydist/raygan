@@ -1,4 +1,4 @@
-  
+
 **RORK.COM**
 
 Complete Product Audit, Competitive Analysis
@@ -9,11 +9,11 @@ and Full Architecture Specification
 
 Prepared by Kayode
 
-February 8, 2026  |  Version 5.0
+February 8, 2026  |  Version 6.0
 
 **Personal Product  |  Pre-Launch Planning**
 
-# **1\. Executive Summary**
+# **1. Executive Summary**
 
 Rork.com is an AI-powered, no-code mobile app builder that generates production-ready React Native (Expo) applications from natural language prompts. Founded in 2024, the company raised $2.8M from a16z and attracts over 743,000 monthly visits with an 85% growth rate. It operates with approximately 3 employees.
 
@@ -21,7 +21,7 @@ This document provides a complete audit of the Rork product and specifies the ar
 
 No existing product combines all of these capabilities. Rork validated the market. This product will capture it.
 
-# **2\. Rork Company Profile**
+# **2. Rork Company Profile**
 
 **Founded:** 2024, San Francisco, CA
 
@@ -35,13 +35,13 @@ No existing product combines all of these capabilities. Rork validated the marke
 
 **Target Market:** Non-technical founders, solopreneurs, designers, small businesses, freelancers
 
-# **3\. Rork Technical Architecture (Reverse Engineered)**
+# **3. Rork Technical Architecture (Reverse Engineered)**
 
 ## **3.1 Frontend**
 
 * Web-based chat interface for prompt input and project management
 
-* In-browser live preview using Sandpack or iframe rendering
+* In-browser live preview using Expo Snack SDK web player
 
 * QR code generation for Expo Go mobile preview
 
@@ -85,14 +85,14 @@ No existing product combines all of these capabilities. Rork validated the marke
 
 * WebSocket connections for real-time preview updates
 
-# **4\. Complete Feature Audit**
+# **4. Complete Feature Audit**
 
 ## **4.1 Core Features**
 
 | Feature | Description | Usage and Adoption |
 | :---- | :---- | :---- |
 | Text-to-App Generation | Plain English prompt generates full React Native app | Very High (Core USP) |
-| Cross-Platform Output | iOS, Android, Web via React Native \+ Expo | Very High |
+| Cross-Platform Output | iOS, Android, Web via React Native + Expo | Very High |
 | QR Code Live Preview | Scan QR with Expo Go to test on real device | Very High |
 | Chat-Based Iteration | Refine app through follow-up chat prompts | High |
 | Multi-Screen Navigation | Tab bars, stack nav, drawer menus auto-generated | High |
@@ -117,7 +117,7 @@ No existing product combines all of these capabilities. Rork validated the marke
 | Cursor Export | Continue development in Cursor IDE | Medium |
 | Web Hosting Export | Deploy web version to Vercel or Netlify | Low-Medium |
 
-# **5\. Native Device Features Analysis**
+# **5. Native Device Features Analysis**
 
 Rork does not have custom native implementations. Its AI generates code using standard Expo SDK modules. There are over 50 modules available. Any product built on React Native and Expo has access to the exact same native capabilities. The differentiator is how reliably those features are implemented and how easily users can configure them.
 
@@ -166,7 +166,7 @@ Rork does not have custom native implementations. Its AI generates code using st
 
 * Africa-specific native templates: pre-built Paystack payments, USSD dialer, SMS verification, and offline-first data sync patterns that no competitor offers.
 
-# **6\. Feature Usage and Acceptance Rate Analysis**
+# **6. Feature Usage and Acceptance Rate Analysis**
 
 Based on community feedback from Reddit, Indie Hackers, Medium reviews, App Store reviews, and Hacker News discussions.
 
@@ -206,7 +206,7 @@ Based on community feedback from Reddit, Indie Hackers, Medium reviews, App Stor
 
 * Data loss: approximately 15% report losing app data after chat-based updates.
 
-# **7\. Rork Pricing Model**
+# **7. Rork Pricing Model**
 
 Message-based subscriptions at approximately $0.20 per message across all tiers. No free trial on the web platform.
 
@@ -218,7 +218,7 @@ Message-based subscriptions at approximately $0.20 per message across all tiers.
 | Senior | $100/mo | 500 messages / month | Small teams, agency work |
 | Scale 1K | $200/mo | 1,000 messages / month | Power users, enterprise |
 
-# **8\. Dual-Mode Architecture: Agent \+ Builder**
+# **8. Dual-Mode Architecture: Agent + Builder**
 
 ## **8.1 The Market Gap**
 
@@ -290,7 +290,7 @@ A shared Component AST (Abstract Syntax Tree) that Agent Mode, Builder Mode, and
 
 This flow is impossible on any existing platform. Steps 4, 6, and 7 would burn 10 to 15 messages on Rork.
 
-# **9\. Integrated Code Workspace**
+# **9. Integrated Code Workspace**
 
 Rork offers a read-only file explorer. Users cannot edit code within the platform and must export to Cursor or VS Code for manual changes. This product provides a full development workspace without the user ever leaving the platform.
 
@@ -310,7 +310,7 @@ Four-panel configurable layout, similar to professional IDEs:
 
 * Center Panel: toggles between Builder Mode canvas and Code Editor. Both sync to the same AST.
 
-* Right Panel: live preview in a phone frame. Connects via QR code to Expo Go on a real device, or renders in-browser via Sandpack.
+* Right Panel: live preview in a phone frame. Connects via QR code to Expo Go on a real device via Snack session, or renders in-browser via Expo Snack web player.
 
 * Bottom Panel: terminal, collapsible like VS Code. Pre-populated command buttons for non-technical users alongside a full command line for power users.
 
@@ -342,13 +342,13 @@ QR code scanning for Expo Go preview is a core MVP feature and must ship in week
 
 * The QR code auto-refreshes when code changes via a WebSocket hot-reload connection
 
-* Browser preview runs simultaneously in the right panel via a Sandpack iframe
+* Browser preview runs simultaneously in the right panel via the Expo Snack web player
 
 * Both preview channels (QR and browser) sync from the same AST, ensuring consistency
 
 This instant feedback loop is the most praised feature across all Rork reviews at over 90% satisfaction. It must be available from day one.
 
-# **10\. Competitive Differentiation Matrix**
+# **10. Competitive Differentiation Matrix**
 
 Capability-by-capability comparison against every relevant competitor:
 
@@ -359,7 +359,7 @@ Capability-by-capability comparison against every relevant competitor:
 | Inline Code Editor | No | No | No | No | Yes | **YES** |
 | Integrated Terminal | No | No | No | No | No | **YES** |
 | Native Mobile Output | Yes | No | No | Yes | No | **YES** |
-| Dual Mode (AI \+ Visual) | No | No | No | No | No | **YES** |
+| Dual Mode (AI + Visual) | No | No | No | No | No | **YES** |
 | Bidirectional AST Sync | No | No | No | No | No | **YES** |
 | QR Code Device Preview | Yes | No | No | Yes | No | **YES** |
 | Multi-Tenant Orgs | No | No | No | Partial | Yes | **YES** |
@@ -402,15 +402,15 @@ Dreamflow is the closest to this product vision: AI chat combined with drag-and-
 
 * Personal execution advantage: deep background in React Native, Expo, TypeScript, and infrastructure at scale.
 
-# **11\. One-Month Build Roadmap**
+# **11. One-Month Build Roadmap**
 
 Week-by-week execution plan for solo development or with one to two contractors. QR code preview, Agent Mode, Builder Mode v1, and Code Workspace are all MVP deliverables.
 
 | Timeline | Focus Area | Deliverables |
 | :---- | :---- | :---- |
-| Week 1 | Core AI Engine \+ Agent Mode \+ QR Preview | Multi-Model AI Gateway with provider adapter pattern. Claude, OpenAI, and Grok integrations. Prompt-to-code pipeline. React Native \+ Expo project generation from natural language. Chat UI built with Next.js. Component AST layer (shared data structure). QR code generation for Expo Go device preview. In-browser Sandpack preview. Project file system management. |
-| Week 2 | Builder Mode v1 \+ Code Workspace | Component inspector and property panel (click to select, edit props). Component tree sidebar with hierarchy view. Monaco code editor (read and write). File explorer with live updates on every change. WebSocket hot-reload to QR and browser preview. Bidirectional AST sync: agent, builder, and code editor all write to same tree. |
-| Week 3 | Integrations \+ Native Feature Templates | GitHub OAuth and repository sync. Supabase one-click backend setup. Environment variable management UI. Template library with 8-10 starter apps. Pre-tested native component templates (maps, biometrics, camera, location, haptics). Drag-and-drop component reordering in builder mode. |
+| Week 1 | Core AI Engine + Agent Mode + QR Preview | Multi-Model AI Gateway with provider adapter pattern. Claude, OpenAI, and Grok integrations. Prompt-to-code pipeline. React Native + Expo project generation from natural language. Chat UI built with Next.js. Component AST layer (shared data structure). QR code generation for Expo Go device preview. In-browser Expo Snack web player preview. Project file system management. |
+| Week 2 | Builder Mode v1 + Code Workspace | Component inspector and property panel (click to select, edit props). Component tree sidebar with hierarchy view. Monaco code editor (read and write). File explorer with live updates on every change. WebSocket hot-reload to QR and browser preview. Bidirectional AST sync: agent, builder, and code editor all write to same tree. |
+| Week 3 | Integrations + Native Feature Templates | GitHub OAuth and repository sync. Supabase one-click backend setup. Environment variable management UI. Template library with 8-10 starter apps. Pre-tested native component templates (maps, biometrics, camera, location, haptics). Drag-and-drop component reordering in builder mode. |
 | Week 4 | Billing, Polish and Beta Launch | Stripe billing with message-based metering and free tier. EAS build integration for app store deployment. User dashboard and project management UI. Component palette for builder mode (buttons, cards, inputs, lists, native components). Native feature flags: Expo Go vs dev build warnings. Landing page, documentation, and beta launch. |
 
 ## **11.1 Phasing Strategy (Months 1 through 4+)**
@@ -422,7 +422,7 @@ Week-by-week execution plan for solo development or with one to two contractors.
 | Month 3 | Builder Mode v3: freeform canvas positioning, constraint-based layouts, responsive breakpoints. Figma Import: paste a Figma URL to convert designs into working React Native app. Terminal v2: containerized per-user sandbox environment. | Market-leading UX. Figma import as viral differentiator. |
 | Month 4+ | AI design suggestions in builder mode. Animation builder. Collaborative real-time editing. White-label and agency mode. A/B testing UI variants. Africa marketplace for templates and components. | Platform maturity and ecosystem growth. |
 
-## **11.2 MVP Feature Checklist (End of Month 1\)**
+## **11.2 MVP Feature Checklist (End of Month 1)**
 
 Every item below must ship for beta launch:
 
@@ -434,7 +434,7 @@ Every item below must ship for beta launch:
 
 * QR Code Preview: Expo Go QR code scanning for real-device testing with auto-refresh on changes
 
-* Browser Preview: Sandpack in-browser preview with phone frame rendering
+* Browser Preview: Expo Snack SDK in-browser preview with phone frame rendering and full Expo SDK module support
 
 * Native Templates: pre-tested component templates for camera, maps, biometrics, location, and haptics
 
@@ -446,11 +446,11 @@ Every item below must ship for beta launch:
 
 ## **11.3 Architecture Decisions**
 
-* AI Provider: Multi-Model AI Gateway with Anthropic (Claude Sonnet 4\) as default, OpenAI (GPT-5) and xAI (Grok 3\) as alternatives. Provider-agnostic adapter pattern for adding future models.
+* AI Provider: Multi-Model AI Gateway with Anthropic (Claude Sonnet 4) as default, OpenAI (GPT-5) and xAI (Grok 3) as alternatives. Provider-agnostic adapter pattern for adding future models.
 
 * Component AST: custom JSON schema as the shared component tree. All modes read and write. Serializes to React Native source files.
 
-* Preview: Expo Snack API or custom development server for QR code device preview. Sandpack for browser preview.
+* Preview: Expo Snack SDK (snack-sdk 4.x) for both QR code device preview via Expo Go and in-browser preview via Snack web player. No backend bundler or preview server needed. Platform commits to Expo managed workflow only.
 
 * Code Editor: Monaco Editor (VS Code engine) for inline code editing
 
@@ -462,7 +462,7 @@ Every item below must ship for beta launch:
 
 * Hosting: Vercel for frontend, Railway or Fly.io for backend services and preview hosting
 
-# **12\. Multi-Model AI Gateway Architecture**
+# **12. Multi-Model AI Gateway Architecture**
 
 Unlike Rork which is locked to specific AI providers, this product is built on a provider-agnostic AI gateway. Any LLM the admin enables from the backend becomes immediately available to users. This is a critical architectural decision that prevents vendor lock-in, enables cost optimization, and future-proofs the platform as new models emerge.
 
@@ -566,7 +566,7 @@ The multi-model architecture enables aggressive cost optimization that a single-
 
 ## **12.8 Implementation Roadmap**
 
-* Month 1 (MVP): AI Gateway with Anthropic (Claude Sonnet 4\) as default, OpenAI (GPT-5) as alternative, and xAI (Grok 3\) as third option. Admin panel for model registration and API key management. User-facing model selector dropdown.
+* Month 1 (MVP): AI Gateway with Anthropic (Claude Sonnet 4) as default, OpenAI (GPT-5) as alternative, and xAI (Grok 3) as third option. Admin panel for model registration and API key management. User-facing model selector dropdown.
 
 * Month 2: add Google Gemini and Mistral adapters. Implement smart routing recommendations based on prompt content. Add cost controls and usage analytics dashboard. Implement fallback chain.
 
@@ -574,7 +574,7 @@ The multi-model architecture enables aggressive cost optimization that a single-
 
 * Month 4+: implement fine-tuned models trained on successful code generation patterns from the platform. Dynamic routing using reinforcement learning from user satisfaction signals (which model outputs users keep versus regenerate).
 
-# **13\. Backend Integration Hub**
+# **13. Backend Integration Hub**
 
 Rork limits users to Supabase and Firebase as backend options, and even those require technical knowledge to configure. This product takes a fundamentally different approach: a Backend Integration Hub that supports multiple managed backend providers out of the box, plus full custom API endpoint integration. Users choose their backend infrastructure the same way they choose their AI model — from a menu of options controlled by the platform.
 
@@ -631,7 +631,7 @@ This is the capability that makes the platform viable for enterprise, fintech, h
 
 * GraphQL Schema: paste a GraphQL endpoint URL. The platform runs an introspection query, discovers all types, queries, mutations, and subscriptions, and makes them available for code generation.
 
-* Manual Definition: for APIs without formal specs, users describe endpoints in Agent Mode chat. Example: 'My API has a POST /api/transfer endpoint that accepts sender\_account, receiver\_account, amount, and currency, and returns a transaction\_id and status.' The AI generates the typed client and UI from this description.
+* Manual Definition: for APIs without formal specs, users describe endpoints in Agent Mode chat. Example: 'My API has a POST /api/transfer endpoint that accepts sender_account, receiver_account, amount, and currency, and returns a transaction_id and status.' The AI generates the typed client and UI from this description.
 
 * cURL Import: paste cURL commands copied from browser DevTools or API documentation. The platform parses the method, URL, headers, body, and auth pattern to define endpoints.
 
@@ -687,7 +687,7 @@ For banking, lending, insurance, and healthcare applications where the user brin
 
 * Transaction Confirmation Flows: multi-step confirmation screens with transaction summary, biometric authentication gate (fingerprint or FaceID via expo-local-authentication), and final confirmation with success or failure states. Generated as a reusable flow template.
 
-* Session Security: automatic session timeout with configurable inactivity period. Background app detection that requires re-authentication after a specified time. Screen capture and screenshot prevention on sensitive screens using the React Native FLAG\_SECURE equivalent.
+* Session Security: automatic session timeout with configurable inactivity period. Background app detection that requires re-authentication after a specified time. Screen capture and screenshot prevention on sensitive screens using the React Native FLAG_SECURE equivalent.
 
 * Offline Transaction Queue: for unstable network environments common in African markets, transactions are queued locally when offline, synced automatically when connectivity returns, and deduplicated using idempotency keys generated client-side.
 
@@ -703,14 +703,14 @@ Pre-built adapter modules for African financial and identity infrastructure that
 
 | Provider | Category | Capabilities | Connection | Best For |
 | :---- | :---- | :---- | :---- | :---- |
-| Paystack | Payments | Card payments, bank transfers, USSD, mobile money (Ghana), recurring charges | API key \+ webhook URL | Nigerian and Ghanaian fintech |
-| Flutterwave | Payments | Card, bank transfer, mobile money, USSD, Mpesa, Barter, Apple Pay | API key \+ encryption key | Pan-African payments |
-| Mono | Account Linking | Bank account linking, transaction history, identity verification, balance lookup | App ID \+ secret key | Open banking, PFM apps |
-| Okra | Financial Data | Account auth, balance, transactions, identity, income verification | App ID \+ client token | Lending, credit scoring |
-| MTN MoMo | Mobile Money | Collections, disbursements, remittances across MTN markets | API user \+ key \+ callback URL | Uganda, Ghana, Cameroon |
-| M-Pesa (Daraja) | Mobile Money | STK push, C2B, B2C, transaction status, account balance | Consumer key \+ secret \+ shortcode | Kenya, Tanzania |
-| Smile Identity | KYC and Identity | ID verification, selfie matching, document verification, AML checks | Partner ID \+ API key | KYC onboarding |
-| Dojah | KYC and Identity | BVN verification, NIN lookup, address verification, liveness check | App ID \+ secret key | Nigerian KYC |
+| Paystack | Payments | Card payments, bank transfers, USSD, mobile money (Ghana), recurring charges | API key + webhook URL | Nigerian and Ghanaian fintech |
+| Flutterwave | Payments | Card, bank transfer, mobile money, USSD, Mpesa, Barter, Apple Pay | API key + encryption key | Pan-African payments |
+| Mono | Account Linking | Bank account linking, transaction history, identity verification, balance lookup | App ID + secret key | Open banking, PFM apps |
+| Okra | Financial Data | Account auth, balance, transactions, identity, income verification | App ID + client token | Lending, credit scoring |
+| MTN MoMo | Mobile Money | Collections, disbursements, remittances across MTN markets | API user + key + callback URL | Uganda, Ghana, Cameroon |
+| M-Pesa (Daraja) | Mobile Money | STK push, C2B, B2C, transaction status, account balance | Consumer key + secret + shortcode | Kenya, Tanzania |
+| Smile Identity | KYC and Identity | ID verification, selfie matching, document verification, AML checks | Partner ID + API key | KYC onboarding |
+| Dojah | KYC and Identity | BVN verification, NIN lookup, address verification, liveness check | App ID + secret key | Nigerian KYC |
 | Termii | Messaging | SMS, WhatsApp, voice OTP, email, in-app messaging | API key | OTP verification, notifications |
 
 Each African integration includes a pre-tested component template that can be dropped into Builder Mode. A Paystack payment button that opens the payment modal, handles 3DS verification, and returns the transaction reference. A Mono account linking widget that launches the Mono Connect flow and returns the account ID. A Smile Identity verification screen with selfie capture and document upload. These templates are hand-tested against live sandbox environments, not AI-generated on the fly.
@@ -725,16 +725,16 @@ Each African integration includes a pre-tested component template that can be dr
 
 * Month 4+: Backend marketplace where third-party developers publish adapter modules. Visual API endpoint builder for non-technical users. Auto-generated API documentation from connected backends. Backend performance monitoring and alerting.
 
-# **14\. Recommended Pricing Strategy**
+# **14. Recommended Pricing Strategy**
 
 The dual-mode architecture enables natural pricing tiers. Builder Mode is free at all tiers, which is the strongest differentiator against Rork where every layout tweak costs a message credit. Code workspace and terminal access gate to paid tiers.
 
 | Plan | Price | Agent Credits | Builder | Code Access | GitHub | Best For |
 | :---- | :---- | :---- | :---- | :---- | :---- | :---- |
 | Free | $0 | 15-20 agent messages / month | Unlimited | Code viewer only | No | Exploration and idea validation |
-| Starter | $15/mo | 100 agent messages | Unlimited | Viewer \+ Editor | Yes | Solo founders, simple MVPs |
+| Starter | $15/mo | 100 agent messages | Unlimited | Viewer + Editor | Yes | Solo founders, simple MVPs |
 | Pro | $45/mo | 300 agent messages | Unlimited | Full workspace | Yes | Freelancers, serious MVPs |
-| Team | $99/mo | 700 agent messages | Unlimited | Full \+ terminal | Yes | Teams, agencies, production apps |
+| Team | $99/mo | 700 agent messages | Unlimited | Full + terminal | Yes | Teams, agencies, production apps |
 
 * Builder Mode free at all tiers: the strongest competitive differentiator. Rork charges a message for every layout tweak.
 
@@ -746,7 +746,7 @@ The dual-mode architecture enables natural pricing tiers. Builder Mode is free a
 
 * Annual discount of 20%: incentivizes long-term commitment and improves revenue predictability.
 
-# **15\. Recommended Tech Stack**
+# **15. Recommended Tech Stack**
 
 ## **15.1 Platform Backend**
 
@@ -758,9 +758,9 @@ The dual-mode architecture enables natural pricing tiers. Builder Mode is free a
 
 * Redis with BullMQ for async AI generation job queue
 
-* Multi-Model AI Gateway for provider-agnostic code generation (see Section 12\)
+* Multi-Model AI Gateway for provider-agnostic code generation (see Section 12)
 
-* Backend Integration Hub with universal adapter pattern (see Section 13\)
+* Backend Integration Hub with universal adapter pattern (see Section 13)
 
 * Vercel for frontend hosting, Railway or Fly.io for backend services
 
@@ -772,7 +772,7 @@ The dual-mode architecture enables natural pricing tiers. Builder Mode is free a
 
 * Zustand for component AST state management
 
-* Sandpack from CodeSandbox for in-browser preview
+* Expo Snack SDK (snack-sdk 4.x) for in-browser preview and Expo Go device preview
 
 * xterm.js for integrated terminal (Month 2 deliverable)
 
@@ -800,7 +800,7 @@ The dual-mode architecture enables natural pricing tiers. Builder Mode is free a
 
 * Expo Application Services (EAS) for app store builds and deployment
 
-# **16\. Conclusion**
+# **16. Conclusion**
 
 Rork validated the market for AI-powered mobile app building with 743,000 monthly visits, $2.8M in funding, and a three-person team. But critical gaps remain: no visual editor (over 25% demand it), no code editing in-platform, no terminal, buggy native feature implementation, and zero customer support.
 
@@ -816,4 +816,4 @@ This is not an incremental improvement over Rork. It is a fundamentally differen
 
 **Strategic Moat:** Bidirectional AST bridge, dual-mode UX, provider-agnostic Multi-Model AI Gateway, Backend Integration Hub with custom API support, Africa-first fintech adapters (Paystack, Flutterwave, Mono, M-Pesa, Smile Identity), pre-tested native templates, and deep personal expertise in React Native, Expo, and TypeScript at production scale.
 
-*End of Report  |  Version 5.0  |  February 2026*
+*End of Report  |  Version 6.0  |  February 2026*

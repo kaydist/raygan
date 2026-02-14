@@ -1,4 +1,4 @@
-  
+
 **FRONTEND ARCHITECTURE**
 
 Technical Specification
@@ -7,7 +7,7 @@ Technical Specification
 
 Prepared by Kayode
 
-February 8, 2026  |  Version 1.2
+February 8, 2026  |  Version 1.3
 
 **Personal Product  |  Pre-Launch Planning**
 
@@ -58,7 +58,7 @@ This document specifies the frontend architecture for the AI-powered mobile app 
 | React Query | 5.x (TanStack) | Server state management. API calls, caching, optimistic updates, background refetching. |
 | Monaco Editor | @monaco-editor/react 4.x | Code Editor panel. VS Code engine with TypeScript IntelliSense and syntax highlighting. |
 | @dnd-kit | 6.x (core \+ sortable) | Drag-and-drop for Builder Mode canvas and component tree reordering. |
-| Sandpack | @codesandbox/sandpack-react 2.x | In-browser React Native Web preview. Hot-reloads on AST changes. |
+| Expo Snack SDK | snack-sdk 4.x | In-browser Expo preview via Snack web player. Supports full Expo SDK modules. QR code for Expo Go device preview. |
 | Socket.io Client | 4.x | WebSocket client for real-time AST sync, preview updates, and terminal streaming. |
 | Turborepo | 2.x | Monorepo build orchestration. Parallel builds. Remote caching. |
 | pnpm | 9.x | Package manager. Workspace support. Strict dependency resolution. Faster than npm/yarn. |
@@ -199,7 +199,7 @@ apps/web/
 
         index.ts                  \# Barrel export
 
-      preview/                     \# Preview (Sandpack \+ QR)
+      preview/                     \# Preview (Expo Snack SDK \+ QR)
 
         index.ts                  \# Barrel export
 
@@ -371,7 +371,7 @@ Every atom maps to a single shadcn/ui component installed via the CLI. They are 
 | PropertyField | Label \+ Input/Select/Slider/ColorPicker \+ Tooltip | { label, type, value, onChange, tooltip?, validation? } | Property inspector in Builder Mode |
 | MessageBubble | Card \+ Avatar \+ Badge \+ code block | { message: Message, isUser: boolean } | Agent Mode chat panel |
 | ColorPicker | Input \+ Popover \+ color swatch grid | { value: string, onChange, presets?: string\[\] } | Property inspector for color properties |
-| DeviceFrame | div styled as phone bezel \+ content slot | { device: 'iphone'|'android'|'tablet', children } | Preview panel wrapper |
+| DeviceFrame | div styled as phone bezel \+ Snack web player slot | { device: 'iphone'|'android'|'tablet', children } | Preview panel wrapper |
 | EmptyState | Icon \+ text \+ Button (CTA) | { icon, title, description, action?, onAction? } | Empty project list, no search results, no conversations |
 | CommandButton | Button \+ kbd shortcut \+ Tooltip | { label, shortcut, onClick, icon? } | Terminal pre-populated commands, toolbar actions |
 
@@ -384,7 +384,7 @@ Every atom maps to a single shadcn/ui component installed via the CLI. They are 
 | ComponentTree | Hierarchical tree view of the component AST. Supports drag-and-drop reordering via @dnd-kit. Highlights selected component. Expand/collapse nodes. | ast-store (full tree, selected node), ui-store (expanded nodes) | ast:patched (updates tree on remote changes) |
 | FileExplorer | Project file tree with folder expand/collapse, file type icons, modified indicators. Right-click context menu for rename, delete, create. | project-store (file tree), ui-store (active file tab) | preview:reload (updates modified indicators) |
 | CodeEditorPanel | Monaco Editor wrapper with file tabs, unsaved changes indicator, diff view toggle, minimap. Handles file switching, save on Ctrl+S. | project-store (file contents), ast-store (bidirectional sync on save) | ast:patched (updates code when AST changes from other modes) |
-| PreviewPanel | Sandpack iframe in a device frame mockup. QR code for Expo Go. Device selector dropdown. Error overlay for compilation errors. | project-store (source files for Sandpack), ui-store (selected device) | preview:reload, preview:error |
+| PreviewPanel | Expo Snack web player in a device frame mockup. QR code for Expo Go via Snack session. Device selector dropdown (iOS/Android/Web). Error overlay for Snack bundler errors. | project-store (source files for Snack), ui-store (selected device, selected platform) | preview:reload, preview:error |
 | ComponentPalette | Draggable grid of available components (native and custom). Search/filter. Categories: Layout, Input, Display, Navigation, Native. Drag into Builder canvas. | ast-store (add node on drop) | None |
 | TerminalPanel | xterm.js terminal emulator. Pre-populated command buttons (Install Package, Run Build, Check Errors). Streams output from backend container. | project-store (project ID for container routing) | terminal:output, terminal:input |
 | ToolbarPanel | Top toolbar with mode switcher (Agent/Builder/Code), undo/redo, deploy button, share, settings. Responsive: icons-only on narrow screens. | ui-store (active mode), ast-store (undo/redo stack) | None |
@@ -590,31 +590,33 @@ features/preview/
 
     index.ts                  \# Barrel export
 
-    SandpackPreview.tsx      \# Sandpack iframe wrapper with error overlay
+    SnackPreview.tsx          \# Expo Snack web player wrapper with error overlay
 
-    QRCodeDisplay.tsx        \# QR code for Expo Go with copy URL button
+    QRCodeDisplay.tsx        \# QR code from Snack session URL for Expo Go
 
-    DeviceSelector.tsx       \# iPhone / Android / Tablet frame picker
+    DeviceSelector.tsx       \# iOS / Android / Web platform picker
 
-    NativeFeatureWarning.tsx \# Badge for features requiring dev build
+    NativeFeatureWarning.tsx  \# Badge for features requiring dev build
 
   hooks/
 
     index.ts                  \# Barrel export
 
-    useSandpackSync.ts       \# Push AST-serialized files to Sandpack instance
+    useSnack.ts              \# Snack SDK session lifecycle (create, connect, dispose)
 
-    useExpoPreview.ts        \# Manage Expo dev server connection and QR URL
+    useSnackSync.ts          \# Push AST-serialized files to Snack instance via updateFiles()
 
   utils/
 
     index.ts                  \# Barrel export
 
-    sandpack-setup.ts        \# Sandpack template config for React Native Web
+    snack-session.ts         \# Snack session factory, configuration, platform defaults
 
-    file-transformer.ts      \# Transform RN source to RN Web compatible
+    file-transformer.ts      \# Transform AST-serialized files to Snack SnackFiles format
 
-Key behaviors: the preview has two channels. Browser Preview uses Sandpack to render React Native Web in an iframe. It updates by pushing the latest file contents from the project store to the Sandpack instance. Device Preview uses Expo Go via QR code. The QR code points to an Expo dev server running on the backend. When files change, the Expo dev server pushes hot updates to the connected device. Both channels render from the same AST, but Sandpack shows a web approximation while Expo Go shows actual native rendering.
+Key behaviors: the preview uses the Expo Snack SDK (snack-sdk 4.x) for both browser and device preview channels. Browser Preview renders via the Snack web player embedded in an iframe within a device frame mockup. The Snack web player supports the full Expo SDK module set, unlike Sandpack which was limited to React Native Web polyfills. Device Preview uses the Snack session's built-in QR code URL, which users scan with Expo Go for native rendering on a real device. Both channels are powered by the same Snack session instance, ensuring consistency. File sync happens via useSnackSync, which pushes AST-serialized files to the Snack instance using snack.updateFiles(). Bundling is handled entirely by Expo's hosted infrastructure — no backend bundler or preview server is needed. The Snack session is created on workspace load, paused after 30 minutes of inactivity, and lazily re-created when the user returns.
+
+**Framework Constraint**: The platform commits to the Expo managed workflow only. No bare React Native CLI projects or custom native modules. This constraint enables the Snack SDK preview to work reliably, since Snack supports all Expo SDK modules but cannot run arbitrary native code.
 
 ## **5.5 Terminal (features/terminal/) \- Month 2**
 
@@ -886,7 +888,7 @@ The Socket.io client is a singleton initialized in src/lib/api/socket-client.ts 
 | generate:stream | Server to Client | Append text chunk to streaming message in Agent Mode chat. | Feature-local state in ChatPanel |
 | generate:complete | Server to Client | Mark message as complete. Apply AST operations. Update credit count. | ast-store, auth-store |
 | generate:error | Server to Client | Show error in chat. Refund credit display. | auth-store |
-| preview:reload | Server to Client | Trigger Sandpack file update and Expo hot reload. | project-store (file contents) |
+| preview:reload | Server to Client | Trigger Snack session file sync via useSnackSync. | project-store (file contents) |
 | preview:error | Server to Client | Show error overlay in preview panel. | Feature-local state in PreviewPanel |
 | terminal:output | Server to Client | Write data to xterm.js terminal buffer. | Feature-local state in TerminalPanel |
 | presence:join | Server to Client | Show collaborator avatar in toolbar (future: Month 4+). | UI display only |
@@ -1032,7 +1034,7 @@ React Query wraps the API client for caching, background refetching, and optimis
 | @tanstack/react-query | 5.x | Server state, caching | \~12KB gzipped |
 | @monaco-editor/react | 4.x | Code editor (lazy loaded) | \~2MB (loaded on demand for workspace only) |
 | @dnd-kit/core \+ sortable | 6.x | Drag and drop | \~15KB gzipped |
-| @codesandbox/sandpack-react | 2.x | Browser preview | \~200KB (loaded on demand) |
+| snack-sdk | 4.x | Expo Snack browser \+ device preview | \~45KB gzipped (loaded on demand) |
 | socket.io-client | 4.x | WebSocket | \~15KB gzipped |
 | @xterm/xterm | 5.x | Terminal emulator | \~100KB (loaded on demand, Month 2\) |
 | react-resizable-panels | 2.x | Panel layout | \~5KB gzipped |
@@ -1043,7 +1045,7 @@ React Query wraps the API client for caching, background refetching, and optimis
 | class-variance-authority | latest | shadcn variant helper | \~1KB gzipped |
 | clsx \+ tailwind-merge | latest | ClassName utilities (cn helper) | \~2KB gzipped |
 
-Total estimated workspace bundle: approximately 130KB gzipped for the initial JavaScript (excluding Monaco, Sandpack, and xterm which are lazy-loaded). Monaco loads an additional 2MB when the user switches to Code Editor mode. Sandpack loads approximately 200KB when the preview panel is first rendered. These large dependencies are code-split and only loaded when the user interacts with the relevant panel.
+Total estimated workspace bundle: approximately 130KB gzipped for the initial JavaScript (excluding Monaco, Snack SDK, and xterm which are lazy-loaded). Monaco loads an additional 2MB when the user switches to Code Editor mode. Snack SDK loads approximately 45KB gzipped when the preview panel is first rendered. These large dependencies are code-split and only loaded when the user interacts with the relevant panel.
 
 # **11\. Environment and Configuration**
 
@@ -1127,7 +1129,7 @@ The settings store is initialized in the root layout (app/layout.tsx) before any
 
 * Webpack config: Monaco Editor uses the MonacoWebpackPlugin for worker bundling in production builds.
 
-* Headers: strict CSP allowing Sandpack iframe, Socket.io connections, and domains resolved at runtime from settings.
+* Headers: strict CSP allowing Expo Snack web player iframe (snack.expo.dev, snack-web-player.s3.us-west-1.amazonaws.com), Socket.io connections, and domains resolved at runtime from settings.
 
 * Rewrites: /api/\* proxied to Express backend in development for CORS-free local development.
 
@@ -1137,7 +1139,7 @@ The settings store is initialized in the root layout (app/layout.tsx) before any
 
 * Route-based splitting: each route group (marketing, auth, dashboard, workspace) is a separate chunk. The workspace bundle is never loaded for marketing visitors.
 
-* Component-level splitting: Monaco Editor, Sandpack, and xterm.js are loaded via next/dynamic with ssr: false. They load only when the user interacts with the relevant panel.
+* Component-level splitting: Monaco Editor, Snack SDK, and xterm.js are loaded via next/dynamic with ssr: false. They load only when the user interacts with the relevant panel.
 
 * Feature module splitting: each feature (agent, builder, code-editor, preview, terminal) is dynamically imported when its panel becomes visible.
 
@@ -1158,7 +1160,7 @@ The settings store is initialized in the root layout (app/layout.tsx) before any
 | CLS (Cumulative Layout Shift) | \< 0.05 | \< 0.1 | \< 0.1 |
 | Initial JS Bundle | \< 80KB gzipped | \< 100KB gzipped | \< 130KB gzipped |
 | TTI (Time to Interactive) | \< 1.5 seconds | \< 2.5 seconds | \< 4.0 seconds |
-| AST Update to Preview Render | N/A | N/A | \< 500ms |
+| AST Update to Preview Render | N/A | N/A | \< 2000ms |
 
 # **13\. Testing Strategy**
 
@@ -1400,4 +1402,4 @@ Enforced via ESLint import/order rule with groups configured in the shared ESLin
 
 * Husky \+ lint-staged: pre-commit hook runs ESLint and Prettier on staged files only.
 
-*End of Frontend Architecture Specification  |  Version 1.2  |  February 2026*
+*End of Frontend Architecture Specification  |  Version 1.3  |  February 2026*
