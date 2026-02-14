@@ -74,3 +74,14 @@ export { Logo } from './logo';
 export { Heading } from './heading';
 
 export { Paragraph } from './paragraph';
+
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from './card';
+
+export { IconButton, iconButtonVariants } from './icon-button';
