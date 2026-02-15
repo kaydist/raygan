@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { api } from "@/lib/api";
+import { useCreateProject } from "@/lib/api";
 import {
   Button,
   ConfigurableSelect,
@@ -41,13 +41,12 @@ interface CreateProjectModalProps {
 
 export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps) {
   const router = useRouter();
+  const createProject = useCreateProject();
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [frameworkVersion, setFrameworkVersion] = useState("expo-52");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
 
   const handleNameChange = (value: string) => {
@@ -62,51 +61,39 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
     setSlug(generateSlug(value));
   };
 
-  const handleClose = () => {
-    onClose();
+  const resetForm = () => {
     setName("");
     setSlug("");
     setDescription("");
     setFrameworkVersion("expo-52");
-    setError(null);
     setSlugTouched(false);
+    createProject.reset();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleClose = () => {
+    onClose();
+    resetForm();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
-    if (!name.trim()) {
-      setError("Project name is required");
-      return;
-    }
+    if (!name.trim() || !slug.trim()) return;
 
-    if (!slug.trim()) {
-      setError("Project slug is required");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const project = await api.projects.create({
+    createProject.mutate(
+      {
         name: name.trim(),
         slug: slug.trim(),
         description: description.trim() || null,
         framework_version: frameworkVersion,
-      });
-
-      handleClose();
-      router.push(`/${project.uuid}`);
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Failed to create project. Please try again.");
+      },
+      {
+        onSuccess: (project) => {
+          handleClose();
+          router.push(`/${project.id}`);
+        },
       }
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
   return (
@@ -127,7 +114,7 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
                 placeholder="My Awesome App"
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                disabled={isSubmitting}
+                disabled={createProject.isPending}
                 autoFocus
               />
             </FormField>
@@ -143,7 +130,7 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
                 placeholder="my-awesome-app"
                 value={slug}
                 onChange={(e) => handleSlugChange(e.target.value)}
-                disabled={isSubmitting}
+                disabled={createProject.isPending}
               />
             </FormField>
 
@@ -153,7 +140,7 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
                 value={frameworkVersion}
                 onValueChange={setFrameworkVersion}
                 placeholder="Select framework version"
-                disabled={isSubmitting}
+                disabled={createProject.isPending}
               />
             </FormField>
 
@@ -163,14 +150,14 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
                 placeholder="A brief description of your app..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                disabled={isSubmitting}
+                disabled={createProject.isPending}
                 rows={3}
               />
             </FormField>
 
-            {error && (
+            {createProject.error && (
               <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                {error}
+                {createProject.error.message}
               </div>
             )}
           </div>
@@ -180,13 +167,13 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={isSubmitting}
+              disabled={createProject.isPending}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              loading={isSubmitting}
+              loading={createProject.isPending}
               disabled={!name.trim() || !slug.trim()}
             >
               Create Project

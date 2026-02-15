@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Plus, ChevronDown, Loader2 } from "lucide-react";
-import type { ProjectResponse } from "@staq/shared";
 import { Button, Paragraph } from "@/components/atoms";
 import {
   ProjectCard,
@@ -12,7 +11,7 @@ import {
   Breadcrumb,
 } from "@/components/molecules";
 import { CreateProjectModal } from "@/components/organisms";
-import { api } from "@/lib/api";
+import { useProjects } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/formatters";
 
 type ViewMode = "grid" | "list";
@@ -21,26 +20,13 @@ export default function DraftsPage() {
   const router = useRouter();
   const [viewMode, setViewMode] = React.useState<ViewMode>("grid");
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
-  const [projects, setProjects] = React.useState<ProjectResponse[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
 
-  const fetchProjects = React.useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await api.projects.list({ include_archived: false });
-      setProjects(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load projects");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+  const {
+    data: projects = [],
+    isLoading,
+    error,
+    refetch,
+  } = useProjects({ include_archived: false });
 
   const handleProjectClick = (projectId: string) => {
     router.push(`/${projectId}`);
@@ -52,7 +38,6 @@ export default function DraftsPage() {
 
   const handleModalClose = () => {
     setIsCreateModalOpen(false);
-    fetchProjects();
   };
 
   return (
@@ -108,8 +93,10 @@ export default function DraftsPage() {
       {/* Error state */}
       {error && !isLoading && (
         <div className="flex flex-col items-center justify-center gap-4 py-12">
-          <Paragraph variant="muted">{error}</Paragraph>
-          <Button variant="outline" onClick={fetchProjects}>
+          <Paragraph variant="muted">
+            {error instanceof Error ? error.message : "Failed to load projects"}
+          </Paragraph>
+          <Button variant="outline" onClick={() => refetch()}>
             Try again
           </Button>
         </div>
