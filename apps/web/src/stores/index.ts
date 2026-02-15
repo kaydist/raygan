@@ -14,6 +14,7 @@ export type {
   PropertyTab,
   Theme,
   ViewMode,
+  RightPanelMode,
   PanelSizes,
   CanvasOffset,
   ModalState,

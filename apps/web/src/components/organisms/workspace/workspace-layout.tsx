@@ -10,7 +10,7 @@ import { LayersPanel } from "./layers-panel";
 import { ComponentPalette } from "./component-palette";
 import { AgentPanel } from "./agent-panel";
 import { CenterCanvas } from "./center-canvas";
-import { PropertyInspector } from "./property-inspector";
+import { RightPanel } from "./right-panel";
 import { StatusBar } from "./status-bar";
 import { defaultLayout, LayoutState } from "./constants";
 
@@ -106,7 +106,7 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
                 maxSize={35}
                 className="border-l border-border bg-background"
               >
-                <PropertyInspector />
+                <RightPanel projectId={projectId} />
               </Panel>
             </>
           )}

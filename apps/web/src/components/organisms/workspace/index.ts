@@ -6,6 +6,8 @@ export { ComponentPalette } from "./component-palette";
 export { AgentPanel } from "./agent-panel";
 export { CenterCanvas } from "./center-canvas";
 export { PropertyInspector } from "./property-inspector";
+export { RightPanel } from "./right-panel";
+export { PreviewPanel } from "./preview-panel";
 export { StatusBar } from "./status-bar";
 export { LAYOUT_STORAGE_KEY, defaultLayout, getStoredLayout, storeLayout } from "./constants";
 export type { LayoutState } from "./constants";

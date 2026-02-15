@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { User, Bot } from "lucide-react";
+import { useEffect, useRef, useMemo } from "react";
+import { User, Bot, FileCode } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/atoms";
@@ -12,8 +12,39 @@ interface MessageListProps {
   className?: string;
 }
 
+interface ParsedContent {
+  text: string;
+  files: Array<{ filename: string; language: string }>;
+}
+
+function parseMessageContent(content: string): ParsedContent {
+  const codeBlockRegex = /```(\w+)?(?:\s+filename="([^"]+)")?\n[\s\S]*?```/g;
+  const files: Array<{ filename: string; language: string }> = [];
+
+  let match;
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    const language = match[1] || "text";
+    const filename = match[2];
+    if (filename) {
+      files.push({ filename, language });
+    }
+  }
+
+  const text = content
+    .replace(codeBlockRegex, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return { text, files };
+}
+
 function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
+
+  const { text, files } = useMemo(
+    () => (isUser ? { text: message.content, files: [] } : parseMessageContent(message.content)),
+    [message.content, isUser]
+  );
 
   return (
     <div
@@ -34,18 +65,39 @@ function MessageBubble({ message }: { message: Message }) {
           <Bot className="h-4 w-4" />
         )}
       </div>
-      <div className="flex-1 space-y-1 overflow-hidden">
+      <div className="flex-1 space-y-2 overflow-hidden">
         <p className="text-xs font-medium text-muted-foreground">
           {isUser ? "You" : "Assistant"}
         </p>
-        <div className="prose prose-sm max-w-none text-foreground">
-          <p className="whitespace-pre-wrap break-words">
-            {message.content}
-            {message.isStreaming && (
-              <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-foreground" />
-            )}
-          </p>
-        </div>
+        {text && (
+          <div className="prose prose-sm max-w-none text-foreground">
+            <p className="whitespace-pre-wrap break-words">
+              {text}
+              {message.isStreaming && (
+                <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-foreground" />
+              )}
+            </p>
+          </div>
+        )}
+        {files.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {files.map((file, index) => (
+              <div
+                key={`${file.filename}-${index}`}
+                className="flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs"
+              >
+                <FileCode className="h-3 w-3 text-muted-foreground" />
+                <span className="font-mono">{file.filename}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {!text && files.length === 0 && message.isStreaming && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="inline-block h-4 w-1 animate-pulse bg-foreground" />
+            <span>Generating...</span>
+          </div>
+        )}
       </div>
     </div>
   );

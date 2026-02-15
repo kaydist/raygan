@@ -6,6 +6,7 @@ export type WorkspaceMode = "agent" | "builder" | "code-editor";
 export type PropertyTab = "style" | "props" | "events";
 export type Theme = "light" | "dark" | "system";
 export type ViewMode = "grid" | "list";
+export type RightPanelMode = "preview" | "inspector";
 
 export interface PanelSizes {
   left: number;
@@ -40,6 +41,7 @@ interface UIState {
   isLeftPanelOpen: boolean;
   isRightPanelOpen: boolean;
   isBottomPanelOpen: boolean;
+  rightPanelMode: RightPanelMode;
   panelSizes: PanelSizes;
   canvasZoom: number;
   canvasOffset: CanvasOffset;
@@ -63,6 +65,7 @@ interface UIActions {
   setLeftPanelOpen: (open: boolean) => void;
   setRightPanelOpen: (open: boolean) => void;
   setBottomPanelOpen: (open: boolean) => void;
+  setRightPanelMode: (mode: RightPanelMode) => void;
   setPanelSizes: (sizes: Partial<PanelSizes>) => void;
   setCanvasZoom: (zoom: number) => void;
   setCanvasOffset: (offset: CanvasOffset) => void;
@@ -116,6 +119,7 @@ const initialState: UIState = {
   isLeftPanelOpen: true,
   isRightPanelOpen: true,
   isBottomPanelOpen: false,
+  rightPanelMode: "preview",
   panelSizes: defaultPanelSizes,
   canvasZoom: 1,
   canvasOffset: { x: 0, y: 0 },
@@ -176,6 +180,11 @@ export const useUIStore = create<UIStore>()(
       setBottomPanelOpen: (open) =>
         set((state) => {
           state.isBottomPanelOpen = open;
+        }),
+
+      setRightPanelMode: (mode) =>
+        set((state) => {
+          state.rightPanelMode = mode;
         }),
 
       setPanelSizes: (sizes) =>
@@ -327,6 +336,7 @@ export const useUIStore = create<UIStore>()(
         set(() => ({
           ...initialState,
           expandedTreeNodes: new Set<string>(),
+          rightPanelMode: "preview" as RightPanelMode,
         })),
     })),
     {

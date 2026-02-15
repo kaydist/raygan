@@ -348,6 +348,13 @@ export interface StreamChunk {
   };
 }
 
+export interface ASTOperation {
+  type: "create" | "update" | "delete" | "move";
+  targetPath: string;
+  content?: string;
+  newPath?: string;
+}
+
 export interface GenerateRequest {
   prompt: string;
   current_file?: string;

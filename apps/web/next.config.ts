@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@staq/shared"],
+  serverExternalPackages: ["snack-sdk", "pubnub", "formidable"],
   images: {
     remotePatterns: [
       {
@@ -10,6 +11,17 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
       },
     ],
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        os: false,
+      };
+    }
+    return config;
   },
   async rewrites() {
     return process.env.NODE_ENV === "development"
