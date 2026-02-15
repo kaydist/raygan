@@ -1,81 +1,58 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { Plus, ChevronDown } from 'lucide-react';
-import { Button, Paragraph } from '@/components/atoms';
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { Plus, ChevronDown, Loader2 } from "lucide-react";
+import type { ProjectResponse } from "@staq/shared";
+import { Button, Paragraph } from "@/components/atoms";
 import {
   ProjectCard,
   NewProjectCard,
   ViewToggle,
   Breadcrumb,
-} from '@/components/molecules';
+} from "@/components/molecules";
+import { CreateProjectModal } from "@/components/organisms";
+import { api } from "@/lib/api";
+import { formatRelativeTime } from "@/lib/formatters";
 
-type ViewMode = 'grid' | 'list';
-
-interface Project {
-  id: string;
-  name: string;
-  status: 'draft' | 'deployed';
-  editedAt: string;
-  screenCount: number;
-  color: string;
-  thumbnail?: string;
-}
-
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    name: 'FitTracker Pro',
-    status: 'deployed',
-    editedAt: 'Edited 2 hours ago',
-    screenCount: 5,
-    color: '#EF4444',
-  },
-  {
-    id: '2',
-    name: 'Recipe App',
-    status: 'draft',
-    editedAt: 'Edited yesterday',
-    screenCount: 4,
-    color: '#22C55E',
-  },
-  {
-    id: '3',
-    name: 'Budget Planner',
-    status: 'deployed',
-    editedAt: 'Edited 3 days ago',
-    screenCount: 6,
-    color: '#F59E0B',
-  },
-  {
-    id: '4',
-    name: 'Chat App',
-    status: 'draft',
-    editedAt: 'Edited 1 week ago',
-    screenCount: 3,
-    color: '#3B82F6',
-  },
-  {
-    id: '5',
-    name: 'PumP Pay',
-    status: 'draft',
-    editedAt: 'Edited 2 weeks ago',
-    screenCount: 7,
-    color: '#EF4444',
-  },
-];
+type ViewMode = "grid" | "list";
 
 export default function DraftsPage() {
   const router = useRouter();
-  const [viewMode, setViewMode] = React.useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = React.useState<ViewMode>("grid");
+  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
+  const [projects, setProjects] = React.useState<ProjectResponse[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const fetchProjects = React.useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await api.projects.list({ include_archived: false });
+      setProjects(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load projects");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const handleProjectClick = (projectId: string) => {
-    router.push(`/workspace/${projectId}`);
+    router.push(`/${projectId}`);
   };
 
   const handleNewProject = () => {
-    console.log('Create new project');
+    setIsCreateModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsCreateModalOpen(false);
+    fetchProjects();
   };
 
   return (
@@ -84,8 +61,8 @@ export default function DraftsPage() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Breadcrumb
           items={[
-            { label: "Kayode's Team", href: '/dashboard' },
-            { label: 'Drafts' },
+            { label: "Kayode's Team", href: "/dashboard" },
+            { label: "Drafts" },
           ]}
         />
 
@@ -103,7 +80,11 @@ export default function DraftsPage() {
           </Button>
 
           {/* New button - icon only on mobile */}
-          <Button size="sm" className="gap-2 sm:h-10" onClick={handleNewProject}>
+          <Button
+            size="sm"
+            className="gap-2 sm:h-10"
+            onClick={handleNewProject}
+          >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">New</span>
           </Button>
@@ -113,34 +94,67 @@ export default function DraftsPage() {
       {/* Project count */}
       <div className="mb-4">
         <Paragraph variant="muted">
-          All projects <span className="ml-1">{mockProjects.length}</span>
+          All projects <span className="ml-1">{projects.length}</span>
         </Paragraph>
       </div>
 
-      {/* Project grid */}
-      <div
-        className={
-          viewMode === 'grid'
-            ? 'grid grid-cols-1 gap-3 xs:grid-cols-2 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-            : 'flex flex-col gap-2'
-        }
-      >
-        <NewProjectCard onClick={handleNewProject} />
+      {/* Loading state */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      )}
 
-        {mockProjects.map((project) => (
-          <ProjectCard
-            key={project.id}
-            id={project.id}
-            name={project.name}
-            status={project.status}
-            editedAt={project.editedAt}
-            screenCount={project.screenCount}
-            color={project.color}
-            thumbnail={project.thumbnail}
-            onClick={() => handleProjectClick(project.id)}
-          />
-        ))}
-      </div>
+      {/* Error state */}
+      {error && !isLoading && (
+        <div className="flex flex-col items-center justify-center gap-4 py-12">
+          <Paragraph variant="muted">{error}</Paragraph>
+          <Button variant="outline" onClick={fetchProjects}>
+            Try again
+          </Button>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!isLoading && !error && projects.length === 0 && (
+        <div className="flex flex-col items-center justify-center gap-4 py-12">
+          <Paragraph variant="muted">No projects yet</Paragraph>
+          <Button onClick={handleNewProject}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create your first project
+          </Button>
+        </div>
+      )}
+
+      {/* Project grid */}
+      {!isLoading && !error && projects.length > 0 && (
+        <div
+          className={
+            viewMode === "grid"
+              ? "grid grid-cols-1 gap-3 xs:grid-cols-2 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              : "flex flex-col gap-2"
+          }
+        >
+          <NewProjectCard onClick={handleNewProject} />
+
+          {projects.map((project) => (
+            <ProjectCard
+              key={project.id.toString()}
+              id={project.id.toString()}
+              name={project.name}
+              status={project.is_archived ? "draft" : "deployed"}
+              editedAt={`Edited ${formatRelativeTime(project.updated_on)}`}
+              screenCount={0}
+              onClick={() => handleProjectClick(project.id.toString())}
+            />
+          ))}
+        </div>
+      )}
+
+      <CreateProjectModal
+        isOpen={isCreateModalOpen}
+        onClose={handleModalClose}
+      />
     </div>
   );
 }

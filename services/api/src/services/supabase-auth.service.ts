@@ -40,7 +40,7 @@ export class SupabaseAuthService {
     if (!session) return null;
 
     return {
-      access_token: `Bearer ${session.access_token}`,
+      access_token: session.access_token,
       refresh_token: session.refresh_token,
       expires_in: session.expires_in,
       expires_at: session.expires_at ?? 0,

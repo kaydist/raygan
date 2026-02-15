@@ -3,52 +3,35 @@ import type {
   RegisterRequest,
   TokenResponse,
   AuthUser,
+  AuthResponse,
+  GoogleOAuthRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  RefreshTokenRequest,
 } from "@staq/shared";
 
 import { setAuthToken, clearAuthToken } from "../../utils";
 import { axiosInstance, extractData } from "../client";
 
-export interface GoogleOAuthRequest {
-  id_token: string;
-}
-
-export interface ForgotPasswordRequest {
-  email: string;
-}
-
-export interface ResetPasswordRequest {
-  token: string;
-  password: string;
-}
-
-export interface RefreshTokenRequest {
-  refresh_token: string;
-}
-
-export interface AuthResponse {
-  user: AuthUser;
-  tokens: TokenResponse;
-}
-
 export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/api/v1/auth/login", data);
     const result = extractData<AuthResponse>(response);
-    setAuthToken(result.tokens.access_token, result.tokens.expires_in);
+    setAuthToken(result.access_token, result.expires_in);
     return result;
   },
 
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/api/v1/auth/register", data);
     const result = extractData<AuthResponse>(response);
-    setAuthToken(result.tokens.access_token, result.tokens.expires_in);
+    setAuthToken(result.access_token, result.expires_in);
     return result;
   },
 
   googleOAuth: async (data: GoogleOAuthRequest): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/api/v1/auth/google", data);
     const result = extractData<AuthResponse>(response);
-    setAuthToken(result.tokens.access_token, result.tokens.expires_in);
+    setAuthToken(result.access_token, result.expires_in);
     return result;
   },
 

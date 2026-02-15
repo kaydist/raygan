@@ -85,3 +85,25 @@ export {
 } from './card';
 
 export { IconButton, iconButtonVariants } from './icon-button';
+
+export { Textarea } from './textarea';
+export type { TextareaProps } from './textarea';
+
+export { FormField } from './form-field';
+
+export { Popover, PopoverTrigger, PopoverContent } from './popover';
+
+export {
+  Command,
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandShortcut,
+  CommandSeparator,
+} from './command';
+
+export { ConfigurableSelect } from './configurable-select';
+export type { ConfigurableSelectProps, SelectOption } from './configurable-select';

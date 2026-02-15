@@ -34,7 +34,7 @@ export interface PaginationParams {
   page?: number;
   limit?: number;
   sort_by?: string;
-  sort_order?: 'asc' | 'desc';
+  sort_order?: "asc" | "desc";
 }
 
 export interface PaginatedResponse<T> {
@@ -64,7 +64,6 @@ export interface AuthUser {
 
 export interface AuthContext {
   user: AuthUser;
-  organization_id?: number;
   organization_role?: string;
 }
 
@@ -84,7 +83,28 @@ export interface TokenResponse {
   access_token: string;
   refresh_token: string;
   expires_in: number;
-  token_type: 'Bearer';
+  token_type: "Bearer";
+}
+
+export interface AuthResponse extends TokenResponse {
+  user: AuthUser;
+}
+
+export interface GoogleOAuthRequest {
+  id_token: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
 }
 
 // =============================================================================
@@ -126,17 +146,16 @@ export interface OrganizationWithRole extends OrganizationResponse {
 
 export interface InviteMemberRequest {
   email: string;
-  role: 'admin' | 'member' | 'viewer';
+  role: "admin" | "member" | "viewer";
 }
 
 export interface UpdateMemberRoleRequest {
-  role: 'admin' | 'member' | 'viewer';
+  role: "admin" | "member" | "viewer";
 }
 
 export interface OrganizationMemberResponse {
   id: number;
   user_id: number;
-  organization_id: number;
   role: string;
   status: string;
   joined_at: string | null;
@@ -185,7 +204,6 @@ export interface CompleteOnboardingRequest {
 // =============================================================================
 
 export interface CreateProjectRequest {
-  organization_id: number;
   name: string;
   description?: string | null;
   slug: string;
@@ -208,7 +226,6 @@ export interface UpdateProjectRequest {
 export interface ProjectResponse {
   id: number;
   uuid: string;
-  organization_id: number;
   name: string;
   description: string | null;
   slug: string;
@@ -300,11 +317,11 @@ export interface AiModelConfig {
 // =============================================================================
 
 export interface HealthCheckResponse {
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   timestamp: string;
   version: string;
   services?: {
-    database: 'up' | 'down';
-    redis?: 'up' | 'down';
+    database: "up" | "down";
+    redis?: "up" | "down";
   };
 }
