@@ -58,6 +58,7 @@ export interface SnackSessionConfig {
   sdkVersion?: string;
   files?: SnackFiles;
   dependencies?: SnackDependencies;
+  webPreviewRef?: React.RefObject<Window | null>;
 }
 
 export interface UseSnackOptions {
@@ -65,6 +66,7 @@ export interface UseSnackOptions {
   description?: string;
   sdkVersion?: string;
   autoConnect?: boolean;
+  webPreviewRef?: React.RefObject<Window | null>;
 }
 
 export interface UseSnackReturn {

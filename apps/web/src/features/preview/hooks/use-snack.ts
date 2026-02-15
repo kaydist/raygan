@@ -27,7 +27,7 @@ const initialState: SnackState = {
 };
 
 export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
-  const { name, description, sdkVersion, autoConnect = true } = options;
+  const { name, description, sdkVersion, autoConnect = true, webPreviewRef } = options;
 
   const [state, setState] = useState<SnackState>(initialState);
   const [errors, setErrors] = useState<SnackError[]>([]);
@@ -125,6 +125,7 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
       name,
       description,
       sdkVersion,
+      webPreviewRef,
     });
 
     snackRef.current = snack;
@@ -137,7 +138,7 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
     return () => {
       disconnect();
     };
-  }, [name, description, sdkVersion, autoConnect, setupListeners, connect, disconnect]);
+  }, [name, description, sdkVersion, autoConnect, setupListeners, connect, disconnect, webPreviewRef]);
 
   return {
     state,

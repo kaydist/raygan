@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Loader2, AlertCircle, RefreshCw, QrCode, Monitor } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -25,22 +25,28 @@ export function SnackPreview({
   const [platform, setPlatform] = useState<Platform>("ios");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("web");
 
+  const webPreviewRef = useRef<Window | null>(null);
+
   const {
     isConnected,
     isLoading,
     error,
+    webPreviewURL,
     qrCodeURL,
     errors,
     syncFiles,
-    getEmbedURL,
   } = useSnackPreview({
     projectId,
     name: projectName,
     syncEnabled: true,
     debounceMs: 500,
+    webPreviewRef,
   });
 
-  const embedURL = getEmbedURL(platform);
+  const handleIframeRef = useCallback((iframe: HTMLIFrameElement | null) => {
+    webPreviewRef.current = iframe?.contentWindow ?? null;
+  }, []);
+
   const hasErrors = errors.length > 0;
 
   return (
@@ -48,12 +54,6 @@ export function SnackPreview({
       <div className="flex items-center justify-between border-b border-border px-4 py-2">
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-medium">Preview</h3>
-          {isConnected && (
-            <span className="flex items-center gap-1.5 text-xs text-green-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              Connected
-            </span>
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export function SnackPreview({
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
-                Connecting to Expo Snack...
+                Connecting Simulator...
               </p>
             </div>
           </div>
@@ -138,15 +138,15 @@ export function SnackPreview({
           <div className="flex h-full items-center justify-center">
             <QRCodeDisplay url={qrCodeURL} size={220} />
           </div>
-        ) : embedURL ? (
+        ) : webPreviewURL ? (
           <div className="flex h-full items-center justify-center">
             <DeviceFrame platform={platform}>
               <iframe
-                src={embedURL}
+                ref={handleIframeRef}
+                src={webPreviewURL}
                 className="h-full w-full border-0"
-                title="Expo Snack Preview"
+                title="Simulator Preview"
                 allow="accelerometer; camera; geolocation; gyroscope; microphone"
-                sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
               />
             </DeviceFrame>
           </div>
