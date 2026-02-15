@@ -1,0 +1,11 @@
+export { WorkspaceLayout } from "./workspace-layout";
+export { ResizeHandle } from "./resize-handle";
+export { PanelHeader } from "./panel-header";
+export { LayersPanel } from "./layers-panel";
+export { ComponentPalette } from "./component-palette";
+export { AgentPanel } from "./agent-panel";
+export { CenterCanvas } from "./center-canvas";
+export { PropertyInspector } from "./property-inspector";
+export { StatusBar } from "./status-bar";
+export { LAYOUT_STORAGE_KEY, defaultLayout, getStoredLayout, storeLayout } from "./constants";
+export type { LayoutState } from "./constants";
