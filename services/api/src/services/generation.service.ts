@@ -56,7 +56,6 @@ export interface GenerateOptions {
   projectId: string;
   prompt: string;
   userId: number;
-  model?: string;
   currentFile?: string;
   selectedCode?: string;
   maxTokens?: number;
@@ -69,7 +68,7 @@ export class GenerationService {
   private providerService = new AIProviderService();
 
   async *generate(options: GenerateOptions): AsyncGenerator<SSEEvent> {
-    const { projectId, prompt, userId, model, currentFile, selectedCode, maxTokens, temperature } = options;
+    const { projectId, prompt, userId, currentFile, selectedCode, maxTokens, temperature } = options;
 
     const startTime = Date.now();
     let userConversation;
@@ -94,15 +93,12 @@ export class GenerationService {
         userId
       );
 
-      const selectedModel = model || (await this.providerService.getDefaultModel())?.model_id;
-      if (!selectedModel) {
-        yield { type: "error", data: { message: "No model available", code: "NO_MODEL" } };
-        return;
-      }
+      const modelConfig = project.default_model_id
+        ? await this.providerService.getModelByPrimaryId(project.default_model_id)
+        : await this.providerService.getDefaultModel();
 
-      const modelConfig = await this.providerService.getModelById(selectedModel);
       if (!modelConfig) {
-        yield { type: "error", data: { message: "Invalid model", code: "INVALID_MODEL" } };
+        yield { type: "error", data: { message: "No model available", code: "NO_MODEL" } };
         return;
       }
 
@@ -113,7 +109,7 @@ export class GenerationService {
 
       const stream = gateway.stream({
         provider: modelConfig.provider.slug as "anthropic",
-        model: selectedModel,
+        model: modelConfig.model_id,
         messages,
         system_prompt: system,
         max_tokens: maxTokens || modelConfig.max_output_tokens,
@@ -249,12 +245,12 @@ export class GenerationService {
   }
 
   private calculateCost(
-    model: { input_cost_per_1m?: number | null; output_cost_per_1m?: number | null },
+    model: { input_cost_per_1k?: number | null; output_cost_per_1k?: number | null },
     inputTokens: number,
     outputTokens: number
   ): number {
-    const inputCost = ((model.input_cost_per_1m || 0) / 1_000_000) * inputTokens;
-    const outputCost = ((model.output_cost_per_1m || 0) / 1_000_000) * outputTokens;
+    const inputCost = ((model.input_cost_per_1k || 0) / 1_000) * inputTokens;
+    const outputCost = ((model.output_cost_per_1k || 0) / 1_000) * outputTokens;
     return Math.round((inputCost + outputCost) * 1_000_000) / 1_000_000;
   }
 }

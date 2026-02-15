@@ -15,7 +15,6 @@ export {
 
 export type {
   ProjectListParams,
-  ConversationListParams,
   HealthCheckResponse,
 } from "./routes";
 
@@ -42,7 +41,7 @@ export {
   useArchiveProject,
   useUnarchiveProject,
   useConversations,
-  useConversationThread,
+  useConversation,
   useModels,
   useModel,
   useSettings,

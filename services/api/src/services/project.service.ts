@@ -1,5 +1,5 @@
 import { In } from "typeorm";
-import { AppDataSource, Project, OrganizationMember } from "../db";
+import { AppDataSource, Project, OrganizationMember, AIModel } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
 
 export class ProjectService {
@@ -17,12 +17,19 @@ export class ProjectService {
     return this.projects.findOne({ where: { organization_id: orgId, slug } });
   }
 
-  async findAllByUserId(userId: number, options?: { orgId?: number; includeArchived?: boolean }) {
-    const memberships = await AppDataSource.getRepository(OrganizationMember).find({
+  async findAllByUserId(
+    userId: number,
+    options?: { orgId?: number; includeArchived?: boolean },
+  ) {
+    const memberships = await AppDataSource.getRepository(
+      OrganizationMember,
+    ).find({
       where: { user_id: userId, deleted_flag: false },
     });
 
-    const orgIds = options?.orgId ? [options.orgId] : memberships.map((m) => m.organization_id);
+    const orgIds = options?.orgId
+      ? [options.orgId]
+      : memberships.map((m) => m.organization_id);
     if (orgIds.length === 0) return [];
 
     const where: Record<string, unknown> = { organization_id: In(orgIds) };
@@ -47,17 +54,36 @@ export class ProjectService {
       framework_version?: string;
       backend_provider?: string | null;
     },
-    createdBy: number
+    createdBy: number,
   ) {
-    return this.projects.create(data, createdBy);
+    const defaultAIModel = await AppDataSource.getRepository(AIModel).findOne({
+      where: { is_default: true, deleted_flag: false },
+    });
+
+    if (!defaultAIModel) {
+      return null;
+    }
+
+    return this.projects.create(
+      { ...data, default_model_id: defaultAIModel.id },
+      createdBy,
+    );
   }
 
   async update(id: number, data: Partial<Project>, updatedBy?: number) {
     return this.projects.update(id, data, updatedBy);
   }
 
-  async updateAst(id: number, astSnapshot: Record<string, unknown>, updatedBy?: number) {
-    return this.projects.update(id, { ast_snapshot: astSnapshot, last_generated_at: new Date() }, updatedBy);
+  async updateAst(
+    id: number,
+    astSnapshot: Record<string, unknown>,
+    updatedBy?: number,
+  ) {
+    return this.projects.update(
+      id,
+      { ast_snapshot: astSnapshot, last_generated_at: new Date() },
+      updatedBy,
+    );
   }
 
   async updateFileTree(id: number, fileTree: unknown[], updatedBy?: number) {
@@ -76,12 +102,21 @@ export class ProjectService {
     return this.projects.softDelete(id, deletedBy);
   }
 
-  async checkAccess(userId: number, projectId: number): Promise<{ project: Project; role: string } | null> {
+  async checkAccess(
+    userId: number,
+    projectId: number,
+  ): Promise<{ project: Project; role: string } | null> {
     const project = await this.findById(projectId);
     if (!project) return null;
 
-    const membership = await AppDataSource.getRepository(OrganizationMember).findOne({
-      where: { organization_id: project.organization_id, user_id: userId, deleted_flag: false },
+    const membership = await AppDataSource.getRepository(
+      OrganizationMember,
+    ).findOne({
+      where: {
+        organization_id: project.organization_id,
+        user_id: userId,
+        deleted_flag: false,
+      },
     });
 
     if (!membership) return null;

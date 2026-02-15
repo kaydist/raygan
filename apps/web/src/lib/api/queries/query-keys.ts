@@ -24,8 +24,8 @@ export const queryKeys = {
 
   conversations: {
     all: ["conversations"] as const,
-    list: (projectId: number) => [...queryKeys.conversations.all, "list", projectId] as const,
-    thread: (projectId: number) => [...queryKeys.conversations.all, "thread", projectId] as const,
+    list: (projectId: string) => [...queryKeys.conversations.all, "list", projectId] as const,
+    detail: (conversationId: string) => [...queryKeys.conversations.all, "detail", conversationId] as const,
   },
 
   models: {

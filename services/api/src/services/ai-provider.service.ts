@@ -39,6 +39,13 @@ export class AIProviderService {
     });
   }
 
+  async getModelByPrimaryId(id: number) {
+    return this.models.findOne({
+      where: { id },
+      relations: ["provider"],
+    });
+  }
+
   async getDefaultModel() {
     return this.models.findOne({
       where: { is_default: true, is_enabled: true },

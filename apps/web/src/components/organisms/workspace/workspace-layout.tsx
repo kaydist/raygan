@@ -14,11 +14,16 @@ import { PropertyInspector } from "./property-inspector";
 import { StatusBar } from "./status-bar";
 import { defaultLayout, LayoutState } from "./constants";
 
-function LeftPanelContent({ layersSize }: { layersSize: number }) {
+interface LeftPanelContentProps {
+  layersSize: number;
+  projectId: string;
+}
+
+function LeftPanelContent({ layersSize, projectId }: LeftPanelContentProps) {
   const { activeMode } = useUIStore();
 
   if (activeMode === "agent") {
-    return <AgentPanel />;
+    return <AgentPanel projectId={projectId} />;
   }
 
   return (
@@ -34,7 +39,11 @@ function LeftPanelContent({ layersSize }: { layersSize: number }) {
   );
 }
 
-export function WorkspaceLayout() {
+interface WorkspaceLayoutProps {
+  projectId: string;
+}
+
+export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
   const { isLeftPanelOpen, isRightPanelOpen } = useUIStore();
   const [mounted, setMounted] = useState(false);
   const [layout, setLayout] = useState<LayoutState>(defaultLayout);
@@ -74,11 +83,11 @@ export function WorkspaceLayout() {
             <>
               <Panel
                 defaultSize={layout.leftSize}
-                minSize={15}
+                minSize={25}
                 maxSize={35}
                 className="border-r border-border bg-background"
               >
-                <LeftPanelContent layersSize={layout.layersSize} />
+                <LeftPanelContent layersSize={layout.layersSize} projectId={projectId} />
               </Panel>
               <ResizeHandle />
             </>

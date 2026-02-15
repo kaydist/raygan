@@ -16,11 +16,17 @@ export class AnthropicAdapter extends BaseAdapter {
     });
   }
 
-  async generate(request: GenerateRequest, modelConfig?: AIModel): Promise<GenerateResponse> {
+  async generate(
+    request: GenerateRequest,
+    modelConfig?: AIModel,
+  ): Promise<GenerateResponse> {
     this.logRequest(request);
     const startTime = Date.now();
 
-    const maxTokens = request.max_tokens || modelConfig?.max_output_tokens || 4096;
+    const maxTokens =
+      request.max_tokens || modelConfig?.max_output_tokens || 4096;
+
+    console.log({ request });
 
     const response = await this.withRetry(async () => {
       return this.client.messages.create({
@@ -28,7 +34,7 @@ export class AnthropicAdapter extends BaseAdapter {
         max_tokens: maxTokens,
         temperature: request.temperature,
         system: request.system_prompt,
-        messages: request.messages.map((m) => ({
+        messages: request.messages?.map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
         })),
@@ -39,7 +45,7 @@ export class AnthropicAdapter extends BaseAdapter {
     const generationTime = Date.now() - startTime;
     const content = response.content
       .filter((block): block is Anthropic.TextBlock => block.type === "text")
-      .map((block) => block.text)
+      ?.map((block) => block.text)
       .join("");
 
     const result: GenerateResponse = {
@@ -47,11 +53,13 @@ export class AnthropicAdapter extends BaseAdapter {
       provider: this.provider,
       model: response.model,
       content,
-      finish_reason: response.stop_reason === "end_turn" ? "stop" : "max_tokens",
+      finish_reason:
+        response.stop_reason === "end_turn" ? "stop" : "max_tokens",
       usage: {
         input_tokens: response.usage.input_tokens,
         output_tokens: response.usage.output_tokens,
-        total_tokens: response.usage.input_tokens + response.usage.output_tokens,
+        total_tokens:
+          response.usage.input_tokens + response.usage.output_tokens,
       },
       generation_time_ms: generationTime,
     };
@@ -60,10 +68,14 @@ export class AnthropicAdapter extends BaseAdapter {
     return result;
   }
 
-  async *stream(request: GenerateRequest, modelConfig?: AIModel): AsyncIterable<StreamChunk> {
+  async *stream(
+    request: GenerateRequest,
+    modelConfig?: AIModel,
+  ): AsyncIterable<StreamChunk> {
     this.logRequest(request);
 
-    const maxTokens = request.max_tokens || modelConfig?.max_output_tokens || 4096;
+    const maxTokens =
+      request.max_tokens || modelConfig?.max_output_tokens || 4096;
 
     try {
       const stream = this.client.messages.stream({
@@ -106,7 +118,8 @@ export class AnthropicAdapter extends BaseAdapter {
         usage: {
           input_tokens: finalMessage.usage.input_tokens,
           output_tokens: finalMessage.usage.output_tokens,
-          total_tokens: finalMessage.usage.input_tokens + finalMessage.usage.output_tokens,
+          total_tokens:
+            finalMessage.usage.input_tokens + finalMessage.usage.output_tokens,
         },
       };
     } catch (error) {

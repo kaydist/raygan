@@ -52,7 +52,10 @@ export async function getProject(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
+    const access = await projectService.checkAccess(
+      authReq.dbUser.id,
+      project.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -87,17 +90,24 @@ export async function getProject(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function createProject(req: Request, res: Response): Promise<void> {
+export async function createProject(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const currentOrg = authReq.currentOrganization;
-    const { name, slug, description, framework_version, backend_provider } = req.body;
+    const { name, slug, description, framework_version, backend_provider } =
+      req.body;
 
     const existing = await projectService.findBySlug(currentOrg.id, slug);
     if (existing) {
       res.status(409).json({
         data: null,
-        error: { code: ERROR_CODES.CONFLICT, message: "Project slug already exists in this organization" },
+        error: {
+          code: ERROR_CODES.CONFLICT,
+          message: "Project slug already exists in this organization",
+        },
       });
       return;
     }
@@ -113,6 +123,18 @@ export async function createProject(req: Request, res: Response): Promise<void> 
       },
       authReq.dbUser.id,
     );
+
+    if (!project) {
+      logger.error("Create project failed");
+      res.status(400).json({
+        data: null,
+        error: {
+          code: ERROR_CODES.INTERNAL_ERROR,
+          message: "Failed to create project",
+        },
+      });
+      return;
+    }
 
     res.status(201).json({
       data: {
@@ -134,11 +156,15 @@ export async function createProject(req: Request, res: Response): Promise<void> 
   }
 }
 
-export async function updateProject(req: Request, res: Response): Promise<void> {
+export async function updateProject(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const projectId = req.params.projectId as string;
-    const { name, slug, description, framework_version, backend_provider } = req.body;
+    const { name, slug, description, framework_version, backend_provider } =
+      req.body;
 
     const project = await projectService.findByUuid(projectId);
     if (!project) {
@@ -149,7 +175,10 @@ export async function updateProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
+    const access = await projectService.checkAccess(
+      authReq.dbUser.id,
+      project.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -159,11 +188,17 @@ export async function updateProject(req: Request, res: Response): Promise<void> 
     }
 
     if (slug && slug !== project.slug) {
-      const existing = await projectService.findBySlug(project.organization_id, slug);
+      const existing = await projectService.findBySlug(
+        project.organization_id,
+        slug,
+      );
       if (existing) {
         res.status(409).json({
           data: null,
-          error: { code: ERROR_CODES.CONFLICT, message: "Project slug already exists in this organization" },
+          error: {
+            code: ERROR_CODES.CONFLICT,
+            message: "Project slug already exists in this organization",
+          },
         });
         return;
       }
@@ -195,7 +230,10 @@ export async function updateProject(req: Request, res: Response): Promise<void> 
   }
 }
 
-export async function archiveProject(req: Request, res: Response): Promise<void> {
+export async function archiveProject(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const projectId = req.params.projectId as string;
@@ -209,7 +247,10 @@ export async function archiveProject(req: Request, res: Response): Promise<void>
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
+    const access = await projectService.checkAccess(
+      authReq.dbUser.id,
+      project.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -230,7 +271,10 @@ export async function archiveProject(req: Request, res: Response): Promise<void>
   }
 }
 
-export async function unarchiveProject(req: Request, res: Response): Promise<void> {
+export async function unarchiveProject(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const projectId = req.params.projectId as string;
@@ -244,7 +288,10 @@ export async function unarchiveProject(req: Request, res: Response): Promise<voi
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
+    const access = await projectService.checkAccess(
+      authReq.dbUser.id,
+      project.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -265,7 +312,10 @@ export async function unarchiveProject(req: Request, res: Response): Promise<voi
   }
 }
 
-export async function deleteProject(req: Request, res: Response): Promise<void> {
+export async function deleteProject(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const projectId = req.params.projectId as string;
@@ -279,8 +329,14 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const membership = await organizationService.getMembership(project.organization_id, authReq.dbUser.id);
-    if (!membership || !organizationService.hasPermission(membership.role, ["owner", "admin"])) {
+    const membership = await organizationService.getMembership(
+      project.organization_id,
+      authReq.dbUser.id,
+    );
+    if (
+      !membership ||
+      !organizationService.hasPermission(membership.role, ["owner", "admin"])
+    ) {
       res.status(403).json({
         data: null,
         error: { code: ERROR_CODES.FORBIDDEN, message: "Access denied" },
@@ -315,7 +371,10 @@ export async function updateAst(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
+    const access = await projectService.checkAccess(
+      authReq.dbUser.id,
+      project.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -336,7 +395,10 @@ export async function updateAst(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function updateFileTree(req: Request, res: Response): Promise<void> {
+export async function updateFileTree(
+  req: Request,
+  res: Response,
+): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const projectId = req.params.projectId as string;
@@ -351,7 +413,10 @@ export async function updateFileTree(req: Request, res: Response): Promise<void>
       return;
     }
 
-    const access = await projectService.checkAccess(authReq.dbUser.id, project.id);
+    const access = await projectService.checkAccess(
+      authReq.dbUser.id,
+      project.id,
+    );
     if (!access) {
       res.status(403).json({
         data: null,
@@ -360,7 +425,11 @@ export async function updateFileTree(req: Request, res: Response): Promise<void>
       return;
     }
 
-    await projectService.updateFileTree(project.id, file_tree, authReq.dbUser.id);
+    await projectService.updateFileTree(
+      project.id,
+      file_tree,
+      authReq.dbUser.id,
+    );
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {

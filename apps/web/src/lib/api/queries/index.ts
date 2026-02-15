@@ -22,7 +22,7 @@ export {
   useUnarchiveProject,
 } from "./use-projects";
 
-export { useConversations, useConversationThread } from "./use-conversations";
+export { useConversations, useConversation } from "./use-conversations";
 
 export { useModels, useModel } from "./use-models";
 

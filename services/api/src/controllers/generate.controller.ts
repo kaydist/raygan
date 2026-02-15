@@ -140,7 +140,7 @@ export async function streamGenerate(req: Request, res: Response): Promise<void>
 export async function generateForProject(req: Request, res: Response): Promise<void> {
   const authReq = req as AuthenticatedRequest;
   const projectId = req.params.projectId as string;
-  const { prompt, model, current_file, selected_code, max_tokens, temperature } = req.body;
+  const { prompt, current_file, selected_code, max_tokens, temperature } = req.body;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -156,7 +156,6 @@ export async function generateForProject(req: Request, res: Response): Promise<v
       projectId,
       prompt,
       userId: authReq.dbUser.id,
-      model,
       currentFile: current_file,
       selectedCode: selected_code,
       maxTokens: max_tokens,

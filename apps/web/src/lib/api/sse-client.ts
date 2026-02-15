@@ -1,6 +1,4 @@
-import type { StreamChunk } from "@staq/shared";
-
-import { logger } from "../utils";
+import { getAuthToken, logger } from "../utils";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -9,20 +7,34 @@ export interface SSECallbacks {
   onASTOperation?: (operation: unknown) => void;
   onFileUpdate?: (update: unknown) => void;
   onProgress?: (progress: number) => void;
-  onDone?: (usage: { input: number; output: number }) => void;
+  onUsage?: (usage: {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    generation_time_ms: number;
+    cost_usd: number;
+  }) => void;
+  onDone?: (data: { conversation_id: string; finish_reason: string }) => void;
   onError?: (error: { code: string; message: string }) => void;
 }
 
 export async function createSSEStream(
   path: string,
   body: unknown,
-  callbacks: SSECallbacks
+  callbacks: SSECallbacks,
 ): Promise<void> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const response = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     credentials: "include",
     body: JSON.stringify(body),
   });
@@ -47,6 +59,7 @@ export async function createSSEStream(
 
   const decoder = new TextDecoder();
   let buffer = "";
+  let currentEventType = "";
 
   try {
     while (true) {
@@ -59,15 +72,15 @@ export async function createSSEStream(
 
       for (const line of lines) {
         if (line.startsWith("event: ")) {
-          const eventType = line.slice(7).trim();
+          currentEventType = line.slice(7).trim();
           continue;
         }
 
         if (line.startsWith("data: ")) {
           const data = line.slice(6);
           try {
-            const chunk: StreamChunk = JSON.parse(data);
-            handleChunk(chunk, callbacks);
+            const parsed = JSON.parse(data);
+            handleEvent(currentEventType, parsed, callbacks);
           } catch {
             logger.warn("Failed to parse SSE data", { data });
           }
@@ -79,27 +92,44 @@ export async function createSSEStream(
   }
 }
 
-function handleChunk(chunk: StreamChunk, callbacks: SSECallbacks): void {
-  switch (chunk.type) {
+function handleEvent(
+  eventType: string,
+  data: Record<string, unknown>,
+  callbacks: SSECallbacks,
+): void {
+  switch (eventType) {
     case "text":
-      callbacks.onText?.(chunk.content || "");
+      callbacks.onText?.((data.content as string) || "");
       break;
     case "ast_operation":
-      callbacks.onASTOperation?.(chunk.data);
+      callbacks.onASTOperation?.(data);
       break;
     case "file_update":
-      callbacks.onFileUpdate?.(chunk.data);
+      callbacks.onFileUpdate?.(data);
       break;
     case "progress":
-      callbacks.onProgress?.(chunk.data as number);
+      callbacks.onProgress?.(data.progress as number);
+      break;
+    case "usage":
+      callbacks.onUsage?.(
+        data as {
+          input_tokens: number;
+          output_tokens: number;
+          total_tokens: number;
+          generation_time_ms: number;
+          cost_usd: number;
+        },
+      );
       break;
     case "done":
       callbacks.onDone?.(
-        chunk.tokensUsed || { input: 0, output: 0 }
+        data as { conversation_id: string; finish_reason: string },
       );
       break;
     case "error":
-      callbacks.onError?.(chunk.data as { code: string; message: string });
+      callbacks.onError?.(data as { code: string; message: string });
+      break;
+    case "close":
       break;
   }
 }

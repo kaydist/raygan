@@ -9,7 +9,7 @@ export interface LayoutState {
 }
 
 export const defaultLayout: LayoutState = {
-  leftSize: 20,
+  leftSize: 30,
   centerSize: 55,
   rightSize: 25,
   layersSize: 60,

@@ -11,7 +11,6 @@ export { projectsApi } from "./projects";
 export type { ProjectListParams } from "./projects";
 
 export { conversationsApi } from "./conversations";
-export type { ConversationListParams } from "./conversations";
 
 export { modelsApi } from "./models";
 

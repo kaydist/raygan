@@ -325,3 +325,33 @@ export interface HealthCheckResponse {
     redis?: "up" | "down";
   };
 }
+
+// =============================================================================
+// SSE STREAMING TYPES
+// =============================================================================
+
+export type StreamChunkType =
+  | "text"
+  | "ast_operation"
+  | "file_update"
+  | "progress"
+  | "done"
+  | "error";
+
+export interface StreamChunk {
+  type: StreamChunkType;
+  content?: string;
+  data?: unknown;
+  tokensUsed?: {
+    input: number;
+    output: number;
+  };
+}
+
+export interface GenerateRequest {
+  prompt: string;
+  current_file?: string;
+  selected_code?: string;
+  max_tokens?: number;
+  temperature?: number;
+}

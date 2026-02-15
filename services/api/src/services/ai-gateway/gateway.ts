@@ -47,8 +47,8 @@ export class AIGateway {
   }
 
   private createAdapter(provider: AIProvider): BaseAdapter | null {
-    if (!provider.api_key_encrypted) {
-      throw new Error(`API Encryption key not configured for ${provider.name}`);
+    if (!(provider.api_key_encrypted && provider.base_url)) {
+      throw new Error(`Provider not properly configured: ${provider.name}`);
     }
     const apiKey = decryptKey(provider.api_key_encrypted) || "";
 
@@ -56,7 +56,7 @@ export class AIGateway {
       case "anthropic":
         return new AnthropicAdapter(
           apiKey,
-          provider.base_url || undefined,
+          provider.base_url,
           provider.timeout_ms,
         );
       default:
@@ -99,7 +99,7 @@ export class AIGateway {
       return;
     }
 
-    yield* adapter.stream(request, model);
+    yield* adapter.stream(request,  model);
   }
 
   async getAvailableModels(): Promise<AIModel[]> {

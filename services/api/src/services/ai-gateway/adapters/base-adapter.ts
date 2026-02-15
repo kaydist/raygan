@@ -41,7 +41,9 @@ export abstract class BaseAdapter implements AIAdapter {
       };
     }
 
-    const inputTokens = this.estimateTokenCount(request.messages.map((m) => m.content).join(" "));
+    const inputTokens = this.estimateTokenCount(
+      request.messages.map((m) => m.content).join(" "),
+    );
     const outputTokens = request.max_tokens || model.max_output_tokens;
 
     const inputCost = (inputTokens / 1000) * model.input_cost_per_1k;
@@ -66,8 +68,12 @@ export abstract class BaseAdapter implements AIAdapter {
 
   protected logRequest(request: GenerateRequest): void {
     logger.debug(
-      { provider: this.provider, model: request.model, messageCount: request.messages.length },
-      "AI request started"
+      {
+        provider: this.provider,
+        model: request.model,
+        messageCount: request.messages?.length ?? 0,
+      },
+      `AI request started ${this.provider}`,
     );
   }
 
@@ -79,15 +85,21 @@ export abstract class BaseAdapter implements AIAdapter {
         tokens: response.usage,
         time_ms: response.generation_time_ms,
       },
-      "AI request completed"
+      "AI request completed",
     );
   }
 
   protected logError(error: unknown, context?: string): void {
-    logger.error({ provider: this.provider, error, context }, "AI adapter error");
+    logger.error(
+      { provider: this.provider, error, context },
+      "AI adapter error",
+    );
   }
 
-  protected async withRetry<T>(operation: () => Promise<T>, retries = this.config.max_retries || 3): Promise<T> {
+  protected async withRetry<T>(
+    operation: () => Promise<T>,
+    retries = this.config.max_retries || 3,
+  ): Promise<T> {
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
@@ -97,7 +109,10 @@ export abstract class BaseAdapter implements AIAdapter {
         lastError = error;
         if (attempt < retries) {
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-          logger.warn({ provider: this.provider, attempt, delay }, "Retrying AI request");
+          logger.warn(
+            { provider: this.provider, attempt, delay },
+            "Retrying AI request",
+          );
           await this.sleep(delay);
         }
       }

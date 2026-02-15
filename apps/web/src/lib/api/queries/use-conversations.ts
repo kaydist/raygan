@@ -1,21 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ConversationResponse, ConversationThread } from "@staq/shared";
+import type { ConversationResponse, PaginationParams } from "@staq/shared";
 
-import { conversationsApi, ConversationListParams } from "../routes/conversations";
+import { conversationsApi } from "../routes/conversations";
 import { queryKeys } from "./query-keys";
 
-export function useConversations(params: ConversationListParams) {
+export function useConversations(projectId: string, params?: PaginationParams) {
   return useQuery<ConversationResponse[]>({
-    queryKey: queryKeys.conversations.list(params.project_id),
-    queryFn: () => conversationsApi.list(params),
-    enabled: !!params.project_id,
+    queryKey: queryKeys.conversations.list(projectId),
+    queryFn: () => conversationsApi.list(projectId, params),
+    enabled: !!projectId,
   });
 }
 
-export function useConversationThread(projectId: number) {
-  return useQuery<ConversationThread>({
-    queryKey: queryKeys.conversations.thread(projectId),
-    queryFn: () => conversationsApi.getThread(projectId),
-    enabled: !!projectId,
+export function useConversation(conversationId: string) {
+  return useQuery<ConversationResponse>({
+    queryKey: queryKeys.conversations.detail(conversationId),
+    queryFn: () => conversationsApi.get(conversationId),
+    enabled: !!conversationId,
   });
 }
