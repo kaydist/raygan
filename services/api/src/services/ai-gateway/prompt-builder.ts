@@ -51,85 +51,97 @@ You always generate code that:
 
 const CODE_QUALITY_RULES = `## Code Quality Rules
 
-### Folder Structure (Atomic Design)
+### File Format
+- ALWAYS generate \`.ts\` files for logic, utilities, hooks, types, and constants
+- ALWAYS generate \`.tsx\` files ONLY when the file contains JSX (components, screens)
+- Never use \`.js\` or \`.jsx\` extensions
+
+### Folder Structure
+Use a flat, simple structure by default:
+\`\`\`
+components/        # Reusable UI components
+screens/           # Full screen components
+hooks/             # Custom React hooks
+utils/             # Helpers, API clients, constants
+types/             # TypeScript interfaces and types
+\`\`\`
+
+If the user explicitly requests Atomic Design, organize components as:
 \`\`\`
 components/
 ├── atoms/          # Basic building blocks (Button, Input, Text, Icon)
 ├── molecules/      # Combinations of atoms (FormField, SearchBar, Card)
 ├── organisms/      # Complex components (ProductList, Header, Form)
-screens/            # Full screen components
-hooks/              # Custom React hooks
-utils/
-├── tokens/         # Design tokens (colors, typography, spacing)
-├── api/            # API clients and fetchers
-├── helpers/        # Pure utility functions
-types/              # TypeScript interfaces and types
 \`\`\`
+Only use this pattern when the user asks for it by name.
 
-### Design Tokens (ALWAYS use)
-Create and import from \`utils/tokens/\`:
-- \`colors.ts\` - Color palette with semantic naming (primary.500, neutral.900, error.500)
-- \`typography.ts\` - Text styles as StyleSheet (h1, h2, body, label, button)
-- \`spacing.ts\` - Spacing scale (xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32)
-- \`index.ts\` - Barrel export
+### Design Tokens
+When generating styles, create a shared tokens file if one doesn't exist:
+- \`utils/tokens.ts\` — export colors, typography, and spacing constants
+- Use semantic color names (e.g. \`primary\`, \`surface\`, \`error\`) not raw hex in components
+- Define a spacing scale (xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32)
+- Define typography presets (heading, subheading, body, caption, label)
 
 ### TypeScript
-- Use strict TypeScript with explicit types
-- Define interfaces for props, state, and API responses
-- Avoid \`any\` type - use \`unknown\` if type is truly unknown
-- Use type guards for runtime type checking
+- Use strict TypeScript with explicit types for all props, state, and API responses
+- Avoid \`any\` — use \`unknown\` if the type is truly unknown, then narrow with type guards
+- Export shared types from \`types/\` directory
+- Use \`interface\` for component props, \`type\` for unions and computed types
 
 ### React Native Best Practices
-- Use functional components with hooks
-- Memoize expensive computations with useMemo
-- Memoize callbacks with useCallback when passing to children
-- Use FlatList for long lists, not ScrollView with map
-- Handle keyboard avoiding properly
-- Test on both iOS and Android
+- Functional components with hooks only
+- Memoize expensive computations with \`useMemo\`
+- Memoize callbacks with \`useCallback\` when passing to child components
+- Use \`FlatList\` for lists, never \`ScrollView\` + \`.map()\`
+- Handle keyboard avoidance (\`KeyboardAvoidingView\` with platform-specific behavior)
+- Ensure minimum 44x44pt touch targets
 
 ### Styling
-- Use StyleSheet.create for performance
-- Import colors, typography, spacing from \`@/utils/tokens\`
-- NEVER hardcode colors - always use token references
-- Support dark mode with useColorScheme
-- Ensure touch targets are at least 44x44
+- Use \`StyleSheet.create\` — never inline style objects
+- Import all colors, spacing, and typography from \`utils/tokens\`
+- NEVER hardcode color hex values in component files
+- Support dark mode via \`useColorScheme\` when relevant
 
 ### Error Handling
-- Always handle loading, error, and empty states
-- Show user-friendly error messages
-- Log errors for debugging
-- Use try-catch for async operations
+- Every async operation must be wrapped in try/catch
+- Always handle three UI states: loading, error, and empty/success
+- Display user-friendly error messages (not raw error strings)
+- Log errors to console in development for debugging
 
 ### Performance
-- Lazy load screens with React.lazy
-- Optimize images (use appropriate sizes)
-- Avoid inline styles and functions in render
-- Use InteractionManager for heavy operations`;
+- Lazy load screens where appropriate
+- Avoid defining functions or objects inline inside JSX
+- Use \`InteractionManager.runAfterInteractions\` for heavy post-navigation work
+- Optimize images (appropriate sizing, caching)`;
 
 const OUTPUT_FORMAT = `## Output Format
 
-When generating code, follow this structure:
-
-1. **Explanation** (optional): Brief description of what you're creating
-2. **Code Blocks**: Use fenced code blocks with language and filename
+### Code Blocks
+- Use fenced code blocks with the language AND filename
+- Use \`.ts\` for non-JSX files, \`.tsx\` only for files containing JSX
 
 \`\`\`tsx filename="screens/HomeScreen.tsx"
-// Your code here
+// Component with JSX
 \`\`\`
 
-3. **Multiple Files**: When creating multiple files, use separate code blocks with clear filenames
+\`\`\`ts filename="utils/tokens.ts"
+// Pure logic, no JSX
+\`\`\`
 
-4. **AST Operations**: When modifying existing code, describe the changes clearly
-
-### Code Block Format
-- Always include \`filename="path/to/file.tsx"\` in the code fence
-- Use relative paths from project root
-- Group related files together
+\`\`\`ts filename="types/user.ts"
+// Type definitions
+\`\`\`
 
 ### Response Structure
-- Start with a brief acknowledgment of the request
-- Provide the code
-- End with usage instructions or next steps if helpful`;
+1. Brief acknowledgment of what you're building
+2. Code blocks with clear filenames (grouped by relevance)
+3. Short usage notes or next steps if helpful — keep it concise
+
+### Rules
+- Always include \`filename="path/to/file"\` in the code fence
+- Use relative paths from project root
+- When generating multiple files, order them logically (types → utils → components → screens)
+- When modifying existing code, describe the specific changes before showing the updated code`;;
 
 export class PromptBuilder {
   private context: PromptContext;
