@@ -27,7 +27,15 @@ export function useSnackSync(
   const files = useProjectStore((state) => state.files);
 
   const syncFiles = useCallback(() => {
-    if (!enabled || !files || files.size === 0) return;
+    console.log("[STAQ-DEBUG] syncFiles called:", {
+      enabled,
+      filesCount: files?.size ?? 0,
+    });
+
+    if (!enabled || !files || files.size === 0) {
+      console.log("[STAQ-DEBUG] syncFiles skipped - not enabled or no files");
+      return;
+    }
 
     const fileTree: Record<string, string> = {};
     files.forEach((entry, path) => {
@@ -38,11 +46,16 @@ export function useSnackSync(
 
     const contentHash = JSON.stringify(fileTree);
     if (contentHash === lastSyncRef.current) {
+      console.log("[STAQ-DEBUG] syncFiles skipped - no changes");
       return;
     }
     lastSyncRef.current = contentHash;
 
     const snackFiles = transformFileTreeToSnack(fileTree);
+    console.log("[STAQ-DEBUG] Syncing files to Snack:", {
+      inputPaths: Object.keys(fileTree),
+      outputPaths: Object.keys(snackFiles),
+    });
     updateFiles(snackFiles);
 
     const allDependencies: Record<string, string> = {};

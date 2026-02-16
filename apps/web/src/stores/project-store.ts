@@ -160,6 +160,13 @@ export const useProjectStore = create<ProjectStore>()(
         const file = state.files.get(path);
         if (file) {
           state.files.set(path, { ...file, content, modified: true });
+          console.log("[STAQ-DEBUG] Project files after updateFile:", {
+            path,
+            totalFiles: state.files.size,
+            contentPreview: content?.substring(0, 200) + "...",
+          });
+        } else {
+          console.warn("[STAQ-DEBUG] updateFile: file not found:", path);
         }
       }),
 
@@ -174,6 +181,12 @@ export const useProjectStore = create<ProjectStore>()(
           modified: type === "file",
         };
         state.files.set(path, entry);
+        console.log("[STAQ-DEBUG] Project files after createFile:", {
+          path,
+          totalFiles: state.files.size,
+          allPaths: Array.from(state.files.keys()),
+          contentPreview: content?.substring(0, 200) + "...",
+        });
       }),
 
     deleteFile: (path) =>

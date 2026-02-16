@@ -62,20 +62,27 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
 
   const connect = useCallback(async () => {
     if (snackRef.current) {
+      console.log("[STAQ-DEBUG] Snack connecting...");
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
         await snackRef.current.getStateAsync();
+        const webPreviewURL = snackRef.current
+          ? getSnackWebPreviewURL(snackRef.current)
+          : null;
+        console.log("[STAQ-DEBUG] Snack connected:", {
+          url: snackRef.current?.getState().url,
+          webPreviewURL,
+        });
         setState((prev) => ({
           ...prev,
           isConnected: true,
           isLoading: false,
           url: snackRef.current?.getState().url || null,
-          webPreviewURL: snackRef.current
-            ? getSnackWebPreviewURL(snackRef.current)
-            : null,
+          webPreviewURL,
         }));
       } catch (err) {
+        console.error("[STAQ-DEBUG] Snack connection error:", err);
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -96,12 +103,21 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
 
   const updateFiles = useCallback((files: SnackFiles) => {
     if (snackRef.current) {
+      console.log("[STAQ-DEBUG] Updating Snack files:", {
+        filePaths: Object.keys(files),
+        fileCount: Object.keys(files).length,
+      });
       snackRef.current.updateFiles(files);
+    } else {
+      console.warn("[STAQ-DEBUG] Cannot update files - snack not initialized");
     }
   }, []);
 
   const updateDependencies = useCallback((deps: SnackDependencies) => {
     if (snackRef.current) {
+      console.log("[STAQ-DEBUG] Updating Snack dependencies:", {
+        deps: Object.keys(deps),
+      });
       snackRef.current.updateDependencies(deps);
     }
   }, []);

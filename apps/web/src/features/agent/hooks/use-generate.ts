@@ -75,6 +75,7 @@ export function useGenerate({
           },
           {
             onText: (content) => {
+              console.log({ content });
               setStreamingState((prev) => ({
                 ...prev,
                 currentContent: prev.currentContent + content,
@@ -84,8 +85,8 @@ export function useGenerate({
                 prev.map((msg) =>
                   msg.id === assistantMessageId
                     ? { ...msg, content: msg.content + content }
-                    : msg
-                )
+                    : msg,
+                ),
               );
             },
             onASTOperation: (data) => {
@@ -93,19 +94,37 @@ export function useGenerate({
               const { createFile, updateFile, deleteFile } =
                 useProjectStore.getState();
 
+              console.log("[STAQ-DEBUG] AST Operation received:", {
+                type: operation.type,
+                path: operation.targetPath,
+                contentLength: operation.content?.length ?? 0,
+              });
+
               switch (operation.type) {
                 case "create":
                   if (operation.content) {
                     createFile(operation.targetPath, operation.content);
+                    console.log(
+                      "[STAQ-DEBUG] File created:",
+                      operation.targetPath,
+                    );
                   }
                   break;
                 case "update":
                   if (operation.content) {
                     updateFile(operation.targetPath, operation.content);
+                    console.log(
+                      "[STAQ-DEBUG] File updated:",
+                      operation.targetPath,
+                    );
                   }
                   break;
                 case "delete":
                   deleteFile(operation.targetPath);
+                  console.log(
+                    "[STAQ-DEBUG] File deleted:",
+                    operation.targetPath,
+                  );
                   break;
               }
             },
@@ -114,10 +133,10 @@ export function useGenerate({
                 const updated = prev.map((msg) =>
                   msg.id === assistantMessageId
                     ? { ...msg, isStreaming: false }
-                    : msg
+                    : msg,
                 );
                 const completedMessage = updated.find(
-                  (msg) => msg.id === assistantMessageId
+                  (msg) => msg.id === assistantMessageId,
                 );
                 if (completedMessage) {
                   onMessageComplete?.(completedMessage);
@@ -141,8 +160,8 @@ export function useGenerate({
                         content: msg.content || "An error occurred.",
                         isStreaming: false,
                       }
-                    : msg
-                )
+                    : msg,
+                ),
               );
 
               setStreamingState({
@@ -152,7 +171,7 @@ export function useGenerate({
               });
               streamingMessageIdRef.current = null;
             },
-          }
+          },
         );
       } catch (error) {
         const errorMessage =
@@ -166,8 +185,8 @@ export function useGenerate({
                   content: "An error occurred while generating.",
                   isStreaming: false,
                 }
-              : msg
-          )
+              : msg,
+          ),
         );
 
         setStreamingState({
@@ -178,7 +197,7 @@ export function useGenerate({
         streamingMessageIdRef.current = null;
       }
     },
-    [projectId, onMessageComplete]
+    [projectId, onMessageComplete],
   );
 
   const stop = useCallback(() => {
@@ -189,8 +208,8 @@ export function useGenerate({
         prev.map((msg) =>
           msg.id === streamingMessageIdRef.current
             ? { ...msg, isStreaming: false }
-            : msg
-        )
+            : msg,
+        ),
       );
     }
 

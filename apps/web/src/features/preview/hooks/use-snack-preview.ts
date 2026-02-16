@@ -42,14 +42,20 @@ export function useSnackPreview(
     errors,
   } = useSnack(snackOptions);
 
-  const syncOptions: UseSnackSyncOptions = useMemo(
-    () => ({
+  const syncOptions: UseSnackSyncOptions = useMemo(() => {
+    const enabled = syncEnabled && state.isConnected;
+    console.log("[STAQ-DEBUG] Sync options updated:", {
       projectId,
-      enabled: syncEnabled && state.isConnected,
+      syncEnabled,
+      isConnected: state.isConnected,
+      enabled,
+    });
+    return {
+      projectId,
+      enabled,
       debounceMs,
-    }),
-    [projectId, syncEnabled, state.isConnected, debounceMs]
-  );
+    };
+  }, [projectId, syncEnabled, state.isConnected, debounceMs]);
 
   const { syncFiles } = useSnackSync(updateFiles, updateDependencies, syncOptions);
 
