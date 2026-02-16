@@ -32,14 +32,13 @@ export function transformFileTreeToSnack(
   fileTree: Record<string, string>
 ): SnackFiles {
   const snackFiles: SnackFiles = {};
+  const normalizedPaths = Object.keys(fileTree).map(normalizeFilePath);
+  const filePaths = new Set(normalizedPaths);
+
+  console.log("[STAQ-DEBUG] transformFileTreeToSnack - all normalized paths:", normalizedPaths);
 
   for (const [path, content] of Object.entries(fileTree)) {
     let normalizedPath = normalizeFilePath(path);
-
-    // Snack expects App.js as entry point - convert App.tsx to App.js
-    if (normalizedPath === "App.tsx" || normalizedPath === "App.ts") {
-      normalizedPath = "App.js";
-    }
 
     console.log("[STAQ-DEBUG] Transforming file:", { original: path, normalized: normalizedPath });
 
@@ -49,9 +48,10 @@ export function transformFileTreeToSnack(
         contents: content,
       };
     } else if (isSupportedCodeFile(path)) {
+      const transformedContent = transformLocalImports(content, normalizedPath, filePaths);
       snackFiles[normalizedPath] = {
         type: "CODE",
-        contents: content,
+        contents: transformedContent,
       };
     }
   }
@@ -122,6 +122,90 @@ const BUILT_IN_MODULES = new Set([
 
 function isBuiltInModule(moduleName: string): boolean {
   return BUILT_IN_MODULES.has(moduleName);
+}
+
+function transformLocalImports(code: string, currentFilePath: string, projectFilePaths: Set<string>): string {
+  const importRegex = /(import\s+(?:[\w\s{},*]+\s+from\s+)?['"])([^'"]+)(['"])/g;
+  const requireRegex = /(require\s*\(\s*['"])([^'"]+)(['"]\s*\))/g;
+
+  console.log("[STAQ-DEBUG] transformLocalImports for:", currentFilePath);
+  console.log("[STAQ-DEBUG] projectFilePaths:", Array.from(projectFilePaths));
+
+  const resolveImportPath = (importPath: string): string | null => {
+    const hasRelativePrefix = importPath.startsWith("./") || importPath.startsWith("../");
+    const hasAbsolutePrefix = importPath.startsWith("/");
+
+    let basePath = importPath;
+    if (importPath.startsWith("./")) {
+      basePath = importPath.slice(2);
+    } else if (importPath.startsWith("/")) {
+      basePath = importPath.slice(1);
+    }
+
+    console.log("[STAQ-DEBUG] resolveImportPath:", { importPath, basePath, hasRelativePrefix });
+
+    if (projectFilePaths.has(basePath)) {
+      return hasRelativePrefix ? importPath : `./${basePath}`;
+    }
+
+    const extensions = [".ts", ".tsx", ".js", ".jsx"];
+    for (const ext of extensions) {
+      if (projectFilePaths.has(`${basePath}${ext}`)) {
+        return hasRelativePrefix ? importPath : `./${basePath}`;
+      }
+    }
+
+    const indexFiles = ["index.ts", "index.tsx", "index.js", "index.jsx"];
+    for (const indexFile of indexFiles) {
+      const indexPath = `${basePath}/${indexFile}`;
+      if (projectFilePaths.has(indexPath)) {
+        console.log("[STAQ-DEBUG] Found index file:", indexPath, "-> resolving to ./", basePath, "/index");
+        return `./${basePath}/index`;
+      }
+    }
+
+    const isDirectoryWithFiles = Array.from(projectFilePaths).some(
+      (p) => p.startsWith(`${basePath}/`)
+    );
+
+    if (isDirectoryWithFiles) {
+      console.log("[STAQ-DEBUG] Directory with files detected:", basePath);
+      for (const indexFile of indexFiles) {
+        if (projectFilePaths.has(`${basePath}/${indexFile}`)) {
+          return `./${basePath}/index`;
+        }
+      }
+    }
+
+    if (!hasRelativePrefix && !hasAbsolutePrefix && isDirectoryWithFiles) {
+      return `./${basePath}`;
+    }
+
+    return null;
+  };
+
+  let result = code;
+
+  result = result.replace(importRegex, (match, prefix, importPath, suffix) => {
+    console.log("[STAQ-DEBUG] Found import:", importPath);
+    const resolved = resolveImportPath(importPath);
+    if (resolved && resolved !== importPath) {
+      console.log("[STAQ-DEBUG] Fixing import:", importPath, "->", resolved);
+      return `${prefix}${resolved}${suffix}`;
+    }
+    return match;
+  });
+
+  result = result.replace(requireRegex, (match, prefix, importPath, suffix) => {
+    const resolved = resolveImportPath(importPath);
+    if (resolved && resolved !== importPath) {
+      console.log("[STAQ-DEBUG] Fixing require:", importPath, "->", resolved);
+      return `${prefix}${resolved}${suffix}`;
+    }
+    return match;
+  });
+
+  return result;
 }
 
 export function mergeSnackFiles(

@@ -48,14 +48,16 @@ export function useSnackPreview(
       projectId,
       syncEnabled,
       isConnected: state.isConnected,
+      webPreviewURL: state.webPreviewURL,
       enabled,
     });
     return {
       projectId,
       enabled,
       debounceMs,
+      webPreviewURL: state.webPreviewURL,
     };
-  }, [projectId, syncEnabled, state.isConnected, debounceMs]);
+  }, [projectId, syncEnabled, state.isConnected, state.webPreviewURL, debounceMs]);
 
   const { syncFiles } = useSnackSync(updateFiles, updateDependencies, syncOptions);
 

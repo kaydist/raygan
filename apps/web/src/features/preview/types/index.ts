@@ -84,6 +84,7 @@ export interface UseSnackSyncOptions {
   projectId: string;
   enabled?: boolean;
   debounceMs?: number;
+  webPreviewURL?: string | null;
 }
 
 export interface DeviceFrameProps {

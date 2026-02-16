@@ -37,16 +37,25 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
   const setupListeners = useCallback((snack: Snack) => {
     const handleStateChange = () => {
       const snackState = snack.getState();
+      const webPreviewURL = getSnackWebPreviewURL(snack);
+
+      console.log("[STAQ-DEBUG] Snack state changed:", {
+        url: snackState.url || null,
+        webPreviewURL,
+        channel: snackState.channel || null,
+        transports: snackState.transports ? Object.keys(snackState.transports) : [],
+      });
 
       setState((prev) => ({
         ...prev,
         url: snackState.url || null,
-        webPreviewURL: getSnackWebPreviewURL(snack),
+        webPreviewURL,
         channel: snackState.channel || null,
       }));
 
       const webplayerTransport = snackState.transports?.webplayer;
       if (webplayerTransport && "error" in webplayerTransport && webplayerTransport.error) {
+        console.error("[STAQ-DEBUG] Webplayer transport error:", webplayerTransport.error);
         setErrors((prev) => [
           ...prev,
           {
@@ -57,6 +66,7 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
     };
 
     const cleanup = snack.addStateListener(handleStateChange);
+    handleStateChange();
     return cleanup;
   }, []);
 
@@ -103,11 +113,18 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
 
   const updateFiles = useCallback((files: SnackFiles) => {
     if (snackRef.current) {
+      const filePaths = Object.keys(files);
       console.log("[STAQ-DEBUG] Updating Snack files:", {
-        filePaths: Object.keys(files),
-        fileCount: Object.keys(files).length,
+        filePaths,
+        fileCount: filePaths.length,
+        hasAppEntry: filePaths.some(p => p === "App.tsx" || p === "App.js" || p === "index.js"),
+        currentSnackState: {
+          url: snackRef.current.getState().url,
+          webPreviewURL: getSnackWebPreviewURL(snackRef.current),
+        },
       });
       snackRef.current.updateFiles(files);
+      console.log("[STAQ-DEBUG] Files sent to Snack");
     } else {
       console.warn("[STAQ-DEBUG] Cannot update files - snack not initialized");
     }
