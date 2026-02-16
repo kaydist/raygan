@@ -152,7 +152,24 @@ export class GenerationService {
       const generationTimeMs = Date.now() - startTime;
       const costUsd = this.calculateCost(modelConfig, totalInputTokens, totalOutputTokens);
 
+      // Parse the full content to extract code blocks and AST operations
       const parsed = parser.parse(fullContent);
+
+      logger.info({
+        codeBlocksFound: parsed.codeBlocks.length,
+        astOperationsFound: parsed.astOperations.length,
+        filenames: parsed.codeBlocks.map(b => b.filename)
+      }, "Final parse complete");
+
+      // Emit all AST operations from the final parse
+      for (const operation of parsed.astOperations) {
+        logger.info({
+          type: operation.type,
+          targetPath: operation.targetPath,
+          contentLength: operation.content?.length
+        }, "Emitting ast_operation");
+        yield { type: "ast_operation", data: operation };
+      }
 
       assistantConversation = await this.conversationService.createAssistantMessage(
         {

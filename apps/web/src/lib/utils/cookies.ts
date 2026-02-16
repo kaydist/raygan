@@ -59,3 +59,22 @@ export function getAuthToken(): string | null {
 export function clearAuthToken(): void {
   deleteCookie(STORAGE_KEYS.ACCESS_TOKEN);
 }
+
+export function setRefreshToken(token: string): void {
+  setCookie(STORAGE_KEYS.REFRESH_TOKEN, token, {
+    expiresInSeconds: 30 * 24 * 60 * 60, // 30 days
+  });
+}
+
+export function getRefreshToken(): string | null {
+  return getCookie(STORAGE_KEYS.REFRESH_TOKEN);
+}
+
+export function clearRefreshToken(): void {
+  deleteCookie(STORAGE_KEYS.REFRESH_TOKEN);
+}
+
+export function clearAllTokens(): void {
+  clearAuthToken();
+  clearRefreshToken();
+}

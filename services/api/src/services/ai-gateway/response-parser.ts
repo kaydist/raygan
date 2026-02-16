@@ -27,9 +27,20 @@ export class ResponseParser {
   private parsedBlocks: CodeBlock[] = [];
 
   parse(content: string): ParsedResponse {
+    console.log("[ResponseParser] Parsing content, length:", content.length);
+
     const codeBlocks = this.extractCodeBlocks(content);
+    console.log("[ResponseParser] Extracted code blocks:", codeBlocks.length);
+    codeBlocks.forEach((block, i) => {
+      console.log(`[ResponseParser] Block ${i}: language=${block.language}, filename=${block.filename}, contentLength=${block.content.length}`);
+    });
+
     const text = this.extractText(content, codeBlocks);
     const astOperations = this.inferASTOperations(codeBlocks);
+    console.log("[ResponseParser] Inferred AST operations:", astOperations.length);
+    astOperations.forEach((op, i) => {
+      console.log(`[ResponseParser] Operation ${i}: type=${op.type}, targetPath=${op.targetPath}`);
+    });
 
     return { text, codeBlocks, astOperations };
   }
@@ -80,20 +91,32 @@ export class ResponseParser {
     let match: RegExpExecArray | null;
 
     const regex = new RegExp(CODE_BLOCK_REGEX.source, "g");
+    console.log("[ResponseParser] Looking for code blocks with regex");
 
     while ((match = regex.exec(content)) !== null) {
       const [fullMatch, language = "text", filename, code = ""] = match;
+      console.log("[ResponseParser] Found match:", {
+        language,
+        filenameFromRegex: filename,
+        codeLength: code.length,
+        codePreview: code.substring(0, 100)
+      });
+
       let resolvedFilename = filename || null;
 
       if (!resolvedFilename && code) {
         const filenameMatch = code.match(FILENAME_IN_COMMENT_REGEX);
         if (filenameMatch?.[1]) {
           resolvedFilename = filenameMatch[1].trim();
+          console.log("[ResponseParser] Found filename in comment:", resolvedFilename);
         }
       }
 
       if (!resolvedFilename) {
         resolvedFilename = this.inferFilename(language, code);
+        if (resolvedFilename) {
+          console.log("[ResponseParser] Inferred filename:", resolvedFilename);
+        }
       }
 
       blocks.push({
@@ -103,6 +126,10 @@ export class ResponseParser {
         startIndex: match.index,
         endIndex: match.index + fullMatch.length,
       });
+    }
+
+    if (blocks.length === 0) {
+      console.log("[ResponseParser] No code blocks found. Content preview:", content.substring(0, 500));
     }
 
     return blocks;
@@ -147,9 +174,11 @@ export class ResponseParser {
 
   private inferFilename(language: string, code: string): string | null {
     const langToExt: Record<string, string> = {
-      typescript: ".ts",
+      typescript: ".tsx",
+      ts: ".ts",
       tsx: ".tsx",
       javascript: ".js",
+      js: ".js",
       jsx: ".jsx",
       json: ".json",
       css: ".css",
@@ -161,20 +190,45 @@ export class ResponseParser {
       yml: ".yml",
     };
 
-    const ext = langToExt[language];
-    if (!ext) return null;
+    const normalizedLang = language?.toLowerCase() || "javascript";
+    const ext = langToExt[normalizedLang] || ".js";
 
-    if (language === "tsx" || language === "jsx") {
+    const isReactCode = ["tsx", "jsx", "javascript", "js", "typescript", "ts"].includes(normalizedLang);
+
+    if (isReactCode) {
+      const hasDefaultExport = /export\s+default\s+/.test(code);
+      const hasAppComponent = /(?:function|const)\s+App\s*[=(]/.test(code);
+      const hasReactImport = /import\s+.*\s+from\s+['"]react['"]/.test(code);
+      const hasReactNativeImport = /import\s+.*\s+from\s+['"]react-native['"]/.test(code);
+
+      // If it looks like a main App file
+      if (hasAppComponent || (hasReactNativeImport && hasDefaultExport)) {
+        console.log("[ResponseParser] Inferred filename: App.js (main app file)");
+        return "App.js";
+      }
+
       const componentMatch = code.match(/(?:export\s+(?:default\s+)?)?(?:function|const)\s+(\w+)/);
       if (componentMatch?.[1]) {
         const name = componentMatch[1];
-        if (name.endsWith("Screen")) {
-          return `screens/${name}.tsx`;
+
+        if (name === "App") {
+          return "App.js";
         }
-        return `components/${name}.tsx`;
+        if (name.endsWith("Screen")) {
+          return `screens/${name}${ext}`;
+        }
+        if (/^[A-Z]/.test(name)) {
+          return `components/${name}${ext}`;
+        }
+      }
+
+      // Fallback: if it has React imports and default export, assume it's App.js
+      if ((hasReactImport || hasReactNativeImport) && hasDefaultExport) {
+        return "App.js";
       }
     }
 
+    console.log("[ResponseParser] Could not infer filename for language:", normalizedLang);
     return null;
   }
 

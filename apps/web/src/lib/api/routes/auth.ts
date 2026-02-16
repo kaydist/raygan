@@ -10,7 +10,11 @@ import type {
   RefreshTokenRequest,
 } from "@staq/shared";
 
-import { setAuthToken, clearAuthToken } from "../../utils";
+import {
+  setAuthToken,
+  setRefreshToken,
+  clearAllTokens,
+} from "../../utils";
 import { axiosInstance, extractData } from "../client";
 
 export const authApi = {
@@ -18,6 +22,7 @@ export const authApi = {
     const response = await axiosInstance.post("/api/v1/auth/login", data);
     const result = extractData<AuthResponse>(response);
     setAuthToken(result.access_token, result.expires_in);
+    setRefreshToken(result.refresh_token);
     return result;
   },
 
@@ -25,6 +30,7 @@ export const authApi = {
     const response = await axiosInstance.post("/api/v1/auth/register", data);
     const result = extractData<AuthResponse>(response);
     setAuthToken(result.access_token, result.expires_in);
+    setRefreshToken(result.refresh_token);
     return result;
   },
 
@@ -32,6 +38,7 @@ export const authApi = {
     const response = await axiosInstance.post("/api/v1/auth/google", data);
     const result = extractData<AuthResponse>(response);
     setAuthToken(result.access_token, result.expires_in);
+    setRefreshToken(result.refresh_token);
     return result;
   },
 
@@ -39,7 +46,7 @@ export const authApi = {
     try {
       await axiosInstance.post("/api/v1/auth/logout");
     } finally {
-      clearAuthToken();
+      clearAllTokens();
     }
   },
 
@@ -57,6 +64,7 @@ export const authApi = {
     const response = await axiosInstance.post("/api/v1/auth/refresh", data);
     const result = extractData<TokenResponse>(response);
     setAuthToken(result.access_token, result.expires_in);
+    setRefreshToken(result.refresh_token);
     return result;
   },
 

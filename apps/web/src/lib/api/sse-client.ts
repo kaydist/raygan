@@ -70,19 +70,49 @@ export async function createSSEStream(
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        if (line.startsWith("event: ")) {
-          currentEventType = line.slice(7).trim();
+      for (let line of lines) {
+        // Remove carriage return if present (handles \r\n line endings)
+        line = line.replace(/\r$/, "").trim();
+
+        if (!line) continue;
+
+        if (line.startsWith("event:")) {
+          currentEventType = line.slice(6).trim();
+          console.log("[STAQ-DEBUG] SSE event type:", currentEventType);
           continue;
         }
 
-        if (line.startsWith("data: ")) {
-          const data = line.slice(6);
+        if (line.startsWith("data:")) {
+          const data = line.slice(5).trim();
+          if (!data || data === "[DONE]") continue;
+
           try {
             const parsed = JSON.parse(data);
+            console.log("[STAQ-DEBUG] SSE parsed:", { eventType: currentEventType, keys: Object.keys(parsed) });
             handleEvent(currentEventType, parsed, callbacks);
-          } catch {
-            logger.warn("Failed to parse SSE data", { data });
+            currentEventType = "";
+          } catch (e) {
+            // Log detailed error info
+            const error = e as Error;
+            console.error("[STAQ-DEBUG] JSON parse failed!");
+            console.error("[STAQ-DEBUG] Error message:", error.message);
+            console.error("[STAQ-DEBUG] Event type:", currentEventType);
+            console.error("[STAQ-DEBUG] Data length:", data.length);
+            console.error("[STAQ-DEBUG] First 100 chars:", JSON.stringify(data.substring(0, 100)));
+            console.error("[STAQ-DEBUG] Last 100 chars:", JSON.stringify(data.substring(data.length - 100)));
+
+            // Check for common issues
+            if (data.includes("\n")) {
+              console.error("[STAQ-DEBUG] Data contains unescaped newlines!");
+            }
+            if (!data.startsWith("{") && !data.startsWith("[")) {
+              console.error("[STAQ-DEBUG] Data doesn't start with { or [");
+            }
+            if (!data.endsWith("}") && !data.endsWith("]")) {
+              console.error("[STAQ-DEBUG] Data doesn't end with } or ]");
+            }
+
+            logger.warn("Failed to parse SSE data", { error: error.message, dataLength: data.length });
           }
         }
       }

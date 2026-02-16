@@ -167,7 +167,7 @@ export class PromptBuilder {
     let context = `## Project Context
 
 **Project:** ${project.name}
-**Framework:** React Native (Expo) ${project.framework_version || "SDK 52"}`;
+**Framework:** React Native (Expo) ${project.framework_version || "SDK 54"}`;
 
     if (project.backend_provider) {
       context += `\n**Backend:** ${project.backend_provider}`;

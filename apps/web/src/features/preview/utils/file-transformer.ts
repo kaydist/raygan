@@ -34,7 +34,14 @@ export function transformFileTreeToSnack(
   const snackFiles: SnackFiles = {};
 
   for (const [path, content] of Object.entries(fileTree)) {
-    const normalizedPath = normalizeFilePath(path);
+    let normalizedPath = normalizeFilePath(path);
+
+    // Snack expects App.js as entry point - convert App.tsx to App.js
+    if (normalizedPath === "App.tsx" || normalizedPath === "App.ts") {
+      normalizedPath = "App.js";
+    }
+
+    console.log("[STAQ-DEBUG] Transforming file:", { original: path, normalized: normalizedPath });
 
     if (isAssetFile(path)) {
       snackFiles[normalizedPath] = {
