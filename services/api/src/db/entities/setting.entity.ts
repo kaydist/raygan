@@ -7,7 +7,7 @@ export type SettingVisibility = "public" | "private" | "internal";
 export type SettingValueType = "string" | "number" | "boolean" | "json";
 
 @Entity("settings")
-@Unique(["organization_id", "key"])
+@Unique(["organization_id", "slug"])
 export class Setting extends BaseEntity {
   @Column({ type: "integer", nullable: true, default: null })
   organization_id!: number | null;
@@ -17,7 +17,7 @@ export class Setting extends BaseEntity {
   organization!: Organization | null;
 
   @Column({ type: "varchar", length: 100 })
-  key!: string;
+  slug!: string;
 
   @Column({ type: "text" })
   value!: string;
