@@ -79,6 +79,16 @@ export class GenerationService {
     const filesToPersist: Array<{ path: string; content: string; type: "create" | "update" }> = [];
 
     try {
+      if (!prompt || prompt.trim().length === 0) {
+        yield { type: "error", data: { message: "Prompt cannot be empty", code: "INVALID_PROMPT" } };
+        return;
+      }
+
+      if (prompt.length > 50000) {
+        yield { type: "error", data: { message: "Prompt too long (max 50000 characters)", code: "PROMPT_TOO_LONG" } };
+        return;
+      }
+
       const project = await this.projectService.findByUuid(projectId);
       if (!project) {
         yield { type: "error", data: { message: "Project not found", code: "PROJECT_NOT_FOUND" } };
@@ -105,7 +115,7 @@ export class GenerationService {
         return;
       }
 
-      const { system, messages } = this.buildPrompt(project, prompt, currentFile, selectedCode);
+      const { system, messages } = await this.buildPrompt(project, prompt, currentFile, selectedCode);
 
       const gateway = getAIGateway();
       const parser = new ResponseParser();
@@ -158,11 +168,26 @@ export class GenerationService {
       // Parse the full content to extract code blocks and AST operations
       const parsed = parser.parse(fullContent);
 
+      if (parsed.warnings && parsed.warnings.length > 0) {
+        logger.warn({
+          warnings: parsed.warnings,
+          projectId: project.id,
+        }, "Response parser warnings");
+      }
+
       logger.info({
         codeBlocksFound: parsed.codeBlocks.length,
         astOperationsFound: parsed.astOperations.length,
-        filenames: parsed.codeBlocks.map(b => b.filename)
+        filenames: parsed.codeBlocks.map(b => b.filename),
+        warningCount: parsed.warnings?.length || 0,
       }, "Final parse complete");
+
+      if (parsed.codeBlocks.length === 0 && fullContent.length > 0) {
+        logger.warn({
+          contentLength: fullContent.length,
+          contentPreview: fullContent.substring(0, 500),
+        }, "AI response contained no valid code blocks");
+      }
 
       // Collect files to persist
       for (const operation of parsed.astOperations) {
@@ -256,15 +281,19 @@ export class GenerationService {
     }
   }
 
-  private buildPrompt(
+  private async buildPrompt(
     project: Project,
     userMessage: string,
     currentFile?: string,
     selectedCode?: string
-  ): { system: string; messages: Array<{ role: "user" | "assistant"; content: string }> } {
+  ): Promise<{ system: string; messages: Array<{ role: "user" | "assistant"; content: string }> }> {
+    const fileTree = project.file_tree && typeof project.file_tree === "object" && !Array.isArray(project.file_tree)
+      ? (project.file_tree as Record<string, unknown>)
+      : {};
+
     const builder = new PromptBuilder()
       .setProject(project)
-      .setFileTree((project.file_tree as Record<string, unknown>) || {});
+      .setFileTree(fileTree);
 
     if (currentFile) {
       builder.setCurrentFile(currentFile);
@@ -280,7 +309,60 @@ export class GenerationService {
       });
     }
 
+    const conversationHistory = await this.getConversationHistory(project.id);
+    if (conversationHistory.length > 0) {
+      builder.setConversationHistory(conversationHistory);
+    }
+
+    const existingFiles = await this.getExistingFiles(project.id);
+    if (existingFiles.size > 0) {
+      builder.setExistingFiles(existingFiles);
+    }
+
     return builder.build(userMessage);
+  }
+
+  private async getConversationHistory(
+    projectId: number
+  ): Promise<Array<{ role: "user" | "assistant"; content: string }>> {
+    try {
+      const { items } = await this.conversationService.findAllByProjectId(projectId, {
+        status: "completed",
+        limit: 10,
+      });
+
+      return items
+        .filter((msg) => msg.role === "user" || msg.role === "assistant")
+        .map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+        }));
+    } catch (error) {
+      logger.warn({ error, projectId }, "Failed to fetch conversation history");
+      return [];
+    }
+  }
+
+  private async getExistingFiles(projectId: number): Promise<Map<string, string>> {
+    try {
+      const files = await this.fileStorageService.findByProjectId(projectId);
+      const fileMap = new Map<string, string>();
+
+      const importantFiles = files
+        .filter((f) => f.path.endsWith(".tsx") || f.path.endsWith(".ts"))
+        .slice(0, 5);
+
+      for (const file of importantFiles) {
+        if (file.content) {
+          fileMap.set(file.path, file.content);
+        }
+      }
+
+      return fileMap;
+    } catch (error) {
+      logger.warn({ error, projectId }, "Failed to fetch existing files");
+      return new Map();
+    }
   }
 
   private inferOperation(block: CodeBlock): ASTOperation {

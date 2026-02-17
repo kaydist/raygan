@@ -2,6 +2,7 @@ export interface ParsedResponse {
   text: string;
   codeBlocks: CodeBlock[];
   astOperations: ASTOperation[];
+  warnings: string[];
 }
 
 export interface CodeBlock {
@@ -22,27 +23,139 @@ export interface ASTOperation {
 const CODE_BLOCK_REGEX = /```(\w+)?(?:\s+filename="([^"]+)")?\n([\s\S]*?)```/g;
 const FILENAME_IN_COMMENT_REGEX = /^\/\/\s*(?:file(?:name)?|path):\s*(.+)$/m;
 
+const MAX_FILE_SIZE = 100 * 1024;
+const VALID_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".json", ".css", ".md", ".html"];
+
 export class ResponseParser {
   private buffer: string = "";
   private parsedBlocks: CodeBlock[] = [];
+  private warnings: string[] = [];
 
   parse(content: string): ParsedResponse {
+    this.warnings = [];
+
+    if (!content || content.trim().length === 0) {
+      this.warnings.push("Empty content received from AI");
+      return { text: "", codeBlocks: [], astOperations: [], warnings: this.warnings };
+    }
+
     console.log("[ResponseParser] Parsing content, length:", content.length);
 
     const codeBlocks = this.extractCodeBlocks(content);
-    console.log("[ResponseParser] Extracted code blocks:", codeBlocks.length);
-    codeBlocks.forEach((block, i) => {
+    const validatedBlocks = this.validateCodeBlocks(codeBlocks);
+
+    console.log("[ResponseParser] Extracted code blocks:", validatedBlocks.length);
+    validatedBlocks.forEach((block, i) => {
       console.log(`[ResponseParser] Block ${i}: language=${block.language}, filename=${block.filename}, contentLength=${block.content.length}`);
     });
 
     const text = this.extractText(content, codeBlocks);
-    const astOperations = this.inferASTOperations(codeBlocks);
+    const astOperations = this.inferASTOperations(validatedBlocks);
     console.log("[ResponseParser] Inferred AST operations:", astOperations.length);
     astOperations.forEach((op, i) => {
       console.log(`[ResponseParser] Operation ${i}: type=${op.type}, targetPath=${op.targetPath}`);
     });
 
-    return { text, codeBlocks, astOperations };
+    return { text, codeBlocks: validatedBlocks, astOperations, warnings: [...this.warnings] };
+  }
+
+  private validateCodeBlocks(blocks: CodeBlock[]): CodeBlock[] {
+    return blocks.filter((block) => {
+      if (!block.content || block.content.trim().length === 0) {
+        this.warnings.push(`Empty code block skipped: ${block.filename || "unnamed"}`);
+        return false;
+      }
+
+      if (block.content.length > MAX_FILE_SIZE) {
+        this.warnings.push(`Code block too large (${block.content.length} bytes), truncating: ${block.filename}`);
+        block.content = block.content.substring(0, MAX_FILE_SIZE);
+      }
+
+      if (block.filename) {
+        const sanitized = this.sanitizeFilename(block.filename);
+        if (sanitized !== block.filename) {
+          this.warnings.push(`Filename sanitized: ${block.filename} -> ${sanitized}`);
+          block.filename = sanitized;
+        }
+
+        if (!this.isValidFilename(block.filename)) {
+          this.warnings.push(`Invalid filename skipped: ${block.filename}`);
+          return false;
+        }
+      }
+
+      if (!this.isValidCode(block.content, block.language)) {
+        this.warnings.push(`Potentially malformed code in: ${block.filename || "unnamed"}`);
+      }
+
+      return true;
+    });
+  }
+
+  private sanitizeFilename(filename: string): string {
+    let sanitized = filename
+      .replace(/\.\./g, "")
+      .replace(/^\/+/, "")
+      .replace(/[<>:"|?*]/g, "")
+      .trim();
+
+    if (sanitized.startsWith("src/")) {
+      sanitized = sanitized.slice(4);
+    }
+
+    return sanitized;
+  }
+
+  private isValidFilename(filename: string): boolean {
+    if (!filename || filename.length === 0 || filename.length > 255) {
+      return false;
+    }
+
+    if (filename.includes("..") || filename.startsWith("/")) {
+      return false;
+    }
+
+    const hasValidExtension = VALID_EXTENSIONS.some((ext) => filename.endsWith(ext)) || !filename.includes(".");
+    return hasValidExtension;
+  }
+
+  private isValidCode(content: string, language: string): boolean {
+    if (["tsx", "ts", "jsx", "js", "typescript", "javascript"].includes(language.toLowerCase())) {
+      const hasBasicStructure =
+        content.includes("import") ||
+        content.includes("export") ||
+        content.includes("function") ||
+        content.includes("const") ||
+        content.includes("class");
+
+      const balancedBraces = this.checkBalancedBraces(content);
+
+      return hasBasicStructure && balancedBraces;
+    }
+    return true;
+  }
+
+  private checkBalancedBraces(content: string): boolean {
+    let braceCount = 0;
+    let parenCount = 0;
+    let bracketCount = 0;
+
+    for (const char of content) {
+      switch (char) {
+        case "{": braceCount++; break;
+        case "}": braceCount--; break;
+        case "(": parenCount++; break;
+        case ")": parenCount--; break;
+        case "[": bracketCount++; break;
+        case "]": bracketCount--; break;
+      }
+
+      if (braceCount < 0 || parenCount < 0 || bracketCount < 0) {
+        return false;
+      }
+    }
+
+    return braceCount === 0 && parenCount === 0 && bracketCount === 0;
   }
 
   appendChunk(chunk: string): { newBlocks: CodeBlock[]; partialBlock: string | null } {
@@ -80,6 +193,11 @@ export class ResponseParser {
   reset(): void {
     this.buffer = "";
     this.parsedBlocks = [];
+    this.warnings = [];
+  }
+
+  getWarnings(): string[] {
+    return [...this.warnings];
   }
 
   getBuffer(): string {

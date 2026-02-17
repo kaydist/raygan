@@ -76,59 +76,90 @@ export class AnthropicAdapter extends BaseAdapter {
 
     const maxTokens =
       request.max_tokens || modelConfig?.max_output_tokens || 4096;
+    const maxRetries = this.config.max_retries || 3;
 
-    try {
-      const stream = this.client.messages.stream({
-        model: request.model,
-        max_tokens: maxTokens,
-        temperature: request.temperature,
-        system: request.system_prompt,
-        messages: request.messages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-        stop_sequences: request.stop_sequences,
-      });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const stream = this.client.messages.stream({
+          model: request.model,
+          max_tokens: maxTokens,
+          temperature: request.temperature,
+          system: request.system_prompt,
+          messages: request.messages.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+          stop_sequences: request.stop_sequences,
+        });
 
-      for await (const event of stream) {
-        if (event.type === "content_block_delta") {
-          const delta = event.delta;
-          if ("text" in delta) {
-            yield { type: "text_delta", content: delta.text };
+        for await (const event of stream) {
+          if (event.type === "content_block_delta") {
+            const delta = event.delta;
+            if ("text" in delta) {
+              yield { type: "text_delta", content: delta.text };
+            }
+          } else if (event.type === "message_delta") {
+            if (event.usage) {
+              yield {
+                type: "usage",
+                usage: {
+                  input_tokens: 0,
+                  output_tokens: event.usage.output_tokens,
+                  total_tokens: event.usage.output_tokens,
+                },
+              };
+            }
+          } else if (event.type === "message_stop") {
+            yield { type: "done", finish_reason: "stop" };
           }
-        } else if (event.type === "message_delta") {
-          if (event.usage) {
-            yield {
-              type: "usage",
-              usage: {
-                input_tokens: 0,
-                output_tokens: event.usage.output_tokens,
-                total_tokens: event.usage.output_tokens,
-              },
-            };
-          }
-        } else if (event.type === "message_stop") {
-          yield { type: "done", finish_reason: "stop" };
         }
-      }
 
-      const finalMessage = await stream.finalMessage();
-      yield {
-        type: "usage",
-        usage: {
-          input_tokens: finalMessage.usage.input_tokens,
-          output_tokens: finalMessage.usage.output_tokens,
-          total_tokens:
-            finalMessage.usage.input_tokens + finalMessage.usage.output_tokens,
-        },
-      };
-    } catch (error) {
-      this.logError(error, "stream");
-      yield {
-        type: "error",
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+        const finalMessage = await stream.finalMessage();
+        yield {
+          type: "usage",
+          usage: {
+            input_tokens: finalMessage.usage.input_tokens,
+            output_tokens: finalMessage.usage.output_tokens,
+            total_tokens:
+              finalMessage.usage.input_tokens + finalMessage.usage.output_tokens,
+          },
+        };
+        return;
+      } catch (error) {
+        const isRetryable = this.isRetryableError(error);
+        const isLastAttempt = attempt === maxRetries;
+
+        if (!isRetryable || isLastAttempt) {
+          this.logError(error, "stream");
+          yield {
+            type: "error",
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
+          return;
+        }
+
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+        this.logError({ attempt, delay, error }, "stream retry");
+        await this.sleep(delay);
+      }
     }
+  }
+
+  private isRetryableError(error: unknown): boolean {
+    if (error instanceof Error) {
+      const message = error.message.toLowerCase();
+      return (
+        message.includes("rate limit") ||
+        message.includes("timeout") ||
+        message.includes("overloaded") ||
+        message.includes("503") ||
+        message.includes("529") ||
+        message.includes("network") ||
+        message.includes("econnreset") ||
+        message.includes("socket hang up")
+      );
+    }
+    return false;
   }
 
   async validateConnection(): Promise<boolean> {

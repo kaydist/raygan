@@ -23,9 +23,9 @@ export abstract class BaseAdapter implements AIAdapter {
     };
   }
 
-  abstract generate(request: GenerateRequest): Promise<GenerateResponse>;
+  abstract generate(request: GenerateRequest, modelConfig?: unknown): Promise<GenerateResponse>;
 
-  abstract stream(request: GenerateRequest): AsyncIterable<StreamChunk>;
+  abstract stream(request: GenerateRequest, modelConfig?: unknown): AsyncIterable<StreamChunk>;
 
   abstract validateConnection(): Promise<boolean>;
 

@@ -1,4 +1,5 @@
 import type { Project } from "../../db";
+import { SIMPLE_APP_EXAMPLE, TODO_APP_EXAMPLE, CALCULATOR_EXAMPLE, type FewShotExample } from "./prompts/few-shot-examples";
 
 export interface PromptContext {
   project?: Project;
@@ -7,7 +8,10 @@ export interface PromptContext {
   selectedCode?: string;
   backendSchema?: BackendSchema;
   conversationHistory?: ConversationMessage[];
+  existingFiles?: Map<string, string>;
 }
+
+const MAX_CONVERSATION_HISTORY = 10;
 
 export interface BackendSchema {
   provider: string;
@@ -151,22 +155,73 @@ export class PromptBuilder {
   }
 
   build(userMessage: string): { system: string; messages: ConversationMessage[] } {
-    const systemPrompt = this.buildSystemPrompt();
+    const systemPrompt = this.buildSystemPrompt(userMessage);
     const messages = this.buildMessages(userMessage);
 
     return { system: systemPrompt, messages };
   }
 
-  private buildSystemPrompt(): string {
+  private buildSystemPrompt(userMessage: string): string {
     const layers: string[] = [
       PLATFORM_CONTEXT,
       this.buildProjectContext(),
+      this.buildExistingFilesContext(),
       CODE_QUALITY_RULES,
       OUTPUT_FORMAT,
+      this.buildFewShotExample(userMessage),
       this.buildBackendContext(),
     ];
 
     return layers.filter(Boolean).join("\n\n---\n\n");
+  }
+
+  private buildFewShotExample(userMessage: string): string {
+    const lowerMessage = userMessage.toLowerCase();
+    let example: FewShotExample | null = null;
+
+    if (lowerMessage.includes("todo") || lowerMessage.includes("task list")) {
+      example = TODO_APP_EXAMPLE;
+    } else if (lowerMessage.includes("calculator") || lowerMessage.includes("calc")) {
+      example = CALCULATOR_EXAMPLE;
+    } else if (
+      lowerMessage.includes("counter") ||
+      lowerMessage.includes("simple app") ||
+      lowerMessage.includes("basic app") ||
+      this.isNewProject()
+    ) {
+      example = SIMPLE_APP_EXAMPLE;
+    }
+
+    if (!example) return "";
+
+    return `## Example
+
+Here's an example of the expected output format:
+
+**User:** ${example.userMessage}
+
+**Assistant:** ${example.assistantResponse}`;
+  }
+
+  private isNewProject(): boolean {
+    const hasFiles = this.context.fileTree && Object.keys(this.context.fileTree).length > 0;
+    const hasExistingFiles = this.context.existingFiles && this.context.existingFiles.size > 0;
+    return !hasFiles && !hasExistingFiles;
+  }
+
+  private buildExistingFilesContext(): string {
+    if (!this.context.existingFiles || this.context.existingFiles.size === 0) {
+      return "";
+    }
+
+    let context = "## Existing Project Files\n\nThe project already has these files. When modifying, maintain consistency with existing patterns:\n\n";
+
+    for (const [path, content] of this.context.existingFiles) {
+      const preview = content.length > 500 ? content.substring(0, 500) + "\n// ... (truncated)" : content;
+      context += `### \`${path}\`\n\`\`\`tsx\n${preview}\n\`\`\`\n\n`;
+    }
+
+    return context;
   }
 
   private buildProjectContext(): string {
@@ -236,7 +291,8 @@ export class PromptBuilder {
     const messages: ConversationMessage[] = [];
 
     if (this.context.conversationHistory) {
-      messages.push(...this.context.conversationHistory);
+      const history = this.context.conversationHistory.slice(-MAX_CONVERSATION_HISTORY);
+      messages.push(...history);
     }
 
     messages.push({ role: "user", content: userMessage });
@@ -292,6 +348,11 @@ export class PromptBuilder {
 
   setConversationHistory(history: ConversationMessage[]): this {
     this.context.conversationHistory = history;
+    return this;
+  }
+
+  setExistingFiles(files: Map<string, string>): this {
+    this.context.existingFiles = files;
     return this;
   }
 }

@@ -4,7 +4,627 @@ export interface FewShotExample {
   tags: string[];
 }
 
+export const SIMPLE_APP_EXAMPLE: FewShotExample = {
+  tags: ["app", "simple", "starter"],
+  userMessage: "Create a simple counter app",
+  assistantResponse: `I'll create a simple counter app with increment and decrement functionality.
+
+\`\`\`tsx filename="App.tsx"
+import { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { StatusBar } from "expo-status-bar";
+
+export default function App() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="auto" />
+      <Text style={styles.title}>Counter</Text>
+      <Text style={styles.count}>{count}</Text>
+      <View style={styles.buttons}>
+        <TouchableOpacity
+          style={[styles.button, styles.decrementButton]}
+          onPress={() => setCount(c => c - 1)}
+          accessibilityLabel="Decrement counter"
+        >
+          <Text style={styles.buttonText}>−</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, styles.incrementButton]}
+          onPress={() => setCount(c => c + 1)}
+          accessibilityLabel="Increment counter"
+        >
+          <Text style={styles.buttonText}>+</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 20,
+  },
+  count: {
+    fontSize: 72,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    marginBottom: 40,
+  },
+  buttons: {
+    flexDirection: "row",
+    gap: 20,
+  },
+  button: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  decrementButton: {
+    backgroundColor: "#ef4444",
+  },
+  incrementButton: {
+    backgroundColor: "#22c55e",
+  },
+  buttonText: {
+    fontSize: 32,
+    fontWeight: "600",
+    color: "#fff",
+  },
+});
+\`\`\`
+
+This creates a minimal counter app with:
+- State management using useState
+- Styled increment/decrement buttons
+- Accessibility labels for screen readers`,
+};
+
+export const TODO_APP_EXAMPLE: FewShotExample = {
+  tags: ["app", "todo", "list", "crud"],
+  userMessage: "Create a todo app",
+  assistantResponse: `I'll create a complete todo app with add, complete, and delete functionality.
+
+\`\`\`tsx filename="App.tsx"
+import { useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+
+interface Todo {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+function TodoItem({
+  todo,
+  onToggle,
+  onDelete,
+}: {
+  todo: Todo;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <View style={styles.todoItem}>
+      <TouchableOpacity
+        style={styles.todoContent}
+        onPress={onToggle}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: todo.completed }}
+      >
+        <View style={[styles.checkbox, todo.completed && styles.checkboxChecked]}>
+          {todo.completed && <Text style={styles.checkmark}>✓</Text>}
+        </View>
+        <Text style={[styles.todoText, todo.completed && styles.todoTextCompleted]}>
+          {todo.text}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onDelete}
+        style={styles.deleteButton}
+        accessibilityLabel="Delete todo"
+      >
+        <Text style={styles.deleteText}>×</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+export default function App() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [input, setInput] = useState("");
+
+  const addTodo = useCallback(() => {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
+    setTodos(prev => [
+      { id: Date.now().toString(), text: trimmed, completed: false },
+      ...prev,
+    ]);
+    setInput("");
+  }, [input]);
+
+  const toggleTodo = useCallback((id: string) => {
+    setTodos(prev =>
+      prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
+    );
+  }, []);
+
+  const deleteTodo = useCallback((id: string) => {
+    setTodos(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const renderTodo = useCallback(
+    ({ item }: { item: Todo }) => (
+      <TodoItem
+        todo={item}
+        onToggle={() => toggleTodo(item.id)}
+        onDelete={() => deleteTodo(item.id)}
+      />
+    ),
+    [toggleTodo, deleteTodo]
+  );
+
+  const completedCount = todos.filter(t => t.completed).length;
+
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <StatusBar style="dark" />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.content}
+        >
+          <Text style={styles.title}>My Todos</Text>
+          {todos.length > 0 && (
+            <Text style={styles.stats}>
+              {completedCount} of {todos.length} completed
+            </Text>
+          )}
+
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              value={input}
+              onChangeText={setInput}
+              placeholder="Add a new todo..."
+              placeholderTextColor="#9ca3af"
+              onSubmitEditing={addTodo}
+              returnKeyType="done"
+            />
+            <TouchableOpacity
+              style={[styles.addButton, !input.trim() && styles.addButtonDisabled]}
+              onPress={addTodo}
+              disabled={!input.trim()}
+              accessibilityLabel="Add todo"
+            >
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          {todos.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>No todos yet</Text>
+              <Text style={styles.emptySubtext}>Add one above to get started</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={todos}
+              renderItem={renderTodo}
+              keyExtractor={item => item.id}
+              style={styles.list}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    marginBottom: 4,
+  },
+  stats: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginBottom: 20,
+  },
+  inputRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 20,
+  },
+  input: {
+    flex: 1,
+    height: 48,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#1a1a1a",
+  },
+  addButton: {
+    height: 48,
+    paddingHorizontal: 20,
+    backgroundColor: "#3b82f6",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addButtonDisabled: {
+    backgroundColor: "#93c5fd",
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  list: {
+    flex: 1,
+  },
+  todoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+  },
+  todoContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#d1d5db",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: "#3b82f6",
+    borderColor: "#3b82f6",
+  },
+  checkmark: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  todoText: {
+    flex: 1,
+    fontSize: 16,
+    color: "#1a1a1a",
+  },
+  todoTextCompleted: {
+    textDecorationLine: "line-through",
+    color: "#9ca3af",
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteText: {
+    fontSize: 24,
+    color: "#ef4444",
+    fontWeight: "300",
+  },
+  empty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#6b7280",
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#9ca3af",
+    marginTop: 4,
+  },
+});
+\`\`\`
+
+This todo app includes:
+- Add, toggle complete, and delete functionality
+- FlatList for efficient rendering
+- Empty state handling
+- Keyboard handling for iOS
+- Accessibility support`,
+};
+
+export const CALCULATOR_EXAMPLE: FewShotExample = {
+  tags: ["app", "calculator", "math"],
+  userMessage: "Build a calculator app",
+  assistantResponse: `I'll create a functional calculator app with a clean design.
+
+\`\`\`tsx filename="App.tsx"
+import { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+
+const { width } = Dimensions.get("window");
+const BUTTON_SIZE = (width - 60) / 4;
+
+type Operator = "+" | "-" | "×" | "÷" | null;
+
+function CalcButton({
+  label,
+  onPress,
+  variant = "number",
+}: {
+  label: string;
+  onPress: () => void;
+  variant?: "number" | "operator" | "function" | "equals";
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.button, styles[\`button_\${variant}\`]]}
+      onPress={onPress}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+    >
+      <Text style={[styles.buttonText, styles[\`text_\${variant}\`]]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+export default function App() {
+  const [display, setDisplay] = useState("0");
+  const [previousValue, setPreviousValue] = useState<number | null>(null);
+  const [operator, setOperator] = useState<Operator>(null);
+  const [waitingForOperand, setWaitingForOperand] = useState(false);
+
+  const inputDigit = (digit: string) => {
+    if (waitingForOperand) {
+      setDisplay(digit);
+      setWaitingForOperand(false);
+    } else {
+      setDisplay(display === "0" ? digit : display + digit);
+    }
+  };
+
+  const inputDecimal = () => {
+    if (waitingForOperand) {
+      setDisplay("0.");
+      setWaitingForOperand(false);
+    } else if (!display.includes(".")) {
+      setDisplay(display + ".");
+    }
+  };
+
+  const clear = () => {
+    setDisplay("0");
+    setPreviousValue(null);
+    setOperator(null);
+    setWaitingForOperand(false);
+  };
+
+  const toggleSign = () => {
+    const value = parseFloat(display);
+    setDisplay(String(value * -1));
+  };
+
+  const inputPercent = () => {
+    const value = parseFloat(display);
+    setDisplay(String(value / 100));
+  };
+
+  const performOperation = (nextOperator: Operator) => {
+    const inputValue = parseFloat(display);
+
+    if (previousValue === null) {
+      setPreviousValue(inputValue);
+    } else if (operator) {
+      const result = calculate(previousValue, inputValue, operator);
+      setDisplay(String(result));
+      setPreviousValue(result);
+    }
+
+    setWaitingForOperand(true);
+    setOperator(nextOperator);
+  };
+
+  const calculate = (a: number, b: number, op: Operator): number => {
+    switch (op) {
+      case "+": return a + b;
+      case "-": return a - b;
+      case "×": return a * b;
+      case "÷": return b !== 0 ? a / b : 0;
+      default: return b;
+    }
+  };
+
+  const handleEquals = () => {
+    if (operator && previousValue !== null) {
+      const inputValue = parseFloat(display);
+      const result = calculate(previousValue, inputValue, operator);
+      setDisplay(String(result));
+      setPreviousValue(null);
+      setOperator(null);
+      setWaitingForOperand(true);
+    }
+  };
+
+  const formatDisplay = (value: string): string => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return "0";
+    if (value.includes(".") && value.endsWith("0") && !value.endsWith(".0")) {
+      return value;
+    }
+    if (Math.abs(num) >= 1e9) {
+      return num.toExponential(4);
+    }
+    return num.toLocaleString("en-US", { maximumFractionDigits: 8 });
+  };
+
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <StatusBar style="light" />
+        <View style={styles.display}>
+          <Text style={styles.displayText} numberOfLines={1} adjustsFontSizeToFit>
+            {formatDisplay(display)}
+          </Text>
+        </View>
+        <View style={styles.buttons}>
+          <View style={styles.row}>
+            <CalcButton label="AC" onPress={clear} variant="function" />
+            <CalcButton label="±" onPress={toggleSign} variant="function" />
+            <CalcButton label="%" onPress={inputPercent} variant="function" />
+            <CalcButton label="÷" onPress={() => performOperation("÷")} variant="operator" />
+          </View>
+          <View style={styles.row}>
+            <CalcButton label="7" onPress={() => inputDigit("7")} />
+            <CalcButton label="8" onPress={() => inputDigit("8")} />
+            <CalcButton label="9" onPress={() => inputDigit("9")} />
+            <CalcButton label="×" onPress={() => performOperation("×")} variant="operator" />
+          </View>
+          <View style={styles.row}>
+            <CalcButton label="4" onPress={() => inputDigit("4")} />
+            <CalcButton label="5" onPress={() => inputDigit("5")} />
+            <CalcButton label="6" onPress={() => inputDigit("6")} />
+            <CalcButton label="-" onPress={() => performOperation("-")} variant="operator" />
+          </View>
+          <View style={styles.row}>
+            <CalcButton label="1" onPress={() => inputDigit("1")} />
+            <CalcButton label="2" onPress={() => inputDigit("2")} />
+            <CalcButton label="3" onPress={() => inputDigit("3")} />
+            <CalcButton label="+" onPress={() => performOperation("+")} variant="operator" />
+          </View>
+          <View style={styles.row}>
+            <CalcButton label="0" onPress={() => inputDigit("0")} />
+            <CalcButton label="." onPress={inputDecimal} />
+            <CalcButton label="=" onPress={handleEquals} variant="equals" />
+          </View>
+        </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  display: {
+    flex: 1,
+    justifyContent: "flex-end",
+    alignItems: "flex-end",
+    padding: 20,
+  },
+  displayText: {
+    color: "#fff",
+    fontSize: 64,
+    fontWeight: "300",
+  },
+  buttons: {
+    padding: 10,
+    gap: 10,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  button: {
+    width: BUTTON_SIZE,
+    height: BUTTON_SIZE,
+    borderRadius: BUTTON_SIZE / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  button_number: {
+    backgroundColor: "#333",
+  },
+  button_operator: {
+    backgroundColor: "#ff9f0a",
+  },
+  button_function: {
+    backgroundColor: "#a5a5a5",
+  },
+  button_equals: {
+    backgroundColor: "#ff9f0a",
+    width: BUTTON_SIZE * 2 + 10,
+  },
+  buttonText: {
+    fontSize: 32,
+    fontWeight: "500",
+  },
+  text_number: {
+    color: "#fff",
+  },
+  text_operator: {
+    color: "#fff",
+  },
+  text_function: {
+    color: "#000",
+  },
+  text_equals: {
+    color: "#fff",
+  },
+});
+\`\`\`
+
+This calculator includes:
+- Basic arithmetic operations (+, -, ×, ÷)
+- Percent and sign toggle functions
+- Decimal support
+- Large number formatting
+- iOS calculator-inspired design`,
+};
+
 export const FEW_SHOT_EXAMPLES: FewShotExample[] = [
+  SIMPLE_APP_EXAMPLE,
+  TODO_APP_EXAMPLE,
+  CALCULATOR_EXAMPLE,
   {
     tags: ["component", "basic", "screen"],
     userMessage: "Create a login screen with email and password fields",
