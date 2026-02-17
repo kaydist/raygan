@@ -44,13 +44,6 @@ export function useSnackPreview(
 
   const syncOptions: UseSnackSyncOptions = useMemo(() => {
     const enabled = syncEnabled && state.isConnected;
-    console.log("[STAQ-DEBUG] Sync options updated:", {
-      projectId,
-      syncEnabled,
-      isConnected: state.isConnected,
-      webPreviewURL: state.webPreviewURL,
-      enabled,
-    });
     return {
       projectId,
       enabled,

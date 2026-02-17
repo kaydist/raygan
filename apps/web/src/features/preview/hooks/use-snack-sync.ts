@@ -17,9 +17,14 @@ interface UseSnackSyncReturn {
 export function useSnackSync(
   updateFiles: (files: SnackFiles) => void,
   updateDependencies: (deps: SnackDependencies) => void,
-  options: UseSnackSyncOptions
+  options: UseSnackSyncOptions,
 ): UseSnackSyncReturn {
-  const { projectId, enabled = true, debounceMs = 500, webPreviewURL } = options;
+  const {
+    projectId,
+    enabled = true,
+    debounceMs = 500,
+    webPreviewURL,
+  } = options;
 
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastSyncRef = useRef<string>("");
@@ -29,14 +34,7 @@ export function useSnackSync(
   const files = useProjectStore((state) => state.files);
 
   const performSync = useCallback(() => {
-    console.log("[STAQ-DEBUG] performSync called:", {
-      enabled,
-      filesCount: files?.size ?? 0,
-      webPreviewURL: webPreviewURL ?? "null",
-    });
-
     if (!enabled || !files || files.size === 0) {
-      console.log("[STAQ-DEBUG] performSync skipped - not enabled or no files");
       return;
     }
 
@@ -49,17 +47,11 @@ export function useSnackSync(
 
     const contentHash = JSON.stringify(fileTree);
     if (contentHash === lastSyncRef.current) {
-      console.log("[STAQ-DEBUG] performSync skipped - no changes (hash match)");
       return;
     }
     lastSyncRef.current = contentHash;
 
     const snackFiles = transformFileTreeToSnack(fileTree);
-    console.log("[STAQ-DEBUG] Syncing files to Snack:", {
-      inputPaths: Object.keys(fileTree),
-      outputPaths: Object.keys(snackFiles),
-      snackFilesPreview: Object.keys(snackFiles).slice(0, 5),
-    });
     updateFiles(snackFiles);
 
     const allDependencies: Record<string, string> = {};
@@ -106,12 +98,10 @@ export function useSnackSync(
     prevWebPreviewURLRef.current = webPreviewURL ?? null;
 
     if (enabled && !wasEnabled) {
-      console.log("[STAQ-DEBUG] Sync enabled, triggering initial sync");
       performSync();
     }
 
     if (webPreviewURL && !prevURL && enabled) {
-      console.log("[STAQ-DEBUG] WebPreviewURL became available, triggering sync");
       lastSyncRef.current = "";
       performSync();
     }

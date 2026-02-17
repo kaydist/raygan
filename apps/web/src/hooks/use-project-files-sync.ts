@@ -17,10 +17,6 @@ export function useProjectFilesSync({ projectId, enabled = true }: UseProjectFil
 
   useEffect(() => {
     if (!enabled || !files || files.length === 0) {
-      console.log("[STAQ-DEBUG] useProjectFilesSync skipped:", {
-        enabled,
-        filesCount: files?.length ?? 0,
-      });
       return;
     }
 
@@ -37,11 +33,6 @@ export function useProjectFilesSync({ projectId, enabled = true }: UseProjectFil
       };
       filesMap.set(file.path, entry);
     }
-
-    console.log("[STAQ-DEBUG] Syncing files to store:", {
-      fileCount: filesMap.size,
-      paths: Array.from(filesMap.keys()),
-    });
 
     setFiles(filesMap);
   }, [files, enabled, setFiles, setFileTree]);

@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { DataSource, type DataSourceOptions } from "typeorm";
 
-import { env } from "../config";
+import { env, logger } from "../config";
 
 /**
  * Database connection options
@@ -34,18 +34,18 @@ export const AppDataSource = new DataSource(baseOptions);
  */
 export async function initializeDatabase(): Promise<DataSource> {
   if (!env.DATABASE_URL) {
-    console.warn("DATABASE_URL not set, skipping database initialization");
+    logger.warn("DATABASE_URL not set, skipping database initialization");
     return AppDataSource;
   }
 
   try {
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
-      console.log("Database connection established");
+      logger.info("Database connection established");
     }
     return AppDataSource;
   } catch (error) {
-    console.error("Database connection failed:", error);
+    logger.error(error, "Database connection failed");
     throw error;
   }
 }
@@ -56,7 +56,7 @@ export async function initializeDatabase(): Promise<DataSource> {
 export async function closeDatabase(): Promise<void> {
   if (AppDataSource.isInitialized) {
     await AppDataSource.destroy();
-    console.log("Database connection closed");
+    logger.info("Database connection closed");
   }
 }
 
@@ -68,7 +68,7 @@ export async function runMigrations(): Promise<void> {
     throw new Error("Database not initialized");
   }
   await AppDataSource.runMigrations();
-  console.log("Migrations completed");
+  logger.info("Migrations completed");
 }
 
 /**
@@ -79,5 +79,5 @@ export async function revertMigration(): Promise<void> {
     throw new Error("Database not initialized");
   }
   await AppDataSource.undoLastMigration();
-  console.log("Migration reverted");
+  logger.info("Migration reverted");
 }

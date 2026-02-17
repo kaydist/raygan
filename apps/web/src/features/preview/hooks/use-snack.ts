@@ -39,13 +39,6 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
       const snackState = snack.getState();
       const webPreviewURL = getSnackWebPreviewURL(snack);
 
-      console.log("[STAQ-DEBUG] Snack state changed:", {
-        url: snackState.url || null,
-        webPreviewURL,
-        channel: snackState.channel || null,
-        transports: snackState.transports ? Object.keys(snackState.transports) : [],
-      });
-
       setState((prev) => ({
         ...prev,
         url: snackState.url || null,
@@ -55,7 +48,6 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
 
       const webplayerTransport = snackState.transports?.webplayer;
       if (webplayerTransport && "error" in webplayerTransport && webplayerTransport.error) {
-        console.error("[STAQ-DEBUG] Webplayer transport error:", webplayerTransport.error);
         setErrors((prev) => [
           ...prev,
           {
@@ -72,7 +64,6 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
 
   const connect = useCallback(async () => {
     if (snackRef.current) {
-      console.log("[STAQ-DEBUG] Snack connecting...");
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
@@ -80,10 +71,6 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
         const webPreviewURL = snackRef.current
           ? getSnackWebPreviewURL(snackRef.current)
           : null;
-        console.log("[STAQ-DEBUG] Snack connected:", {
-          url: snackRef.current?.getState().url,
-          webPreviewURL,
-        });
         setState((prev) => ({
           ...prev,
           isConnected: true,
@@ -92,7 +79,6 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
           webPreviewURL,
         }));
       } catch (err) {
-        console.error("[STAQ-DEBUG] Snack connection error:", err);
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -113,28 +99,12 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
 
   const updateFiles = useCallback((files: SnackFiles) => {
     if (snackRef.current) {
-      const filePaths = Object.keys(files);
-      console.log("[STAQ-DEBUG] Updating Snack files:", {
-        filePaths,
-        fileCount: filePaths.length,
-        hasAppEntry: filePaths.some(p => p === "App.tsx" || p === "App.js" || p === "index.js"),
-        currentSnackState: {
-          url: snackRef.current.getState().url,
-          webPreviewURL: getSnackWebPreviewURL(snackRef.current),
-        },
-      });
       snackRef.current.updateFiles(files);
-      console.log("[STAQ-DEBUG] Files sent to Snack");
-    } else {
-      console.warn("[STAQ-DEBUG] Cannot update files - snack not initialized");
     }
   }, []);
 
   const updateDependencies = useCallback((deps: SnackDependencies) => {
     if (snackRef.current) {
-      console.log("[STAQ-DEBUG] Updating Snack dependencies:", {
-        deps: Object.keys(deps),
-      });
       snackRef.current.updateDependencies(deps);
     }
   }, []);

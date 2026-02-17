@@ -26,8 +26,6 @@ export class AnthropicAdapter extends BaseAdapter {
     const maxTokens =
       request.max_tokens || modelConfig?.max_output_tokens || 4096;
 
-    console.log({ request });
-
     const response = await this.withRetry(async () => {
       return this.client.messages.create({
         model: request.model,

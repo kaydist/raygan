@@ -22,7 +22,7 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
   const [mounted, setMounted] = useState(false);
   const [layout, setLayout] = useState<LayoutState>(defaultLayout);
 
-  const { fileCount } = useProjectFilesSync({
+  useProjectFilesSync({
     projectId,
     enabled: mounted,
   });
@@ -31,11 +31,6 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (mounted) {
-      console.log("[STAQ-DEBUG] WorkspaceLayout mounted, files loaded:", { fileCount });
-    }
-  }, [mounted, fileCount]);
 
   const handleLayoutChange = (sizes: number[]) => {
     setLayout((prev) => {

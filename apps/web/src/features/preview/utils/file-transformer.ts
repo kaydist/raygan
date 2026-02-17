@@ -35,12 +35,8 @@ export function transformFileTreeToSnack(
   const normalizedPaths = Object.keys(fileTree).map(normalizeFilePath);
   const filePaths = new Set(normalizedPaths);
 
-  console.log("[STAQ-DEBUG] transformFileTreeToSnack - all normalized paths:", normalizedPaths);
-
   for (const [path, content] of Object.entries(fileTree)) {
     let normalizedPath = normalizeFilePath(path);
-
-    console.log("[STAQ-DEBUG] Transforming file:", { original: path, normalized: normalizedPath });
 
     if (isAssetFile(path)) {
       snackFiles[normalizedPath] = {
@@ -124,12 +120,9 @@ function isBuiltInModule(moduleName: string): boolean {
   return BUILT_IN_MODULES.has(moduleName);
 }
 
-function transformLocalImports(code: string, currentFilePath: string, projectFilePaths: Set<string>): string {
+function transformLocalImports(code: string, _currentFilePath: string, projectFilePaths: Set<string>): string {
   const importRegex = /(import\s+(?:[\w\s{},*]+\s+from\s+)?['"])([^'"]+)(['"])/g;
   const requireRegex = /(require\s*\(\s*['"])([^'"]+)(['"]\s*\))/g;
-
-  console.log("[STAQ-DEBUG] transformLocalImports for:", currentFilePath);
-  console.log("[STAQ-DEBUG] projectFilePaths:", Array.from(projectFilePaths));
 
   const resolveImportPath = (importPath: string): string | null => {
     const hasRelativePrefix = importPath.startsWith("./") || importPath.startsWith("../");
@@ -141,8 +134,6 @@ function transformLocalImports(code: string, currentFilePath: string, projectFil
     } else if (importPath.startsWith("/")) {
       basePath = importPath.slice(1);
     }
-
-    console.log("[STAQ-DEBUG] resolveImportPath:", { importPath, basePath, hasRelativePrefix });
 
     if (projectFilePaths.has(basePath)) {
       return hasRelativePrefix ? importPath : `./${basePath}`;
@@ -159,7 +150,6 @@ function transformLocalImports(code: string, currentFilePath: string, projectFil
     for (const indexFile of indexFiles) {
       const indexPath = `${basePath}/${indexFile}`;
       if (projectFilePaths.has(indexPath)) {
-        console.log("[STAQ-DEBUG] Found index file:", indexPath, "-> resolving to ./", basePath, "/index");
         return `./${basePath}/index`;
       }
     }
@@ -169,7 +159,6 @@ function transformLocalImports(code: string, currentFilePath: string, projectFil
     );
 
     if (isDirectoryWithFiles) {
-      console.log("[STAQ-DEBUG] Directory with files detected:", basePath);
       for (const indexFile of indexFiles) {
         if (projectFilePaths.has(`${basePath}/${indexFile}`)) {
           return `./${basePath}/index`;
@@ -187,10 +176,8 @@ function transformLocalImports(code: string, currentFilePath: string, projectFil
   let result = code;
 
   result = result.replace(importRegex, (match, prefix, importPath, suffix) => {
-    console.log("[STAQ-DEBUG] Found import:", importPath);
     const resolved = resolveImportPath(importPath);
     if (resolved && resolved !== importPath) {
-      console.log("[STAQ-DEBUG] Fixing import:", importPath, "->", resolved);
       return `${prefix}${resolved}${suffix}`;
     }
     return match;
@@ -199,7 +186,6 @@ function transformLocalImports(code: string, currentFilePath: string, projectFil
   result = result.replace(requireRegex, (match, prefix, importPath, suffix) => {
     const resolved = resolveImportPath(importPath);
     if (resolved && resolved !== importPath) {
-      console.log("[STAQ-DEBUG] Fixing require:", importPath, "->", resolved);
       return `${prefix}${resolved}${suffix}`;
     }
     return match;

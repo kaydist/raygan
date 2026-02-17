@@ -4,7 +4,7 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, Check, ExternalLink, Smartphone } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, logger } from "@/lib/utils";
 import { Button } from "@/components/atoms";
 
 interface QRCodeDisplayProps {
@@ -30,7 +30,7 @@ export function QRCodeDisplay({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error("Failed to copy URL:", err);
+      logger.error("Failed to copy URL", err instanceof Error ? err : undefined);
     }
   };
 
