@@ -16,3 +16,11 @@ export {
 // AI Gateway entities
 export { AIProvider, type ProviderSlug } from "./ai-provider.entity";
 export { AIModel } from "./ai-model.entity";
+
+// Settings
+export {
+  Setting,
+  type SettingCategory,
+  type SettingVisibility,
+  type SettingValueType,
+} from "./setting.entity";
