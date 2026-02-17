@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Panel, PanelGroup } from "react-resizable-panels";
 
 import { useUIStore } from "@/stores";
+import { useProjectFilesSync } from "@/hooks";
 
 import { ResizeHandle } from "./resize-handle";
 import { LayersPanel } from "./layers-panel";
@@ -48,9 +49,20 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
   const [mounted, setMounted] = useState(false);
   const [layout, setLayout] = useState<LayoutState>(defaultLayout);
 
+  const { isLoading: isLoadingFiles, fileCount } = useProjectFilesSync({
+    projectId,
+    enabled: mounted,
+  });
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      console.log("[STAQ-DEBUG] WorkspaceLayout mounted, files loaded:", { fileCount });
+    }
+  }, [mounted, fileCount]);
 
   const handleLayoutChange = (sizes: number[]) => {
     if (sizes.length >= 3) {

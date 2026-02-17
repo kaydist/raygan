@@ -22,6 +22,17 @@ export {
   useUnarchiveProject,
 } from "./use-projects";
 
+export {
+  useProjectFiles,
+  useSnackFiles,
+  useFileTree,
+  useFile,
+  useCreateFile,
+  useUpdateFile,
+  useDeleteFile,
+  useBulkCreateFiles,
+} from "./use-files";
+
 export { useConversations, useConversation } from "./use-conversations";
 
 export { useModels, useModel } from "./use-models";

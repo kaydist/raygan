@@ -5,6 +5,7 @@ export { axiosInstance, extractData } from "./client";
 export {
   authApi,
   projectsApi,
+  filesApi,
   conversationsApi,
   modelsApi,
   usersApi,
@@ -15,6 +16,12 @@ export {
 
 export type {
   ProjectListParams,
+  ProjectFileResponse,
+  SnackFilesResponse,
+  FileTreeNode,
+  CreateFileRequest,
+  UpdateFileRequest,
+  BulkCreateFilesRequest,
   HealthCheckResponse,
 } from "./routes";
 
@@ -40,6 +47,14 @@ export {
   useDeleteProject,
   useArchiveProject,
   useUnarchiveProject,
+  useProjectFiles,
+  useSnackFiles,
+  useFileTree,
+  useFile,
+  useCreateFile,
+  useUpdateFile,
+  useDeleteFile,
+  useBulkCreateFiles,
   useConversations,
   useConversation,
   useModels,

@@ -10,6 +10,16 @@ export type {
 export { projectsApi } from "./projects";
 export type { ProjectListParams } from "./projects";
 
+export { filesApi } from "./files";
+export type {
+  ProjectFileResponse,
+  SnackFilesResponse,
+  FileTreeNode,
+  CreateFileRequest,
+  UpdateFileRequest,
+  BulkCreateFilesRequest,
+} from "./files";
+
 export { conversationsApi } from "./conversations";
 
 export { modelsApi } from "./models";

@@ -5,6 +5,14 @@ export { ConversationService } from "./conversation.service";
 export { AIProviderService } from "./ai-provider.service";
 export { GenerationService } from "./generation.service";
 export {
+  FileStorageService,
+  type CreateFileInput,
+  type UpdateFileInput,
+  type FileTreeNode,
+  type SnackFile,
+  type SnackFiles,
+} from "./file-storage.service";
+export {
   SupabaseAuthService,
   SupabaseUnavailableError,
   SupabaseAuthError,

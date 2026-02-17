@@ -22,6 +22,15 @@ export const queryKeys = {
     detail: (uuid: string) => [...queryKeys.projects.all, "detail", uuid] as const,
   },
 
+  files: {
+    all: ["files"] as const,
+    list: (projectId: string) => [...queryKeys.files.all, "list", projectId] as const,
+    snack: (projectId: string) => [...queryKeys.files.all, "snack", projectId] as const,
+    tree: (projectId: string) => [...queryKeys.files.all, "tree", projectId] as const,
+    detail: (projectId: string, fileId: string) =>
+      [...queryKeys.files.all, "detail", projectId, fileId] as const,
+  },
+
   conversations: {
     all: ["conversations"] as const,
     list: (projectId: string) => [...queryKeys.conversations.all, "list", projectId] as const,

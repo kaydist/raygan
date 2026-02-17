@@ -2,6 +2,7 @@ import { logger } from "../config";
 import { ProjectService } from "./project.service";
 import { ConversationService } from "./conversation.service";
 import { AIProviderService } from "./ai-provider.service";
+import { FileStorageService } from "./file-storage.service";
 import { getAIGateway, PromptBuilder, ResponseParser } from "./ai-gateway";
 import type { CodeBlock, ASTOperation } from "./ai-gateway/response-parser";
 import type { Project } from "../db";
@@ -66,6 +67,7 @@ export class GenerationService {
   private projectService = new ProjectService();
   private conversationService = new ConversationService();
   private providerService = new AIProviderService();
+  private fileStorageService = new FileStorageService();
 
   async *generate(options: GenerateOptions): AsyncGenerator<SSEEvent> {
     const { projectId, prompt, userId, currentFile, selectedCode, maxTokens, temperature } = options;
@@ -74,6 +76,7 @@ export class GenerationService {
     let userConversation;
     let assistantConversation;
     let fullContent = "";
+    const filesToPersist: Array<{ path: string; content: string; type: "create" | "update" }> = [];
 
     try {
       const project = await this.projectService.findByUuid(projectId);
@@ -161,16 +164,18 @@ export class GenerationService {
         filenames: parsed.codeBlocks.map(b => b.filename)
       }, "Final parse complete");
 
-      // Emit all AST operations from the final parse
+      // Collect files to persist
       for (const operation of parsed.astOperations) {
-        logger.info({
-          type: operation.type,
-          targetPath: operation.targetPath,
-          contentLength: operation.content?.length
-        }, "Emitting ast_operation");
-        yield { type: "ast_operation", data: operation };
+        if ((operation.type === "create" || operation.type === "update") && operation.content) {
+          filesToPersist.push({
+            path: operation.targetPath,
+            content: operation.content,
+            type: operation.type,
+          });
+        }
       }
 
+      // Create assistant conversation first to get the conversation ID for file tracking
       assistantConversation = await this.conversationService.createAssistantMessage(
         {
           project_id: project.id,
@@ -184,6 +189,35 @@ export class GenerationService {
         },
         userId
       );
+
+      // Persist files to database
+      if (filesToPersist.length > 0) {
+        try {
+          await this.fileStorageService.bulkCreateOrUpdate(
+            project.id,
+            filesToPersist.map(f => ({ path: f.path, content: f.content })),
+            userId,
+            assistantConversation.id
+          );
+          logger.info({
+            projectId: project.id,
+            fileCount: filesToPersist.length,
+            paths: filesToPersist.map(f => f.path),
+          }, "Files persisted to database");
+        } catch (fileError) {
+          logger.error({ fileError, projectId: project.id }, "Failed to persist files to database");
+        }
+      }
+
+      // Emit all AST operations from the final parse
+      for (const operation of parsed.astOperations) {
+        logger.info({
+          type: operation.type,
+          targetPath: operation.targetPath,
+          contentLength: operation.content?.length
+        }, "Emitting ast_operation");
+        yield { type: "ast_operation", data: operation };
+      }
 
       await this.conversationService.markCompleted(userConversation.id, userId);
 

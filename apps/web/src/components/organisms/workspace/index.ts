@@ -5,6 +5,7 @@ export { LayersPanel } from "./layers-panel";
 export { ComponentPalette } from "./component-palette";
 export { AgentPanel } from "./agent-panel";
 export { CenterCanvas } from "./center-canvas";
+export { FileExplorer } from "./file-explorer";
 export { PropertyInspector } from "./property-inspector";
 export { RightPanel } from "./right-panel";
 export { PreviewPanel } from "./preview-panel";
