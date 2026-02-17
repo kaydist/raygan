@@ -34,7 +34,7 @@ export function WorkspaceToolbar({ projectName, className }: WorkspaceToolbarPro
   return (
     <div
       className={cn(
-        "flex h-12 items-center justify-between border-b border-border bg-background px-2",
+        "flex h-12 items-center justify-between border-b border-border bg-background p-2",
         className
       )}
     >

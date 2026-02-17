@@ -40,7 +40,7 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
   };
 
   return (
-    <div className={cn("flex h-full flex-col", className)}>
+    <div className={cn("flex h-full flex-col overflow-hidden", className)}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-2">
         <h3 className="text-sm font-medium">Chat</h3>

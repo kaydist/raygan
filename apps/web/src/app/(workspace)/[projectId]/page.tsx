@@ -10,12 +10,11 @@ interface WorkspacePageProps {
 
 export default function WorkspacePage({ params }: WorkspacePageProps) {
   const { projectId } = use(params);
-  const projectIdNum = projectId;
 
   return (
     <>
       <WorkspaceToolbar projectName={`Project ${projectId}`} />
-      <WorkspaceLayout projectId={projectIdNum} />
+      <WorkspaceLayout projectId={projectId} />
     </>
   );
 }
