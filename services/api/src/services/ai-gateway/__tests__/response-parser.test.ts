@@ -105,14 +105,14 @@ export function Button() {
       expect(result.codeBlocks[0]?.filename).toBe("components/Button.tsx");
     });
 
-    it("should handle empty code blocks", () => {
+    it("should filter out empty code blocks", () => {
       const content = `\`\`\`tsx filename="empty.tsx"
 \`\`\``;
 
       const result = parser.parse(content);
 
-      expect(result.codeBlocks).toHaveLength(1);
-      expect(result.codeBlocks[0]?.content).toBe("");
+      expect(result.codeBlocks).toHaveLength(0);
+      expect(result.warnings.some(w => w.includes("Empty code block"))).toBe(true);
     });
 
     it("should handle code blocks with only language", () => {
@@ -261,5 +261,149 @@ export const x = 1;
 
     expect(blocks).toHaveLength(1);
     expect(blocks[0]?.filename).toBe("test.tsx");
+  });
+});
+
+describe("ResponseParser validation", () => {
+  let parser: ResponseParser;
+
+  beforeEach(() => {
+    parser = new ResponseParser();
+  });
+
+  describe("empty content handling", () => {
+    it("should handle empty string", () => {
+      const result = parser.parse("");
+
+      expect(result.codeBlocks).toHaveLength(0);
+      expect(result.warnings).toContain("Empty content received from AI");
+    });
+
+    it("should handle whitespace-only content", () => {
+      const result = parser.parse("   \n\t  ");
+
+      expect(result.codeBlocks).toHaveLength(0);
+      expect(result.warnings).toContain("Empty content received from AI");
+    });
+  });
+
+  describe("code block validation", () => {
+    it("should filter out empty code blocks", () => {
+      const content = `\`\`\`tsx filename="empty.tsx"
+\`\`\`
+
+\`\`\`tsx filename="valid.tsx"
+export function Valid() {}
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.codeBlocks).toHaveLength(1);
+      expect(result.codeBlocks[0]?.filename).toBe("valid.tsx");
+      expect(result.warnings.some(w => w.includes("Empty code block"))).toBe(true);
+    });
+
+    it("should add warning for oversized code blocks", () => {
+      const largeContent = "x".repeat(150 * 1024);
+      const content = `\`\`\`tsx filename="large.tsx"
+${largeContent}
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.warnings.some(w => w.includes("too large"))).toBe(true);
+    });
+  });
+
+  describe("filename sanitization", () => {
+    it("should sanitize path traversal attempts", () => {
+      const content = `\`\`\`tsx filename="../../../etc/passwd"
+export const x = 1;
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.codeBlocks[0]?.filename).not.toContain("..");
+      expect(result.warnings.some(w => w.includes("sanitized"))).toBe(true);
+    });
+
+    it("should remove leading slashes", () => {
+      const content = `\`\`\`tsx filename="/absolute/path.tsx"
+export const x = 1;
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.codeBlocks[0]?.filename).not.toMatch(/^\//);
+    });
+
+    it("should strip src/ prefix", () => {
+      const content = `\`\`\`tsx filename="src/components/Button.tsx"
+export function Button() {}
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.codeBlocks[0]?.filename).toBe("components/Button.tsx");
+    });
+
+    it("should sanitize invalid filename characters", () => {
+      const content = `\`\`\`tsx filename="invalid<>file.tsx"
+export const x = 1;
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.codeBlocks).toHaveLength(1);
+      expect(result.codeBlocks[0]?.filename).toBe("invalidfile.tsx");
+      expect(result.warnings.some(w => w.includes("sanitized"))).toBe(true);
+    });
+  });
+
+  describe("code validation", () => {
+    it("should warn about malformed code with unbalanced braces", () => {
+      const content = `\`\`\`tsx filename="malformed.tsx"
+export function Broken() {
+  return <div>
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.warnings.some(w => w.includes("malformed"))).toBe(true);
+    });
+
+    it("should accept valid balanced code", () => {
+      const content = `\`\`\`tsx filename="valid.tsx"
+export function Valid() {
+  return <div>Hello</div>;
+}
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.warnings.filter(w => w.includes("malformed"))).toHaveLength(0);
+    });
+  });
+
+  describe("warnings collection", () => {
+    it("should reset warnings on new parse", () => {
+      parser.parse("");
+      expect(parser.getWarnings().length).toBeGreaterThan(0);
+
+      parser.reset();
+      expect(parser.getWarnings()).toHaveLength(0);
+    });
+
+    it("should accumulate multiple warnings", () => {
+      const content = `\`\`\`tsx filename="../bad.tsx"
+\`\`\`
+
+\`\`\`tsx filename="also-empty.tsx"
+\`\`\``;
+
+      const result = parser.parse(content);
+
+      expect(result.warnings.length).toBeGreaterThan(1);
+    });
   });
 });
