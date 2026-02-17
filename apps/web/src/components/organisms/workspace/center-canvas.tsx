@@ -111,6 +111,21 @@ function BuilderCanvas() {
   );
 }
 
+function FileExplorerPanel() {
+  return (
+    <div className="flex h-full flex-col bg-[#1e1e1e]">
+      <div className="flex h-9 items-center border-b border-border bg-[#252526] px-3">
+        <span className="text-xs font-medium uppercase text-muted-foreground">
+          Explorer
+        </span>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <FileExplorer />
+      </div>
+    </div>
+  );
+}
+
 function CodeWorkspace() {
   return (
     <div className="flex h-full flex-col bg-[#1e1e1e]">
@@ -146,6 +161,10 @@ export function CenterCanvas() {
 
   if (activeMode === "builder") {
     return <BuilderCanvas />;
+  }
+
+  if (activeMode === "agent") {
+    return <FileExplorerPanel />;
   }
 
   return <CodeWorkspace />;

@@ -7,49 +7,22 @@ import { useUIStore } from "@/stores";
 import { useProjectFilesSync } from "@/hooks";
 
 import { ResizeHandle } from "./resize-handle";
-import { LayersPanel } from "./layers-panel";
-import { ComponentPalette } from "./component-palette";
 import { AgentPanel } from "./agent-panel";
 import { CenterCanvas } from "./center-canvas";
 import { RightPanel } from "./right-panel";
 import { StatusBar } from "./status-bar";
 import { defaultLayout, LayoutState } from "./constants";
 
-interface LeftPanelContentProps {
-  layersSize: number;
-  projectId: string;
-}
-
-function LeftPanelContent({ layersSize, projectId }: LeftPanelContentProps) {
-  const { activeMode } = useUIStore();
-
-  if (activeMode === "agent") {
-    return <AgentPanel projectId={projectId} />;
-  }
-
-  return (
-    <PanelGroup direction="vertical" className="h-full">
-      <Panel defaultSize={layersSize} minSize={30}>
-        <LayersPanel />
-      </Panel>
-      <ResizeHandle orientation="vertical" />
-      <Panel defaultSize={100 - layersSize} minSize={20}>
-        <ComponentPalette />
-      </Panel>
-    </PanelGroup>
-  );
-}
-
 interface WorkspaceLayoutProps {
   projectId: string;
 }
 
 export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
-  const { isLeftPanelOpen, isRightPanelOpen } = useUIStore();
+  const { activeMode } = useUIStore();
   const [mounted, setMounted] = useState(false);
   const [layout, setLayout] = useState<LayoutState>(defaultLayout);
 
-  const { isLoading: isLoadingFiles, fileCount } = useProjectFilesSync({
+  const { fileCount } = useProjectFilesSync({
     projectId,
     enabled: mounted,
   });
@@ -65,14 +38,23 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
   }, [mounted, fileCount]);
 
   const handleLayoutChange = (sizes: number[]) => {
-    if (sizes.length >= 3) {
-      setLayout((prev) => ({
-        ...prev,
-        leftSize: sizes[0] ?? prev.leftSize,
-        centerSize: sizes[1] ?? prev.centerSize,
-        rightSize: sizes[2] ?? prev.rightSize,
-      }));
-    }
+    setLayout((prev) => {
+      if (activeMode === "agent" && sizes.length >= 3) {
+        return {
+          ...prev,
+          leftSize: sizes[0] ?? prev.leftSize,
+          centerSize: sizes[1] ?? prev.centerSize,
+          rightSize: sizes[2] ?? prev.rightSize,
+        };
+      } else if (sizes.length >= 2) {
+        return {
+          ...prev,
+          centerSize: sizes[0] ?? prev.centerSize,
+          rightSize: sizes[1] ?? prev.rightSize,
+        };
+      }
+      return prev;
+    });
   };
 
   if (!mounted) {
@@ -83,6 +65,8 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
     );
   }
 
+  const showLeftPanel = activeMode === "agent";
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-hidden">
@@ -91,37 +75,37 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
           onLayout={handleLayoutChange}
           className="h-full"
         >
-          {isLeftPanelOpen && (
+          {showLeftPanel && (
             <>
               <Panel
                 defaultSize={layout.leftSize}
-                minSize={25}
+                minSize={30}
                 maxSize={35}
                 className="border-r border-border bg-background"
               >
-                <LeftPanelContent layersSize={layout.layersSize} projectId={projectId} />
+                <AgentPanel projectId={projectId} />
               </Panel>
               <ResizeHandle />
             </>
           )}
 
-          <Panel defaultSize={layout.centerSize} minSize={30}>
+          <Panel
+            defaultSize={showLeftPanel ? 20 : 60}
+            minSize={showLeftPanel ? 15 : 30}
+            maxSize={showLeftPanel ? 30 : undefined}
+          >
             <CenterCanvas />
           </Panel>
 
-          {isRightPanelOpen && (
-            <>
-              <ResizeHandle />
-              <Panel
-                defaultSize={layout.rightSize}
-                minSize={15}
-                maxSize={35}
-                className="border-l border-border bg-background"
-              >
-                <RightPanel projectId={projectId} />
-              </Panel>
-            </>
-          )}
+          <ResizeHandle />
+          <Panel
+            defaultSize={showLeftPanel ? 50 : layout.rightSize}
+            minSize={showLeftPanel ? 40 : 15}
+            maxSize={showLeftPanel ? 60 : 40}
+            className="border-l border-border bg-background"
+          >
+            <RightPanel projectId={projectId} />
+          </Panel>
         </PanelGroup>
       </div>
 
