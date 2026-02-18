@@ -1,6 +1,6 @@
 import { logger } from "../../config";
 import { AIProviderService } from "../ai-provider.service";
-import { AnthropicAdapter } from "./adapters";
+import { AnthropicAdapter, OpenAIAdapter } from "./adapters";
 import type { BaseAdapter } from "./adapters";
 import type { GenerateRequest, GenerateResponse, StreamChunk } from "./types";
 import type { AIModel, AIProvider } from "../../db";
@@ -47,7 +47,7 @@ export class AIGateway {
   }
 
   private createAdapter(provider: AIProvider): BaseAdapter | null {
-    if (!(provider.api_key_encrypted && provider.base_url)) {
+    if (!provider.api_key_encrypted) {
       throw new Error(`Provider not properly configured: ${provider.name}`);
     }
     const apiKey = decryptKey(provider.api_key_encrypted) || "";
@@ -56,7 +56,13 @@ export class AIGateway {
       case "anthropic":
         return new AnthropicAdapter(
           apiKey,
-          provider.base_url,
+          provider.base_url || undefined,
+          provider.timeout_ms,
+        );
+      case "openai":
+        return new OpenAIAdapter(
+          apiKey,
+          provider.base_url || undefined,
           provider.timeout_ms,
         );
       default:
@@ -125,10 +131,13 @@ export class AIGateway {
     }
   }
 
-  registerAdapter(slug: string, apiKey: string): void {
+  registerAdapter(slug: string, apiKey: string, baseUrl?: string): void {
     switch (slug) {
       case "anthropic":
-        this.adapters.set(slug, new AnthropicAdapter(apiKey));
+        this.adapters.set(slug, new AnthropicAdapter(apiKey, baseUrl));
+        break;
+      case "openai":
+        this.adapters.set(slug, new OpenAIAdapter(apiKey, baseUrl));
         break;
       default:
         throw new Error(`Unknown provider: ${slug}`);
