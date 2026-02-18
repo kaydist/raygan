@@ -1,6 +1,6 @@
 import { logger } from "../../config";
 import { AIProviderService } from "../ai-provider.service";
-import { AnthropicAdapter, OpenAIAdapter } from "./adapters";
+import { AnthropicAdapter, OpenAIAdapter, XAIAdapter, GoogleAdapter } from "./adapters";
 import type { BaseAdapter } from "./adapters";
 import type { GenerateRequest, GenerateResponse, StreamChunk } from "./types";
 import type { AIModel, AIProvider } from "../../db";
@@ -61,6 +61,18 @@ export class AIGateway {
         );
       case "openai":
         return new OpenAIAdapter(
+          apiKey,
+          provider.base_url || undefined,
+          provider.timeout_ms,
+        );
+      case "xai":
+        return new XAIAdapter(
+          apiKey,
+          provider.base_url || undefined,
+          provider.timeout_ms,
+        );
+      case "google":
+        return new GoogleAdapter(
           apiKey,
           provider.base_url || undefined,
           provider.timeout_ms,
@@ -138,6 +150,12 @@ export class AIGateway {
         break;
       case "openai":
         this.adapters.set(slug, new OpenAIAdapter(apiKey, baseUrl));
+        break;
+      case "xai":
+        this.adapters.set(slug, new XAIAdapter(apiKey, baseUrl));
+        break;
+      case "google":
+        this.adapters.set(slug, new GoogleAdapter(apiKey, baseUrl));
         break;
       default:
         throw new Error(`Unknown provider: ${slug}`);
