@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useUIStore, useProjectStore } from "@/stores";
+import { filesApi } from "@/lib/api";
 
 interface FileTabProps {
   path: string;
@@ -107,6 +108,8 @@ export function FileTabs() {
   const setActiveFileTab = useUIStore((s) => s.setActiveFileTab);
   const closeFileTab = useUIStore((s) => s.closeFileTab);
   const files = useProjectStore((s) => s.files);
+  const currentProject = useProjectStore((s) => s.currentProject);
+  const deleteFile = useProjectStore((s) => s.deleteFile);
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     isOpen: false,
@@ -114,6 +117,7 @@ export function FileTabs() {
     y: 0,
     path: null,
   });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +163,27 @@ export function FileTabs() {
     }
     setContextMenu({ isOpen: false, x: 0, y: 0, path: null });
   }, [contextMenu.path, openFileTabs, closeFileTab]);
+
+  const handleDeleteFile = useCallback(async () => {
+    if (!contextMenu.path || !currentProject?.id) return;
+
+    const file = files.get(contextMenu.path);
+    const path = contextMenu.path;
+    setContextMenu({ isOpen: false, x: 0, y: 0, path: null });
+
+    setIsDeleting(true);
+    try {
+      if (file?.uuid) {
+        await filesApi.delete(currentProject.id.toString(), file.uuid);
+      }
+      deleteFile(path);
+      closeFileTab(path);
+    } catch (error) {
+      console.error("Failed to delete file:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [contextMenu.path, currentProject?.id, files, deleteFile, closeFileTab]);
 
   if (openFileTabs.length === 0) {
     return null;
@@ -226,6 +251,15 @@ export function FileTabs() {
               className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
             >
               Close All
+            </button>
+            <div className="my-1 h-px bg-border" />
+            <button
+              onClick={handleDeleteFile}
+              disabled={isDeleting}
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {isDeleting ? "Deleting..." : "Delete File"}
             </button>
           </div>
         </>
