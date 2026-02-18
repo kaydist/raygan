@@ -1,3 +1,2 @@
-// Terminal feature components (Month 2)
-// export { TerminalEmulator } from "./TerminalEmulator";
-// export { CommandPalette } from "./CommandPalette";
+export { Terminal } from "./terminal";
+export { TerminalPanel } from "./terminal-panel";

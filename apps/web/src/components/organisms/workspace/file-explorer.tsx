@@ -52,8 +52,8 @@ function FileTreeItem({ entry, depth }: FileTreeItemProps) {
       <button
         onClick={handleClick}
         className={cn(
-          "flex w-full items-center gap-1 rounded-sm px-2 py-1 text-left text-sm hover:bg-accent",
-          isActive && "bg-accent text-accent-foreground"
+          "flex w-full items-center gap-1 rounded-sm px-2 py-1 text-left text-sm text-white hover:bg-accent hover:text-black",
+          isActive && "bg-accent text-black"
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >

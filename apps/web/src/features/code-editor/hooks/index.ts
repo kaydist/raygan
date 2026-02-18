@@ -1,4 +1,2 @@
-// Code Editor feature hooks
-// export { useMonaco } from "./useMonaco";
-// export { useFileSync } from "./useFileSync";
-// export { useAutoComplete } from "./useAutoComplete";
+export { useEditorKeyboard } from "./use-editor-keyboard";
+export type { UseEditorKeyboardOptions } from "./use-editor-keyboard";

@@ -34,3 +34,20 @@ export {
 
 export { createAdapter } from "./adapters";
 export type { FrameworkAdapter, ComponentImport, SerializerContext } from "./types";
+
+export {
+  parseSourceCode,
+  parseMultipleFiles,
+  type ParseResult,
+  type ParseError,
+  type ParserConfig,
+} from "./parser";
+
+export {
+  parseAIResponse,
+  parseCodeBlocksOnly,
+  validateASTOperations,
+  type AIResponseParseResult,
+  type CodeBlock,
+  type AIOperationHint,
+} from "./ai-response-parser";

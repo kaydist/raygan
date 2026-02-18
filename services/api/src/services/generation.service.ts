@@ -4,10 +4,20 @@ import { ConversationService } from "./conversation.service";
 import { AIProviderService } from "./ai-provider.service";
 import { FileStorageService } from "./file-storage.service";
 import { getAIGateway, PromptBuilder, ResponseParser } from "./ai-gateway";
-import type { CodeBlock, ASTOperation } from "./ai-gateway/response-parser";
+import type { CodeBlock } from "./ai-gateway/response-parser";
+import { parseAIResponse } from "./ast-engine";
+import type { ASTNode, ASTOperation } from "@staq/shared";
 import type { Project } from "../db";
 
-export type SSEEventType = "text" | "code_block" | "ast_operation" | "usage" | "done" | "error";
+export type SSEEventType =
+  | "text"
+  | "code_block"
+  | "ast_operation"
+  | "ast_snapshot"
+  | "file_update"
+  | "usage"
+  | "done"
+  | "error";
 
 export interface SSEEvent {
   type: SSEEventType;
@@ -27,6 +37,23 @@ export interface CodeBlockEvent {
 export interface ASTOperationEvent {
   type: "ast_operation";
   data: ASTOperation;
+}
+
+export interface ASTSnapshotEvent {
+  type: "ast_snapshot";
+  data: {
+    ast: ASTNode;
+    version: number;
+  };
+}
+
+export interface FileUpdateEvent {
+  type: "file_update";
+  data: {
+    path: string;
+    content: string;
+    operation: "create" | "update" | "delete";
+  };
 }
 
 export interface UsageEvent {
@@ -142,11 +169,6 @@ export class GenerationService {
           const { newBlocks } = parser.appendChunk(chunk.content);
           for (const block of newBlocks) {
             yield { type: "code_block", data: block };
-
-            if (block.filename) {
-              const operation = this.inferOperation(block);
-              yield { type: "ast_operation", data: operation };
-            }
           }
         }
 
@@ -175,11 +197,22 @@ export class GenerationService {
         }, "Response parser warnings");
       }
 
+      // Also parse with AST engine for proper AST operations
+      const astParsed = parseAIResponse(fullContent);
+
+      if (astParsed.errors.length > 0) {
+        logger.warn({
+          errors: astParsed.errors,
+          projectId: project.id,
+        }, "AST parser errors");
+      }
+
       logger.info({
         codeBlocksFound: parsed.codeBlocks.length,
-        astOperationsFound: parsed.astOperations.length,
+        astOperationsFound: astParsed.operations.length,
+        parsedNodesCount: astParsed.parsedNodes.length,
         filenames: parsed.codeBlocks.map(b => b.filename),
-        warningCount: parsed.warnings?.length || 0,
+        warningCount: (parsed.warnings?.length || 0) + astParsed.warnings.length,
       }, "Final parse complete");
 
       if (parsed.codeBlocks.length === 0 && fullContent.length > 0) {
@@ -189,13 +222,17 @@ export class GenerationService {
         }, "AI response contained no valid code blocks");
       }
 
-      // Collect files to persist
-      for (const operation of parsed.astOperations) {
-        if ((operation.type === "create" || operation.type === "update") && operation.content) {
+      // Collect files to persist from code blocks
+      for (const block of parsed.codeBlocks) {
+        if (block.filename && block.content) {
+          const hasImports = block.content.includes("import ");
+          const hasExport = block.content.includes("export ");
+          const isFullFile = hasImports || (hasExport && block.content.length > 100);
+
           filesToPersist.push({
-            path: operation.targetPath,
-            content: operation.content,
-            type: operation.type,
+            path: block.filename,
+            content: block.content,
+            type: isFullFile ? "create" : "update",
           });
         }
       }
@@ -210,7 +247,7 @@ export class GenerationService {
           tokens_out: totalOutputTokens,
           generation_time_ms: generationTimeMs,
           cost_usd: costUsd,
-          ast_diff: parsed.astOperations.length > 0 ? { operations: parsed.astOperations } : undefined,
+          ast_diff: astParsed.operations.length > 0 ? { operations: astParsed.operations } : undefined,
         },
         userId
       );
@@ -234,12 +271,23 @@ export class GenerationService {
         }
       }
 
-      // Emit all AST operations from the final parse
-      for (const operation of parsed.astOperations) {
+      // Emit file update events
+      for (const file of filesToPersist) {
+        yield {
+          type: "file_update",
+          data: {
+            path: file.path,
+            content: file.content,
+            operation: file.type,
+          },
+        };
+      }
+
+      // Emit proper AST operations from AST engine parser
+      for (const operation of astParsed.operations) {
         logger.info({
           type: operation.type,
-          targetPath: operation.targetPath,
-          contentLength: operation.content?.length
+          operationType: operation.type,
         }, "Emitting ast_operation");
         yield { type: "ast_operation", data: operation };
       }
@@ -363,18 +411,6 @@ export class GenerationService {
       logger.warn({ error, projectId }, "Failed to fetch existing files");
       return new Map();
     }
-  }
-
-  private inferOperation(block: CodeBlock): ASTOperation {
-    const hasImports = block.content.includes("import ");
-    const hasExport = block.content.includes("export ");
-    const isFullFile = hasImports || (hasExport && block.content.length > 100);
-
-    return {
-      type: isFullFile ? "create" : "update",
-      targetPath: block.filename!,
-      content: block.content,
-    };
   }
 
   private calculateCost(

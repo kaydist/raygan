@@ -20,3 +20,16 @@ export type {
   ModalState,
   Modals,
 } from "./ui-store";
+
+export { useASTStore } from "./ast-store";
+export type {
+  ASTNode,
+  ASTOperation,
+  ASTOperationCreate,
+  ASTOperationUpdate,
+  ASTOperationDelete,
+  ASTOperationMove,
+  ASTOperationDuplicate,
+  ASTSnapshot,
+  JSONPatch,
+} from "./ast-store";

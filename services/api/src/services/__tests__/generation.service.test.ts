@@ -502,8 +502,15 @@ describe("GenerationService", () => {
       const codeResponse = `Here's your component:
 
 \`\`\`tsx filename="components/Button.tsx"
+import React from 'react';
+import { TouchableOpacity, Text } from 'react-native';
+
 export function Button() {
-  return <button>Click me</button>;
+  return (
+    <TouchableOpacity>
+      <Text>Click me</Text>
+    </TouchableOpacity>
+  );
 }
 \`\`\`
 
@@ -533,7 +540,7 @@ Enjoy!`;
             newBlocks: [{
               filename: "components/Button.tsx",
               language: "tsx",
-              content: "export function Button() { return <button>Click me</button>; }",
+              content: "import React from 'react';\nimport { TouchableOpacity, Text } from 'react-native';\n\nexport function Button() {\n  return (\n    <TouchableOpacity>\n      <Text>Click me</Text>\n    </TouchableOpacity>\n  );\n}",
             }],
             partialBlock: null
           });
@@ -542,12 +549,7 @@ Enjoy!`;
             codeBlocks: [{
               filename: "components/Button.tsx",
               language: "tsx",
-              content: "export function Button() { return <button>Click me</button>; }",
-            }],
-            astOperations: [{
-              type: "create",
-              targetPath: "components/Button.tsx",
-              content: "export function Button() { return <button>Click me</button>; }",
+              content: "import React from 'react';\nimport { TouchableOpacity, Text } from 'react-native';\n\nexport function Button() {\n  return (\n    <TouchableOpacity>\n      <Text>Click me</Text>\n    </TouchableOpacity>\n  );\n}",
             }],
             warnings: [],
           });

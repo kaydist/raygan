@@ -41,6 +41,7 @@ interface UIState {
   isLeftPanelOpen: boolean;
   isRightPanelOpen: boolean;
   isBottomPanelOpen: boolean;
+  isTerminalOpen: boolean;
   rightPanelMode: RightPanelMode;
   panelSizes: PanelSizes;
   canvasZoom: number;
@@ -62,9 +63,11 @@ interface UIActions {
   toggleLeftPanel: () => void;
   toggleRightPanel: () => void;
   toggleBottomPanel: () => void;
+  toggleTerminal: () => void;
   setLeftPanelOpen: (open: boolean) => void;
   setRightPanelOpen: (open: boolean) => void;
   setBottomPanelOpen: (open: boolean) => void;
+  setTerminalOpen: (open: boolean) => void;
   setRightPanelMode: (mode: RightPanelMode) => void;
   setPanelSizes: (sizes: Partial<PanelSizes>) => void;
   setCanvasZoom: (zoom: number) => void;
@@ -119,6 +122,7 @@ const initialState: UIState = {
   isLeftPanelOpen: true,
   isRightPanelOpen: true,
   isBottomPanelOpen: false,
+  isTerminalOpen: false,
   rightPanelMode: "preview",
   panelSizes: defaultPanelSizes,
   canvasZoom: 1,
@@ -167,6 +171,11 @@ export const useUIStore = create<UIStore>()(
           state.isBottomPanelOpen = !state.isBottomPanelOpen;
         }),
 
+      toggleTerminal: () =>
+        set((state) => {
+          state.isTerminalOpen = !state.isTerminalOpen;
+        }),
+
       setLeftPanelOpen: (open) =>
         set((state) => {
           state.isLeftPanelOpen = open;
@@ -180,6 +189,11 @@ export const useUIStore = create<UIStore>()(
       setBottomPanelOpen: (open) =>
         set((state) => {
           state.isBottomPanelOpen = open;
+        }),
+
+      setTerminalOpen: (open) =>
+        set((state) => {
+          state.isTerminalOpen = open;
         }),
 
       setRightPanelMode: (mode) =>
@@ -346,6 +360,7 @@ export const useUIStore = create<UIStore>()(
         theme: state.theme,
         viewMode: state.viewMode,
         isSidebarOpen: state.isSidebarOpen,
+        isTerminalOpen: state.isTerminalOpen,
         panelSizes: state.panelSizes,
       }),
     }

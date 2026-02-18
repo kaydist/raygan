@@ -124,9 +124,9 @@ export function SnackPreview({
         </div>
       )}
 
-      <div className="flex-1 overflow-auto bg-muted/30 p-4">
+      <div className="min-h-0 flex-1 overflow-hidden bg-muted/30">
         {isLoading ? (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
@@ -135,23 +135,21 @@ export function SnackPreview({
             </div>
           </div>
         ) : previewMode === "device" ? (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center">
             <QRCodeDisplay url={qrCodeURL} size={220} />
           </div>
         ) : webPreviewURL ? (
-          <div className="flex h-full items-center justify-center">
-            <DeviceFrame platform={platform}>
-              <iframe
-                ref={handleIframeRef}
-                src={webPreviewURL}
-                className="h-full w-full border-0"
-                title="Simulator Preview"
-                allow="accelerometer; camera; geolocation; gyroscope; microphone"
-              />
-            </DeviceFrame>
-          </div>
+          <DeviceFrame platform={platform} className="p-4">
+            <iframe
+              ref={handleIframeRef}
+              src={webPreviewURL}
+              className="h-full w-full border-0"
+              title="Simulator Preview"
+              allow="accelerometer; camera; geolocation; gyroscope; microphone"
+            />
+          </DeviceFrame>
         ) : (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center">
             <div className="flex flex-col items-center gap-3 text-center">
               <Monitor className="h-12 w-12 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">

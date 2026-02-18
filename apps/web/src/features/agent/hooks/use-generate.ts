@@ -2,9 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 
-import { createSSEStream } from "@/lib/api";
-import { useProjectStore } from "@/stores";
-import type { ASTOperation } from "@staq/shared";
+import { createSSEStream, type FileUpdate } from "@/lib/api";
+import { useProjectStore, useASTStore } from "@/stores";
 import type { Message, StreamingState } from "../types";
 
 interface UseGenerateOptions {
@@ -88,24 +87,23 @@ export function useGenerate({
                 ),
               );
             },
-            onASTOperation: (data) => {
-              const operation = data as ASTOperation;
+            onASTOperation: (operation) => {
+              const { applyOperation } = useASTStore.getState();
+              applyOperation(operation);
+            },
+            onFileUpdate: (update: FileUpdate) => {
               const { createFile, updateFile, deleteFile } =
                 useProjectStore.getState();
 
-              switch (operation.type) {
+              switch (update.operation) {
                 case "create":
-                  if (operation.content) {
-                    createFile(operation.targetPath, operation.content);
-                  }
+                  createFile(update.path, update.content);
                   break;
                 case "update":
-                  if (operation.content) {
-                    updateFile(operation.targetPath, operation.content);
-                  }
+                  updateFile(update.path, update.content);
                   break;
                 case "delete":
-                  deleteFile(operation.targetPath);
+                  deleteFile(update.path);
                   break;
               }
             },

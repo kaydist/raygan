@@ -66,4 +66,4 @@ export {
 export { socketClient } from "./socket-client";
 
 export { createSSEStream } from "./sse-client";
-export type { SSECallbacks } from "./sse-client";
+export type { SSECallbacks, FileUpdate, ASTSnapshot, CodeBlock } from "./sse-client";

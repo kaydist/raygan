@@ -12,6 +12,7 @@ import type {
 } from "@staq/shared";
 
 export interface FileEntry {
+  uuid?: string;
   path: string;
   name: string;
   type: "file" | "folder";

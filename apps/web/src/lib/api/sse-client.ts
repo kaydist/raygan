@@ -1,11 +1,31 @@
+import type { ASTNode, ASTOperation } from "@staq/shared";
 import { getAuthToken, logger } from "../utils";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
+export interface FileUpdate {
+  path: string;
+  content: string;
+  operation: "create" | "update" | "delete";
+}
+
+export interface ASTSnapshot {
+  ast: ASTNode;
+  version: number;
+}
+
+export interface CodeBlock {
+  language: string;
+  filename: string | null;
+  content: string;
+}
+
 export interface SSECallbacks {
   onText?: (content: string) => void;
-  onASTOperation?: (operation: unknown) => void;
-  onFileUpdate?: (update: unknown) => void;
+  onCodeBlock?: (block: CodeBlock) => void;
+  onASTOperation?: (operation: ASTOperation) => void;
+  onASTSnapshot?: (snapshot: ASTSnapshot) => void;
+  onFileUpdate?: (update: FileUpdate) => void;
   onProgress?: (progress: number) => void;
   onUsage?: (usage: {
     input_tokens: number;
@@ -114,11 +134,17 @@ function handleEvent(
     case "text":
       callbacks.onText?.((data.content as string) || "");
       break;
+    case "code_block":
+      callbacks.onCodeBlock?.(data as unknown as CodeBlock);
+      break;
     case "ast_operation":
-      callbacks.onASTOperation?.(data);
+      callbacks.onASTOperation?.(data as unknown as ASTOperation);
+      break;
+    case "ast_snapshot":
+      callbacks.onASTSnapshot?.(data as unknown as ASTSnapshot);
       break;
     case "file_update":
-      callbacks.onFileUpdate?.(data);
+      callbacks.onFileUpdate?.(data as unknown as FileUpdate);
       break;
     case "progress":
       callbacks.onProgress?.(data.progress as number);

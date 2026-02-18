@@ -1,7 +1,9 @@
 "use client";
 
-import { Code, Blocks, X } from "lucide-react";
-import { Panel, PanelGroup } from "react-resizable-panels";
+import { Code, Blocks, X, TerminalSquare } from "lucide-react";
+import { Panel, PanelGroup, ImperativePanelHandle } from "react-resizable-panels";
+import { useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 
 import { useUIStore, useProjectStore } from "@/stores";
 import { Button } from "@/components/atoms";
@@ -10,6 +12,18 @@ import { cn } from "@/lib/utils";
 
 import { FileExplorer } from "./file-explorer";
 import { ResizeHandle } from "./resize-handle";
+
+const TerminalPanel = dynamic(
+  () => import("@/features/terminal").then((mod) => mod.TerminalPanel),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center bg-[#1e1e1e]">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    ),
+  }
+);
 
 function EditorTabs() {
   const { openFileTabs, activeFileTab, closeFileTab, setActiveFileTab } = useUIStore();
@@ -28,9 +42,9 @@ function EditorTabs() {
           <div
             key={path}
             className={cn(
-              "group flex h-7 items-center gap-1.5 rounded-t-sm px-3 text-sm",
+              "group flex h-7 items-center gap-1.5 rounded-t-sm px-3 text-sm text-white",
               isActive
-                ? "bg-[#1e1e1e] text-foreground"
+                ? "bg-[#1e1e1e] "
                 : "text-muted-foreground hover:bg-[#2d2d2d]"
             )}
           >
@@ -127,31 +141,80 @@ function FileExplorerPanel() {
 }
 
 function CodeWorkspace() {
+  const terminalPanelRef = useRef<ImperativePanelHandle>(null);
+  const isTerminalOpen = useUIStore((s) => s.isTerminalOpen);
+  const toggleTerminal = useUIStore((s) => s.toggleTerminal);
+
+  const handleToggleTerminal = useCallback(() => {
+    const panel = terminalPanelRef.current;
+    if (!panel) return;
+
+    if (isTerminalOpen) {
+      panel.collapse();
+    } else {
+      panel.expand();
+    }
+    toggleTerminal();
+  }, [isTerminalOpen, toggleTerminal]);
+
   return (
     <div className="flex h-full flex-col bg-[#1e1e1e]">
-      <PanelGroup direction="horizontal" className="flex-1">
-        <Panel defaultSize={25} minSize={15} maxSize={40}>
-          <div className="flex h-full flex-col border-r border-border">
-            <div className="flex h-9 items-center border-b border-border bg-[#252526] px-3">
-              <span className="text-xs font-medium uppercase text-muted-foreground">
-                Explorer
-              </span>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <FileExplorer />
-            </div>
-          </div>
+      <PanelGroup direction="vertical" className="flex-1">
+        <Panel defaultSize={isTerminalOpen ? 70 : 100} minSize={30}>
+          <PanelGroup direction="horizontal" className="h-full">
+            <Panel defaultSize={25} minSize={15} maxSize={40}>
+              <div className="flex h-full flex-col border-r border-border">
+                <div className="flex h-9 items-center border-b border-border bg-[#252526] px-3">
+                  <span className="text-xs font-medium uppercase text-muted-foreground">
+                    Explorer
+                  </span>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <FileExplorer />
+                </div>
+              </div>
+            </Panel>
+            <ResizeHandle />
+            <Panel defaultSize={75} minSize={40}>
+              <div className="flex h-full flex-col">
+                <EditorTabs />
+                <div className="flex-1 overflow-hidden">
+                  <EditorPanel />
+                </div>
+              </div>
+            </Panel>
+          </PanelGroup>
         </Panel>
-        <ResizeHandle />
-        <Panel defaultSize={75} minSize={40}>
-          <div className="flex h-full flex-col">
-            <EditorTabs />
-            <div className="flex-1 overflow-hidden">
-              <EditorPanel />
-            </div>
-          </div>
+        <ResizeHandle orientation="horizontal" />
+        <Panel
+          ref={terminalPanelRef}
+          defaultSize={isTerminalOpen ? 30 : 0}
+          minSize={0}
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => {
+            if (isTerminalOpen) toggleTerminal();
+          }}
+          onExpand={() => {
+            if (!isTerminalOpen) toggleTerminal();
+          }}
+        >
+          <TerminalPanel />
         </Panel>
       </PanelGroup>
+      <div className="flex h-6 items-center justify-between border-t border-border bg-[#252526] px-2">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={handleToggleTerminal}
+          >
+            <TerminalSquare className="h-3.5 w-3.5" />
+            Terminal
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

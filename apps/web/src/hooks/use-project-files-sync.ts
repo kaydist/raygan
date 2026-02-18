@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 
-import { useProjectFiles } from "@/lib/api";
+import { useProjectFiles, useProject } from "@/lib/api";
 import { useProjectStore, type FileEntry } from "@/stores";
 
 interface UseProjectFilesSyncOptions {
@@ -12,8 +12,16 @@ interface UseProjectFilesSyncOptions {
 
 export function useProjectFilesSync({ projectId, enabled = true }: UseProjectFilesSyncOptions) {
   const { data: files, isLoading, error, refetch } = useProjectFiles(projectId);
+  const { data: project } = useProject(projectId);
   const setFiles = useProjectStore((state) => state.setFiles);
   const setFileTree = useProjectStore((state) => state.setFileTree);
+  const setCurrentProject = useProjectStore((state) => state.setCurrentProject);
+
+  useEffect(() => {
+    if (project) {
+      setCurrentProject(project);
+    }
+  }, [project, setCurrentProject]);
 
   useEffect(() => {
     if (!enabled || !files || files.length === 0) {
@@ -24,6 +32,7 @@ export function useProjectFilesSync({ projectId, enabled = true }: UseProjectFil
 
     for (const file of files) {
       const entry: FileEntry = {
+        uuid: file.uuid,
         path: file.path,
         name: file.name,
         type: file.type === "directory" ? "folder" : "file",
