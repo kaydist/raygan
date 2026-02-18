@@ -12,6 +12,7 @@ export {
   type SnackFile,
   type SnackFiles,
 } from "./file-storage.service";
+export { TemplateService, type TemplateType } from "./template.service";
 export {
   SupabaseAuthService,
   SupabaseUnavailableError,

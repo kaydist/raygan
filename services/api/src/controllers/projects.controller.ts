@@ -2,10 +2,11 @@ import type { Request, Response } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth";
 import { logger } from "../config";
 import { ERROR_CODES } from "../constants";
-import { ProjectService, OrganizationService } from "../services";
+import { ProjectService, OrganizationService, TemplateService } from "../services";
 
 const projectService = new ProjectService();
 const organizationService = new OrganizationService();
+const templateService = new TemplateService();
 
 export async function listProjects(req: Request, res: Response): Promise<void> {
   try {
@@ -97,7 +98,7 @@ export async function createProject(
   try {
     const authReq = req as AuthenticatedRequest;
     const currentOrg = authReq.currentOrganization;
-    const { name, slug, description, framework_version, backend_provider } =
+    const { name, slug, description, framework_version, backend_provider, template } =
       req.body;
 
     const existing = await projectService.findBySlug(currentOrg.id, slug);
@@ -134,6 +135,20 @@ export async function createProject(
         },
       });
       return;
+    }
+
+    const templateType = template || "expo-base";
+    try {
+      await templateService.initializeProject(
+        project.id,
+        name,
+        slug,
+        templateType,
+        authReq.dbUser.id
+      );
+      logger.info({ projectId: project.id, template: templateType }, "Project initialized with template");
+    } catch (templateErr) {
+      logger.error({ templateErr, projectId: project.id }, "Failed to initialize project template");
     }
 
     res.status(201).json({
