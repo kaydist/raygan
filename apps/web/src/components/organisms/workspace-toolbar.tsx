@@ -27,7 +27,10 @@ interface WorkspaceToolbarProps {
   className?: string;
 }
 
-export function WorkspaceToolbar({ projectName, className }: WorkspaceToolbarProps) {
+export function WorkspaceToolbar({
+  projectName,
+  className,
+}: WorkspaceToolbarProps) {
   const router = useRouter();
   const { activeMode, setActiveMode } = useUIStore();
 
@@ -35,7 +38,7 @@ export function WorkspaceToolbar({ projectName, className }: WorkspaceToolbarPro
     <div
       className={cn(
         "flex h-12 items-center justify-between border-b border-border bg-background p-2",
-        className
+        className,
       )}
     >
       <div className="flex items-center gap-1">
