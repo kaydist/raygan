@@ -1737,27 +1737,120 @@ export class ASTEngine {
 
 }
 
-## **10.2 Serializer (AST to Source Code)**
+## **10.2 Serializer (Framework-Agnostic Architecture)**
 
-export class ASTSerializer {
+The serializer converts the AST to source code using a pluggable framework adapter pattern. This enables support for multiple target frameworks (Expo, bare React Native, Flutter) while sharing common logic.
 
-  serialize(ast: ASTNode, config: ProjectConfig): Map\<string, string\> {
+### **10.2.1 Framework Adapter Interface**
 
-    // Screen nodes \-\> src/app/\[name\].tsx (Expo Router)
+```typescript
+export type Framework = "expo" | "bare-rn" | "flutter";
 
-    // Navigator nodes \-\> src/app/\_layout.tsx, src/app/(tabs)/\_layout.tsx
+export interface FrameworkAdapter {
+  readonly framework: Framework;
 
-    // Component nodes \-\> src/components/\[Name\].tsx
+  // Component handling
+  isBuiltInComponent(componentType: string): boolean;
+  getComponentImport(componentType: string): ComponentImport | null;
 
-    // StyleSheet.create() from style props
+  // Code generation
+  serializeScreen(node: ASTNode, context: SerializerContext): string;
+  serializeNavigator(node: ASTNode, context: SerializerContext): string;
+  serializeComponent(node: ASTNode, context: SerializerContext): string;
 
-    // Auto-manage imports, generate TypeScript types
+  // Scaffolding
+  generateScaffolding(config: SerializerConfig, deps: DependencyTracker): Map<string, string>;
 
-    // Return Map\<filePath, fileContent\>
-
-  }
-
+  // File paths
+  getScreenPath(name: string, config: SerializerConfig): string;
+  getComponentPath(name: string, config: SerializerConfig): string;
 }
+```
+
+### **10.2.2 Base Adapter (Shared Logic)**
+
+```typescript
+export abstract class BaseFrameworkAdapter implements FrameworkAdapter {
+  abstract readonly framework: Framework;
+
+  abstract isBuiltInComponent(componentType: string): boolean;
+  abstract getComponentImport(componentType: string): ComponentImport | null;
+  abstract generateScaffolding(config: SerializerConfig, deps: DependencyTracker): Map<string, string>;
+
+  // JSX generation (shared across React-based frameworks)
+  protected generateJsxElement(tagName, props, children, indent, depth): string { ... }
+  protected generatePropsString(props): string { ... }
+  protected flattenStyle(style: ASTStyle): Record<string, unknown> { ... }
+  protected toKebabCase(str: string): string { ... }
+}
+```
+
+### **10.2.3 Expo Adapter**
+
+```typescript
+export class ExpoAdapter extends BaseFrameworkAdapter {
+  readonly framework = "expo";
+
+  // React Native + Expo component registries
+  private REACT_NATIVE_COMPONENTS: Set<string>;
+  private EXPO_COMPONENTS: Map<string, string>;
+
+  // Expo-specific scaffolding: app.json, babel.config.js, tsconfig.json
+  // Expo Router + React Navigation support
+}
+```
+
+### **10.2.4 Adapter Factory**
+
+```typescript
+export function createAdapter(framework: Framework): FrameworkAdapter {
+  switch (framework) {
+    case "expo":
+      return new ExpoAdapter();
+    case "bare-rn":
+      throw new Error("Bare React Native adapter not yet implemented");
+    case "flutter":
+      throw new Error("Flutter adapter not yet implemented");
+  }
+}
+```
+
+### **10.2.5 Serializer Entry Point**
+
+```typescript
+export function serialize(ast: ASTNode, config: SerializerConfig): SerializerOutput {
+  const adapter = createAdapter(config.framework ?? "expo");
+  // Delegate all framework-specific operations to adapter
+  // Screen nodes -> adapter.getScreenPath() + adapter.serializeScreen()
+  // Navigator nodes -> adapter.serializeNavigator()
+  // Component nodes -> adapter.getComponentPath() + adapter.serializeComponent()
+  // Scaffolding -> adapter.generateScaffolding()
+  // Return Map<filePath, fileContent>
+}
+```
+
+### **10.2.6 Directory Structure**
+
+```
+services/api/src/services/ast-engine/
+├── serializer.ts           # Main entry (backward compatible)
+├── types.ts                # Framework types, adapter interface
+├── adapters/
+│   ├── base-adapter.ts     # Abstract base with shared logic
+│   ├── expo.adapter.ts     # Expo implementation
+│   └── index.ts            # Factory + barrel export
+├── ast.ts                  # (existing)
+├── differ.ts               # (existing)
+└── validator.ts            # (existing)
+```
+
+### **10.2.7 Future Framework Support**
+
+| Framework | Adapter | Status | Notes |
+| :-------- | :------ | :----- | :---- |
+| Expo (managed) | ExpoAdapter | Implemented | Default framework. Full Snack SDK preview support. |
+| Bare React Native | BareRNAdapter | Planned | Different scaffolding (metro.config.js, no expo-router). |
+| Flutter | FlutterAdapter | Planned | Dart code generation. New base class hierarchy. |
 
 ## **10.3 Conflict Resolution**
 

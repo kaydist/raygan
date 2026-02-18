@@ -348,11 +348,11 @@ export interface StreamChunk {
   };
 }
 
-export interface ASTOperation {
+export interface FileOperation {
   type: "create" | "update" | "delete" | "move";
-  targetPath: string;
+  target_path: string;
   content?: string;
-  newPath?: string;
+  new_path?: string;
 }
 
 export interface GenerateRequest {

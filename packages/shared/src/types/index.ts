@@ -3,3 +3,6 @@ export * from './database.types';
 
 // API types (request/response DTOs)
 export * from './api.types';
+
+// AST types (Component AST structure)
+export * from './ast.types';
