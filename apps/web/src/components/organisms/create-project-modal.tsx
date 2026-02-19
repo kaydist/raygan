@@ -90,7 +90,7 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
       {
         onSuccess: (project) => {
           handleClose();
-          router.push(`/${project.id}`);
+          router.push(`/workspace/${project.id}`);
         },
       }
     );

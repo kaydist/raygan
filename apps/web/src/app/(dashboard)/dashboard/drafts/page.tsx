@@ -29,7 +29,7 @@ export default function DraftsPage() {
   } = useProjects({ include_archived: false });
 
   const handleProjectClick = (projectId: string) => {
-    router.push(`/${projectId}`);
+    router.push(`/workspace/${projectId}`);
   };
 
   const handleNewProject = () => {
