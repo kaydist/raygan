@@ -25,11 +25,15 @@ import {
 interface WorkspaceToolbarProps {
   projectName: string;
   className?: string;
+  isConnected?: boolean;
+  isSyncing?: boolean;
 }
 
 export function WorkspaceToolbar({
   projectName,
   className,
+  isConnected = false,
+  isSyncing = false,
 }: WorkspaceToolbarProps) {
   const router = useRouter();
   const { activeMode, setActiveMode } = useUIStore();
@@ -98,7 +102,23 @@ export function WorkspaceToolbar({
         </div>
 
         <div className="flex items-center gap-1.5 text-sm">
-          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+          <div
+            className={cn(
+              "h-2 w-2 rounded-full",
+              isSyncing
+                ? "animate-pulse bg-amber-500"
+                : isConnected
+                  ? "bg-emerald-500"
+                  : "bg-red-500"
+            )}
+            title={
+              isSyncing
+                ? "Syncing..."
+                : isConnected
+                  ? "Connected"
+                  : "Disconnected"
+            }
+          />
           <span className="text-muted-foreground">847 credits</span>
         </div>
 

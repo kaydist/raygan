@@ -287,27 +287,190 @@ data: {"message": "Rate limit exceeded", "code": "RATE_LIMITED"}
 
 ---
 
-## Next Steps (Day 7+)
+## Day 33: Multi-Model AI Gateway (COMPLETED)
 
-### Tasks
-- [ ] Initialize Next.js 15 with App Router, Tailwind CSS 4, shadcn/ui
-- [ ] Route groups: (marketing), (auth), (dashboard), (workspace)
-- [ ] Basic signin page
-- [ ] Basic dashboard page: list projects, create project
-- [ ] Verify: can see project list in browser, create new project
+### Completed Tasks
+
+#### 1. xAI/Grok Adapter
+- [x] Created `XAIAdapter` using OpenAI SDK with custom base URL (`https://api.x.ai/v1`)
+- [x] Full streaming support with retry logic
+- [x] Migration to seed xAI provider and Grok models
+
+#### 2. Google/Gemini Adapter
+- [x] Created `GoogleAdapter` using `@google/generative-ai` SDK
+- [x] Message role conversion (assistant → model)
+- [x] Migration to seed Google provider and Gemini models
+
+#### 3. Seeded Models
+| Provider | Models |
+|----------|--------|
+| xAI | grok-3, grok-3-fast, grok-2-vision |
+| Google | gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash, gemini-1.5-flash-8b, gemini-2.0-flash-lite |
 
 ### Key Files
-- `apps/web/src/app/(dashboard)/page.tsx`
-- `apps/web/src/app/layout.tsx`
-- `apps/web/tailwind.config.ts`
-- `apps/web/src/components/ui/`
+```
+src/services/ai-gateway/adapters/
+├── xai.adapter.ts          # xAI/Grok implementation
+└── google.adapter.ts       # Google/Gemini implementation
+
+src/db/migrations/
+├── 1708300900000-AddXAIProvider.ts
+└── 1708301000000-AddGoogleProvider.ts
+```
+
+---
+
+## Day 34: Fallback Chain & Cost Estimation (COMPLETED)
+
+### Completed Tasks
+
+#### 1. Fallback Chain
+- [x] `generateWithFallback()` - tries next model by priority if primary fails
+- [x] `streamWithFallback()` - streaming with automatic fallback
+- [x] Returns which model was actually used and if fallback occurred
+
+#### 2. Cost Estimator
+- [x] Token counting using `tiktoken` with model-specific encoders
+- [x] Pre-flight cost estimation before API call
+- [x] Actual cost calculation from response usage
+
+#### 3. Credit Usage Tracking
+- [x] Created `CreditUsage` entity for tracking AI usage per generation
+- [x] Tracks organization, user, project, conversation, model, tokens, cost, timing
+- [x] `UsageTrackingService` for logging and querying usage data
+- [x] Methods: `logUsage`, `logFromResponse`, `getOrganizationUsage`, `getUserUsage`, etc.
+
+#### 4. Provider Filtering
+- [x] Models only returned if their provider is enabled
+- [x] `getAllEnabledModels()` filters by `provider.is_enabled`
+- [x] Individual model queries return `null` if provider disabled
+
+### Key Files
+```
+src/services/ai-gateway/
+├── gateway.ts              # Added fallback methods
+├── cost-estimator.ts       # Token counting & cost estimation
+
+src/db/entities/
+└── credit-usage.entity.ts  # Usage tracking entity
+
+src/services/
+└── usage-tracking.service.ts
+
+src/db/migrations/
+└── 1708301100000-CreateCreditUsageTable.ts
+```
+
+---
+
+## Day 35: Model Selector UI & Integration (COMPLETED)
+
+### Completed Tasks
+
+#### 1. Model Selector Component
+- [x] Provider logos (from URL or fallback SVG icons)
+- [x] Intelligence dots indicator (1-4 dots based on capabilities)
+- [x] Price tier labels ($, $$, $$$, $$$$)
+- [x] Context window display (e.g., "128K", "1M")
+- [x] Models sorted by intelligence (highest first)
+- [x] Check icon for selected model
+- [x] Scrollable dropdown with proper height
+
+#### 2. Provider Logo Support
+- [x] Added `logo_url` column to `ai_providers` table
+- [x] Migration with default logo URLs for Anthropic, OpenAI, xAI, Google
+- [x] Backend API returns full provider info including logo
+
+#### 3. Project Default Model
+- [x] Model selector integrated into chat `PromptInput`
+- [x] Selected model saved as project's `default_model_id`
+- [x] Backend updated to return/accept `default_model_id` in project endpoints
+- [x] Generation service uses: provided modelId → project default → system default
+
+### Key Files
+```
+apps/web/src/components/molecules/
+└── model-selector.tsx      # Full model selector UI
+
+apps/web/src/features/agent/components/
+├── prompt-input.tsx        # Integrated ModelSelector
+└── chat-panel.tsx          # Model selection handling
+
+services/api/src/controllers/
+├── generate.controller.ts  # Updated listModels with full info
+└── projects.controller.ts  # Returns/accepts default_model_id
+
+src/db/migrations/
+└── 1708301200000-AddProviderLogoUrl.ts
+```
+
+### Model Selector Features
+- Popover-based dropdown with ScrollArea
+- Provider logos with fallback SVG icons
+- Intelligence scoring based on capabilities + context + cost
+- Price tier calculation from input/output costs
+- Sorted by intelligence level (descending)
+- Check icon indicator for selected model
+
+---
+
+## Next Steps (Day 36)
+
+### Tasks
+- [ ] Set up Socket.io server attached to Express
+- [ ] Room management (one room per project)
+- [ ] ast:patch event (client→server): receive AST diff, apply to server state, broadcast
+- [ ] ast:patched event (server→clients): broadcast applied patches
+- [ ] ast:snapshot on client connect: send full current AST state
+
+### Key Files
+- `services/api/src/socket/index.ts`
+- `services/api/src/socket/handlers/ast-sync.ts`
+- `services/api/src/socket/middleware/`
 
 ### Acceptance Criteria
-- [ ] Next.js app runs on pnpm dev
-- [ ] Route groups properly organized
-- [ ] Dashboard shows project list from API
-- [ ] Create project button works
-- [ ] shadcn/ui components render correctly
+- [ ] Socket.io server runs alongside Express
+- [ ] Clients join project rooms on workspace open
+- [ ] AST patches broadcast to all room members
+- [ ] New clients receive full AST snapshot on connect
+- [ ] Connection/disconnection handled gracefully
 
-### Dependencies
-Blocked by: #3
+---
+
+## Next Steps (Day 37)
+
+### Tasks
+- [ ] Create socket client with auto-reconnect and exponential backoff
+- [ ] Wire ast-store to emit patches via socket on local changes
+- [ ] Listen for remote patches, apply to local store (skip if own patch)
+- [ ] Test multi-tab: edit in one tab → other tab updates in real-time
+
+### Key Files
+- `apps/web/src/lib/socket-client.ts`
+- `apps/web/src/hooks/useSocket.ts`
+
+### Acceptance Criteria
+- [ ] Socket connects on workspace mount, disconnects on unmount
+- [ ] Multi-tab editing works (changes sync between tabs)
+- [ ] Own changes not echoed back (optimistic updates)
+- [ ] Reconnection restores state from snapshot
+- [ ] No duplicate patches applied
+
+---
+
+## Next Steps (Day 38)
+
+### Tasks
+- [ ] generate:start, generate:stream, generate:complete, generate:error events via Socket.io
+- [ ] preview:reload event on file changes
+- [ ] Show generation progress indicator in chat panel
+- [ ] Multiple clients see generation progress in real-time
+
+### Key Files
+- `services/api/src/socket/handlers/generation-sync.ts`
+
+### Acceptance Criteria
+- [ ] Generation events stream to all project room members
+- [ ] Preview reloads automatically when files change
+- [ ] Progress indicator shows in all connected clients
+- [ ] Generation errors broadcast to room

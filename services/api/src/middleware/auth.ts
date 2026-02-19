@@ -71,7 +71,7 @@ export async function authenticate(
       relations: ["current_organization"],
     });
 
-    if (!dbUser || dbUser.deleted_flag) {
+    if (!dbUser || dbUser.deleted_flag || !dbUser.activated_flag) {
       res.status(401).json({
         data: null,
         error: {
