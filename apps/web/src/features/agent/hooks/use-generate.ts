@@ -14,6 +14,7 @@ interface UseGenerateOptions {
 
 interface GenerateRequest {
   prompt: string;
+  modelId?: string;
 }
 
 export function useGenerate({
@@ -71,6 +72,7 @@ export function useGenerate({
           `/api/v1/projects/${projectId}/generate`,
           {
             prompt: request.prompt,
+            model_id: request.modelId,
           },
           {
             onText: (content) => {

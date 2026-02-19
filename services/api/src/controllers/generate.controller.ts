@@ -16,15 +16,24 @@ export async function listModels(_req: Request, res: Response): Promise<void> {
 
     res.json({
       data: models.map((m) => ({
-        id: m.model_id,
+        id: m.id,
+        model_id: m.model_id,
         name: m.name,
         description: m.description,
-        provider: m.provider?.slug,
+        provider: {
+          slug: m.provider?.slug,
+          name: m.provider?.name,
+          logo_url: m.provider?.logo_url,
+        },
         context_window: m.context_window,
         max_output_tokens: m.max_output_tokens,
+        input_cost_per_1k: m.input_cost_per_1k,
+        output_cost_per_1k: m.output_cost_per_1k,
         supports_vision: m.supports_vision,
+        supports_tools: m.supports_tools,
         supports_streaming: m.supports_streaming,
         is_default: m.is_default,
+        capabilities: m.capabilities,
       })),
       error: null,
     });
@@ -140,7 +149,7 @@ export async function streamGenerate(req: Request, res: Response): Promise<void>
 export async function generateForProject(req: Request, res: Response): Promise<void> {
   const authReq = req as AuthenticatedRequest;
   const projectId = req.params.projectId as string;
-  const { prompt, current_file, selected_code, max_tokens, temperature } = req.body;
+  const { prompt, model_id, current_file, selected_code, max_tokens, temperature } = req.body;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -156,6 +165,7 @@ export async function generateForProject(req: Request, res: Response): Promise<v
       projectId,
       prompt,
       userId: authReq.dbUser.id,
+      modelId: model_id,
       currentFile: current_file,
       selectedCode: selected_code,
       maxTokens: max_tokens,

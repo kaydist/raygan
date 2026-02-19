@@ -4,3 +4,4 @@ export * from "./adapters";
 export * from "./prompt-builder";
 export * from "./response-parser";
 export * from "./prompts";
+export * from "./cost-estimator";

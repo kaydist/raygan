@@ -15,6 +15,9 @@ export class AIProvider extends BaseEntity {
   @Column({ type: "text", nullable: true })
   description!: string | null;
 
+  @Column({ type: "varchar", length: 500, nullable: true })
+  logo_url!: string | null;
+
   @Column({ type: "varchar", length: 255, nullable: true })
   base_url!: string | null;
 

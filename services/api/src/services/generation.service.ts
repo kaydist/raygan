@@ -84,6 +84,7 @@ export interface GenerateOptions {
   projectId: string;
   prompt: string;
   userId: number;
+  modelId?: string;
   currentFile?: string;
   selectedCode?: string;
   maxTokens?: number;
@@ -97,7 +98,7 @@ export class GenerationService {
   private fileStorageService = new FileStorageService();
 
   async *generate(options: GenerateOptions): AsyncGenerator<SSEEvent> {
-    const { projectId, prompt, userId, currentFile, selectedCode, maxTokens, temperature } = options;
+    const { projectId, prompt, userId, modelId, currentFile, selectedCode, maxTokens, temperature } = options;
 
     const startTime = Date.now();
     let userConversation;
@@ -133,9 +134,21 @@ export class GenerationService {
         userId
       );
 
-      const modelConfig = project.default_model_id
-        ? await this.providerService.getModelByPrimaryId(project.default_model_id)
-        : await this.providerService.getDefaultModel();
+      let modelConfig = null;
+      if (modelId) {
+        const parsedModelId = Number(modelId);
+        if (!isNaN(parsedModelId)) {
+          modelConfig = await this.providerService.getModelByPrimaryId(parsedModelId);
+        } else {
+          modelConfig = await this.providerService.getModelById(modelId);
+        }
+      }
+      if (!modelConfig && project.default_model_id) {
+        modelConfig = await this.providerService.getModelByPrimaryId(project.default_model_id);
+      }
+      if (!modelConfig) {
+        modelConfig = await this.providerService.getDefaultModel();
+      }
 
       if (!modelConfig) {
         yield { type: "error", data: { message: "No model available", code: "NO_MODEL" } };

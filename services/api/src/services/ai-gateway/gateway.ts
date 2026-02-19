@@ -2,9 +2,18 @@ import { logger } from "../../config";
 import { AIProviderService } from "../ai-provider.service";
 import { AnthropicAdapter, OpenAIAdapter, XAIAdapter, GoogleAdapter } from "./adapters";
 import type { BaseAdapter } from "./adapters";
-import type { GenerateRequest, GenerateResponse, StreamChunk } from "./types";
+import type { GenerateRequest, GenerateResponse, StreamChunk, CostEstimate } from "./types";
 import type { AIModel, AIProvider } from "../../db";
 import { decryptKey } from "@/helpers";
+import { getCostEstimator } from "./cost-estimator";
+
+interface FallbackResult {
+  response: GenerateResponse;
+  usedFallback: boolean;
+  originalModel: string;
+  actualModel: string;
+  attempts: number;
+}
 
 export class AIGateway {
   private adapters: Map<string, BaseAdapter> = new Map();
@@ -97,6 +106,166 @@ export class AIGateway {
     }
 
     return adapter.generate(request, model);
+  }
+
+  async generateWithFallback(
+    request: GenerateRequest,
+    maxAttempts = 3,
+  ): Promise<FallbackResult> {
+    await this.ensureInitialized();
+
+    const originalModel = request.model;
+    let attempts = 0;
+    const triedModels: string[] = [];
+
+    const primaryModel = await this.providerService.getModelById(request.model);
+    if (!primaryModel) {
+      throw new Error(`Model not found: ${request.model}`);
+    }
+
+    const modelsToTry: AIModel[] = [primaryModel];
+    const fallbackModels = await this.providerService.getFallbackModels(
+      request.model,
+      maxAttempts - 1,
+    );
+    modelsToTry.push(...fallbackModels);
+
+    for (const model of modelsToTry.slice(0, maxAttempts)) {
+      attempts++;
+      triedModels.push(model.model_id);
+
+      const adapter = this.adapters.get(model.provider.slug);
+      if (!adapter) {
+        logger.warn(
+          { model: model.model_id, provider: model.provider.slug },
+          "Provider not configured, trying fallback",
+        );
+        continue;
+      }
+
+      try {
+        const modifiedRequest = { ...request, model: model.model_id };
+        const response = await adapter.generate(modifiedRequest, model);
+
+        return {
+          response,
+          usedFallback: model.model_id !== originalModel,
+          originalModel,
+          actualModel: model.model_id,
+          attempts,
+        };
+      } catch (error) {
+        logger.warn(
+          { model: model.model_id, error, attempts },
+          "Model generation failed, trying fallback",
+        );
+
+        if (attempts >= maxAttempts) {
+          throw new Error(
+            `All ${attempts} model attempts failed. Tried: ${triedModels.join(", ")}. Last error: ${error instanceof Error ? error.message : "Unknown error"}`,
+          );
+        }
+      }
+    }
+
+    throw new Error(`No available models to try. Attempted: ${triedModels.join(", ")}`);
+  }
+
+  async *streamWithFallback(
+    request: GenerateRequest,
+    maxAttempts = 3,
+  ): AsyncIterable<StreamChunk & { fallback_info?: { original_model: string; actual_model: string } }> {
+    await this.ensureInitialized();
+
+    const originalModel = request.model;
+    let attempts = 0;
+    const triedModels: string[] = [];
+
+    const primaryModel = await this.providerService.getModelById(request.model);
+    if (!primaryModel) {
+      yield { type: "error", error: `Model not found: ${request.model}` };
+      return;
+    }
+
+    const modelsToTry: AIModel[] = [primaryModel];
+    const fallbackModels = await this.providerService.getFallbackModels(
+      request.model,
+      maxAttempts - 1,
+    );
+    modelsToTry.push(...fallbackModels);
+
+    for (const model of modelsToTry.slice(0, maxAttempts)) {
+      attempts++;
+      triedModels.push(model.model_id);
+
+      const adapter = this.adapters.get(model.provider.slug);
+      if (!adapter) {
+        logger.warn(
+          { model: model.model_id, provider: model.provider.slug },
+          "Provider not configured, trying fallback",
+        );
+        continue;
+      }
+
+      try {
+        const modifiedRequest = { ...request, model: model.model_id };
+        let hasYielded = false;
+
+        for await (const chunk of adapter.stream(modifiedRequest, model)) {
+          if (!hasYielded && model.model_id !== originalModel) {
+            yield {
+              ...chunk,
+              fallback_info: {
+                original_model: originalModel,
+                actual_model: model.model_id,
+              },
+            };
+          } else {
+            yield chunk;
+          }
+          hasYielded = true;
+
+          if (chunk.type === "error") {
+            throw new Error(chunk.error || "Stream error");
+          }
+        }
+        return;
+      } catch (error) {
+        logger.warn(
+          { model: model.model_id, error, attempts },
+          "Model streaming failed, trying fallback",
+        );
+
+        if (attempts >= maxAttempts) {
+          yield {
+            type: "error",
+            error: `All ${attempts} model attempts failed. Tried: ${triedModels.join(", ")}`,
+          };
+          return;
+        }
+      }
+    }
+
+    yield {
+      type: "error",
+      error: `No available models to try. Attempted: ${triedModels.join(", ")}`,
+    };
+  }
+
+  estimateCost(request: GenerateRequest, model: AIModel): CostEstimate {
+    const estimator = getCostEstimator();
+    return estimator.estimateCost(request, model);
+  }
+
+  async estimateCostByModelId(
+    request: GenerateRequest,
+    modelId?: string,
+  ): Promise<CostEstimate | null> {
+    const model = await this.providerService.getModelById(
+      modelId || request.model,
+    );
+    if (!model) return null;
+    return this.estimateCost(request, model);
   }
 
   async *stream(request: GenerateRequest): AsyncIterable<StreamChunk> {

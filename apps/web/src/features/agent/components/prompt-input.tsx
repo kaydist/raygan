@@ -5,10 +5,14 @@ import { Send, Square } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button, Textarea } from "@/components/atoms";
+import { ModelSelector, type ModelOption } from "@/components/molecules";
+import { useModels } from "@/lib/api";
 
 interface PromptInputProps {
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string, modelId?: number) => void;
   onStop?: () => void;
+  onModelChange?: (model: ModelOption) => void;
+  selectedModelId?: number | null;
   isGenerating?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -18,6 +22,8 @@ interface PromptInputProps {
 export function PromptInput({
   onSubmit,
   onStop,
+  onModelChange,
+  selectedModelId,
   isGenerating = false,
   disabled = false,
   placeholder = "Describe what you want to build...",
@@ -25,18 +31,35 @@ export function PromptInput({
 }: PromptInputProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { data: modelsData } = useModels();
+
+  const models: ModelOption[] = (modelsData || []).map((m) => ({
+    id: m.id,
+    model_id: m.model_id,
+    name: m.name,
+    description: m.description,
+    provider: m.provider,
+    context_window: m.context_window,
+    max_output_tokens: m.max_output_tokens,
+    input_cost_per_1k: m.input_cost_per_1k,
+    output_cost_per_1k: m.output_cost_per_1k,
+    supports_vision: m.supports_vision,
+    supports_tools: m.supports_tools,
+    supports_streaming: m.supports_streaming,
+    capabilities: m.capabilities,
+  }));
 
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim();
     if (!trimmed || isGenerating || disabled) return;
 
-    onSubmit(trimmed);
+    onSubmit(trimmed, selectedModelId ?? undefined);
     setValue("");
 
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [value, isGenerating, disabled, onSubmit]);
+  }, [value, isGenerating, disabled, onSubmit, selectedModelId]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -63,7 +86,7 @@ export function PromptInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled || isGenerating}
-          className="min-h-[44px] max-h-[200px] resize-none"
+          className="min-h-[44px] max-h-[200px] resize-none border-none focus-visible:ring-0 focus-visible:outline-none focus-within:border-none"
           rows={1}
         />
         {isGenerating ? (
@@ -88,9 +111,14 @@ export function PromptInput({
           </Button>
         )}
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Press Enter to send, Shift + Enter for new line
-      </p>
+      <div className="mt-3 flex items-center justify-between">
+        <ModelSelector
+          models={models}
+          selectedModelId={selectedModelId || null}
+          onSelect={(model) => onModelChange?.(model)}
+          disabled={isGenerating}
+        />
+      </div>
     </div>
   );
 }

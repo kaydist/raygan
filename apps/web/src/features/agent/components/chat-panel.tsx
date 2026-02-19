@@ -5,11 +5,12 @@ import { AlertCircle, Loader2, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/atoms";
-import { useConversations } from "@/lib/api/queries";
+import { useConversations, useProject, useUpdateProject } from "@/lib/api";
 import { useGenerate } from "../hooks/use-generate";
 import { MessageList } from "./message-list";
 import { PromptInput } from "./prompt-input";
 import type { Message } from "../types";
+import type { ModelOption } from "@/components/molecules";
 
 interface ChatPanelProps {
   projectId: string;
@@ -17,10 +18,10 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ projectId, className }: ChatPanelProps) {
-  const {
-    data: conversations,
-    isLoading: isLoadingHistory,
-  } = useConversations(projectId);
+  const { data: project } = useProject(projectId);
+  const { mutate: updateProject } = useUpdateProject();
+  const { data: conversations, isLoading: isLoadingHistory } =
+    useConversations(projectId);
 
   const initialMessages = useMemo<Message[]>(() => {
     if (!conversations?.length) return [];
@@ -35,8 +36,19 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
   const { messages, isGenerating, error, generate, stop, clearMessages } =
     useGenerate({ projectId, initialMessages });
 
-  const handleSubmit = (prompt: string) => {
-    generate({ prompt });
+  const selectedModelId = project?.default_model_id ?? null;
+
+  const handleSubmit = (prompt: string, modelId?: number) => {
+    generate({ prompt, modelId: modelId?.toString() });
+  };
+
+  const handleModelChange = (model: ModelOption) => {
+    if (project?.uuid) {
+      updateProject({
+        uuid: project.uuid,
+        data: { default_model_id: model.id },
+      });
+    }
   };
 
   return (
@@ -79,6 +91,8 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
       <PromptInput
         onSubmit={handleSubmit}
         onStop={stop}
+        onModelChange={handleModelChange}
+        selectedModelId={selectedModelId}
         isGenerating={isGenerating}
       />
     </div>

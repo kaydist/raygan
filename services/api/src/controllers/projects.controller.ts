@@ -68,11 +68,13 @@ export async function getProject(req: Request, res: Response): Promise<void> {
     res.json({
       data: {
         id: project.uuid,
+        uuid: project.uuid,
         name: project.name,
         slug: project.slug,
         description: project.description,
         framework_version: project.framework_version,
         backend_provider: project.backend_provider,
+        default_model_id: project.default_model_id,
         ast_snapshot: project.ast_snapshot,
         file_tree: project.file_tree,
         is_archived: project.is_archived,
@@ -178,7 +180,7 @@ export async function updateProject(
   try {
     const authReq = req as AuthenticatedRequest;
     const projectId = req.params.projectId as string;
-    const { name, slug, description, framework_version, backend_provider } =
+    const { name, slug, description, framework_version, backend_provider, default_model_id } =
       req.body;
 
     const project = await projectService.findByUuid(projectId);
@@ -221,18 +223,20 @@ export async function updateProject(
 
     const updated = await projectService.update(
       project.id,
-      { name, slug, description, framework_version, backend_provider },
+      { name, slug, description, framework_version, backend_provider, default_model_id },
       authReq.dbUser.id,
     );
 
     res.json({
       data: {
         id: updated?.uuid,
+        uuid: updated?.uuid,
         name: updated?.name,
         slug: updated?.slug,
         description: updated?.description,
         framework_version: updated?.framework_version,
         backend_provider: updated?.backend_provider,
+        default_model_id: updated?.default_model_id,
       },
       error: null,
     });

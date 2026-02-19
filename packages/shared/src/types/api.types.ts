@@ -303,13 +303,23 @@ export interface SettingsResponse {
 
 export interface AiModelConfig {
   id: number;
-  provider: string;
-  model_name: string;
-  display_name: string;
-  max_tokens: number;
-  cost_per_1k_input: number;
-  cost_per_1k_output: number;
-  is_available: boolean;
+  model_id: string;
+  name: string;
+  description?: string | null;
+  provider: {
+    slug: string;
+    name: string;
+    logo_url?: string | null;
+  };
+  context_window: number;
+  max_output_tokens: number;
+  input_cost_per_1k: number;
+  output_cost_per_1k: number;
+  supports_vision: boolean;
+  supports_tools: boolean;
+  supports_streaming: boolean;
+  is_default: boolean;
+  capabilities?: Record<string, boolean>;
 }
 
 // =============================================================================
