@@ -1,4 +1,11 @@
-export { SnackPreview, QRCodeDisplay, DeviceSelector, DeviceFrame } from "./components";
+export {
+  SnackPreview,
+  QRCodeDisplay,
+  DeviceSelector,
+  DeviceFrame,
+  PreviewToolbar,
+  ConsolePanel,
+} from "./components";
 
 export { useSnack, useSnackSync, useSnackPreview } from "./hooks";
 
@@ -18,6 +25,9 @@ export type {
   UseSnackReturn,
   UseSnackSyncOptions,
   DeviceFrameProps,
+  ConsoleLog,
+  ConnectedDevice,
+  DeviceConnectionStatus,
 } from "./types";
 
 export {

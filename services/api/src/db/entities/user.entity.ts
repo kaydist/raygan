@@ -36,8 +36,8 @@ export class User extends BaseEntity {
   @Column({ type: "boolean", default: false })
   onboarding_completed!: boolean;
 
-  @Column({ type: "integer" })
-  current_organization_id!: number;
+  @Column({ type: "integer", nullable: true })
+  current_organization_id!: number | null;
 
   // Relations
   @OneToMany("OrganizationMember", "user")

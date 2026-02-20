@@ -1,9 +1,11 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/organisms';
 import { MobileHeader } from '@/components/molecules';
 import { cn } from '@/lib/utils';
+import { useLogout } from '@/lib/api/queries';
 
 interface DashboardTemplateProps {
   children: React.ReactNode;
@@ -27,9 +29,16 @@ export function DashboardTemplate({
   children,
   className,
 }: DashboardTemplateProps) {
+  const router = useRouter();
+  const logout = useLogout();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   const closeSidebar = () => setIsSidebarOpen(false);
+
+  const handleLogout = async () => {
+    await logout.mutateAsync();
+    router.push('/login');
+  };
 
   return (
     <div className="flex h-screen flex-col bg-background lg:flex-row">
@@ -59,7 +68,7 @@ export function DashboardTemplate({
           credits={mockCredits}
           teams={mockTeams}
           currentTeamId="1"
-          onLogout={closeSidebar}
+          onLogout={handleLogout}
         />
       </div>
 

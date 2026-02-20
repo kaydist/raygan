@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { LoginRequest } from '@staq/shared';
 import { Button, Heading, Paragraph } from '@/components/atoms';
-import { GoogleOAuthButton, FormField, OrDivider } from '@/components/molecules';
+import { GoogleOAuthButton, GitHubOAuthButton, FormField, OrDivider } from '@/components/molecules';
 
 interface SignInFormProps {
   onSubmit?: (data: LoginRequest) => void;
   onGoogleAuth?: () => void;
+  onGitHubAuth?: () => void;
   onForgotPassword?: () => void;
   isLoading?: boolean;
   error?: string | null;
@@ -18,6 +19,7 @@ interface SignInFormProps {
 export function SignInForm({
   onSubmit,
   onGoogleAuth,
+  onGitHubAuth,
   onForgotPassword,
   isLoading,
   error,
@@ -41,7 +43,10 @@ export function SignInForm({
         </Paragraph>
       </div>
 
-      <GoogleOAuthButton onClick={onGoogleAuth} disabled={isLoading} />
+      <div className="flex gap-3">
+        <GoogleOAuthButton onClick={onGoogleAuth} disabled={isLoading} />
+        <GitHubOAuthButton onClick={onGitHubAuth} disabled={isLoading} />
+      </div>
 
       <OrDivider />
 

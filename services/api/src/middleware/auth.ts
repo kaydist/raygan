@@ -71,12 +71,22 @@ export async function authenticate(
       relations: ["current_organization"],
     });
 
-    if (!dbUser || dbUser.deleted_flag || !dbUser.activated_flag) {
+    if (!dbUser || dbUser.deleted_flag) {
       res.status(401).json({
         data: null,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
           message: "Authentication required",
+        },
+      });
+      return;
+    }
+    if (!dbUser.activated_flag) {
+      res.status(401).json({
+        data: null,
+        error: {
+          code: ERROR_CODES.UNAUTHORIZED,
+          message: "Your account has been temporarily deactivated. please contact support",
         },
       });
       return;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Loader2, AlertCircle, RefreshCw, QrCode, Monitor } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw, QrCode, Monitor, Terminal } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/atoms";
@@ -10,6 +10,8 @@ import type { Platform, PreviewMode } from "../types";
 import { DeviceFrame } from "./device-frame";
 import { DeviceSelector } from "./device-selector";
 import { QRCodeDisplay } from "./qr-code-display";
+import { PreviewToolbar } from "./preview-toolbar";
+import { ConsolePanel } from "./console-panel";
 
 interface SnackPreviewProps {
   projectId: string;
@@ -24,6 +26,7 @@ export function SnackPreview({
 }: SnackPreviewProps) {
   const [platform, setPlatform] = useState<Platform>("ios");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("web");
+  const [showConsole, setShowConsole] = useState(false);
 
   const webPreviewRef = useRef<Window | null>(null);
 
@@ -33,8 +36,13 @@ export function SnackPreview({
     error,
     webPreviewURL,
     qrCodeURL,
+    snackURL,
     errors,
+    logs,
+    connectedDevices,
+    deviceCount,
     syncFiles,
+    clearLogs,
   } = useSnackPreview({
     projectId,
     name: projectName,
@@ -42,6 +50,10 @@ export function SnackPreview({
     debounceMs: 500,
     webPreviewRef,
   });
+
+  const handleDeepLinkTest = useCallback((url: string) => {
+    console.log("[Preview] Testing deep link:", url);
+  }, []);
 
   const handleIframeRef = useCallback((iframe: HTMLIFrameElement | null) => {
     webPreviewRef.current = iframe?.contentWindow ?? null;
@@ -79,6 +91,21 @@ export function SnackPreview({
           </div>
 
           <Button
+            variant={showConsole ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setShowConsole(!showConsole)}
+            className="h-8 w-8 p-0 relative"
+            title="Toggle console"
+          >
+            <Terminal className="h-4 w-4" />
+            {logs.length > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                {logs.length > 99 ? "99+" : logs.length}
+              </span>
+            )}
+          </Button>
+
+          <Button
             variant="ghost"
             size="sm"
             onClick={syncFiles}
@@ -88,6 +115,17 @@ export function SnackPreview({
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
         </div>
+      </div>
+
+      <div className="border-b border-border px-4 py-2">
+        <PreviewToolbar
+          isConnected={isConnected}
+          deviceCount={deviceCount}
+          connectedDevices={connectedDevices}
+          snackURL={snackURL}
+          qrCodeURL={qrCodeURL}
+          onDeepLinkTest={handleDeepLinkTest}
+        />
       </div>
 
       {previewMode === "web" && (
@@ -167,6 +205,14 @@ export function SnackPreview({
           </div>
         )}
       </div>
+
+      {showConsole && (
+        <ConsolePanel
+          logs={logs}
+          onClear={clearLogs}
+          maxHeight={150}
+        />
+      )}
     </div>
   );
 }

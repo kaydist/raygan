@@ -11,15 +11,25 @@ import {
   MessageSquare,
   Blocks,
   Code,
+  LogOut,
+  Settings,
+  User,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores";
+import { useLogout } from "@/lib/api/queries";
 import {
   Button,
   Avatar,
   AvatarFallback,
   AvatarImage,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/atoms";
 
 interface WorkspaceToolbarProps {
@@ -37,6 +47,12 @@ export function WorkspaceToolbar({
 }: WorkspaceToolbarProps) {
   const router = useRouter();
   const { activeMode, setActiveMode } = useUIStore();
+  const logout = useLogout();
+
+  const handleLogout = async () => {
+    await logout.mutateAsync();
+    router.push("/login");
+  };
 
   return (
     <div
@@ -132,12 +148,39 @@ export function WorkspaceToolbar({
           <ChevronDown className="h-3.5 w-3.5" />
         </Button>
 
-        <Avatar className="h-8 w-8">
-          <AvatarImage src="" />
-          <AvatarFallback className="bg-primary text-xs text-primary-foreground">
-            K
-          </AvatarFallback>
-        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="" />
+                <AvatarFallback className="bg-primary text-xs text-primary-foreground">
+                  K
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+              <Settings className="mr-2 h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              disabled={logout.isPending}
+              className="text-destructive focus:text-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {logout.isPending ? "Logging out..." : "Logout"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

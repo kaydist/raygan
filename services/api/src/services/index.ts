@@ -17,6 +17,7 @@ export {
   SupabaseAuthService,
   SupabaseUnavailableError,
   SupabaseAuthError,
+  SupabaseTokenExpiredError,
   type FormattedSession,
 } from "./supabase-auth.service";
 export * from "./ai-gateway";

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 
-import type { UseSnackOptions, UseSnackSyncOptions, Platform } from "../types";
+import type { UseSnackOptions, UseSnackSyncOptions, Platform, ConsoleLog, ConnectedDevice } from "../types";
 import { useSnack } from "./use-snack";
 import { useSnackSync } from "./use-snack-sync";
 
@@ -18,8 +18,13 @@ interface UseSnackPreviewReturn {
   error: string | null;
   webPreviewURL: string | null;
   qrCodeURL: string | null;
+  snackURL: string | null;
   errors: Array<{ message: string }>;
+  logs: ConsoleLog[];
+  connectedDevices: ConnectedDevice[];
+  deviceCount: number;
   syncFiles: () => void;
+  clearLogs: () => void;
   getEmbedURL: (platform: Platform) => string | null;
 }
 
@@ -39,7 +44,9 @@ export function useSnackPreview(
     updateDependencies,
     getQRCodeURL,
     getWebPreviewURL,
+    getSnackURL,
     errors,
+    clearLogs,
   } = useSnack(snackOptions);
 
   const syncOptions: UseSnackSyncOptions = useMemo(() => {
@@ -69,8 +76,13 @@ export function useSnackPreview(
     error: state.error,
     webPreviewURL: state.webPreviewURL,
     qrCodeURL: getQRCodeURL(),
+    snackURL: getSnackURL(),
     errors,
+    logs: state.logs,
+    connectedDevices: state.connectedDevices,
+    deviceCount: state.deviceCount,
     syncFiles,
+    clearLogs,
     getEmbedURL,
   };
 }

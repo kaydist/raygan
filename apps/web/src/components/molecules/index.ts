@@ -1,4 +1,4 @@
-export { GoogleOAuthButton } from './oauth-button';
+export { GoogleOAuthButton, GitHubOAuthButton } from './oauth-button';
 export { FormField } from './form-field';
 export { OrDivider } from './or-divider';
 export { ProjectCard, NewProjectCard } from './project-card';

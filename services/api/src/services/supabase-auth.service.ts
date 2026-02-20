@@ -141,6 +141,40 @@ export class SupabaseAuthService {
     }
   }
 
+  async resendVerificationEmail(email: string): Promise<void> {
+    const client = this.getClient();
+
+    const { error } = await client.auth.resend({
+      type: "signup",
+      email,
+    });
+
+    if (error) {
+      throw new SupabaseAuthError(error.message);
+    }
+  }
+
+  async verifyEmailToken(token: string, type: "signup" | "email_change" = "signup"): Promise<SignInResult> {
+    const client = this.getClient();
+
+    const { data, error } = await client.auth.verifyOtp({
+      token_hash: token,
+      type,
+    });
+
+    if (error) {
+      if (error.message.includes("expired")) {
+        throw new SupabaseTokenExpiredError(error.message);
+      }
+      throw new SupabaseAuthError(error.message);
+    }
+
+    return {
+      user: data.user,
+      session: this.formatSession(data.session),
+    };
+  }
+
   isAvailable(): boolean {
     try {
       this.getClient();
@@ -162,5 +196,12 @@ export class SupabaseAuthError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SupabaseAuthError";
+  }
+}
+
+export class SupabaseTokenExpiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SupabaseTokenExpiredError";
   }
 }

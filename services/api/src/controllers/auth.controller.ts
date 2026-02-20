@@ -2,12 +2,14 @@ import type { Request, Response } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth";
 import { logger, env } from "../config";
 import { ERROR_CODES } from "../constants";
+import { AppDataSource } from "../db";
 import {
   UserService,
   OrganizationService,
   SupabaseAuthService,
   SupabaseUnavailableError,
   SupabaseAuthError,
+  SupabaseTokenExpiredError,
 } from "../services";
 
 const userService = new UserService();
@@ -28,20 +30,26 @@ export async function register(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const user = await userService.create({
-      auth_user_id: authUser.id,
-      email,
-      first_name,
-      last_name,
-      display_name: display_name || `${first_name} ${last_name}`,
+    const result = await AppDataSource.transaction(async (manager) => {
+      const user = await userService.create({
+        auth_user_id: authUser.id,
+        email,
+        first_name,
+        last_name,
+        display_name: display_name || `${first_name} ${last_name}`,
+      });
+
+      const personalOrg = await organizationService.create(
+        { name: `${first_name}'s Workspace`, slug: `${user.uuid}-personal`, is_personal: true },
+        user.id
+      );
+
+      await userService.setCurrentOrganization(user.id, personalOrg.id);
+
+      return { user, personalOrg };
     });
 
-    const personalOrg = await organizationService.create(
-      { name: `${first_name}'s Workspace`, slug: `${user.uuid}-personal`, is_personal: true },
-      user.id
-    );
-
-    await userService.setCurrentOrganization(user.id, personalOrg.id);
+    const { user, personalOrg } = result;
 
     res.status(201).json({
       data: {
@@ -205,21 +213,28 @@ export async function oauthLogin(req: Request, res: Response): Promise<void> {
       const firstName = metadata.full_name?.split(" ")[0] || metadata.name?.split(" ")[0] || "User";
       const lastName = metadata.full_name?.split(" ").slice(1).join(" ") || "";
 
-      user = await userService.create({
-        auth_user_id: authUser.id,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        display_name: metadata.full_name || metadata.name || email.split("@")[0],
-        avatar_url: metadata.avatar_url || metadata.picture || null,
+      const result = await AppDataSource.transaction(async () => {
+        const newUser = await userService.create({
+          auth_user_id: authUser.id,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          display_name: metadata.full_name || metadata.name || email.split("@")[0],
+          avatar_url: metadata.avatar_url || metadata.picture || null,
+        });
+
+        const newOrg = await organizationService.create(
+          { name: `${firstName}'s Workspace`, slug: `${newUser.uuid}-personal`, is_personal: true },
+          newUser.id
+        );
+
+        await userService.setCurrentOrganization(newUser.id, newOrg.id);
+
+        return { user: newUser, org: newOrg };
       });
 
-      currentOrg = await organizationService.create(
-        { name: `${firstName}'s Workspace`, slug: `${user.uuid}-personal`, is_personal: true },
-        user.id
-      );
-
-      await userService.setCurrentOrganization(user.id, currentOrg.id);
+      user = result.user;
+      currentOrg = result.org;
     } else {
       if (user.deleted_flag) {
         res.status(401).json({
@@ -446,6 +461,109 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
       return;
     }
     logger.error({ err }, "Reset password failed");
+    res.status(500).json({
+      data: null,
+      error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },
+    });
+  }
+}
+
+export async function resendVerification(req: Request, res: Response): Promise<void> {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "Email is required" },
+      });
+      return;
+    }
+
+    await supabaseAuth.resendVerificationEmail(email);
+
+    res.json({ data: { success: true }, error: null });
+  } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
+      res.status(503).json({
+        data: null,
+        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseAuthError) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: err.message },
+      });
+      return;
+    }
+    logger.error({ err }, "Resend verification failed");
+    res.status(500).json({
+      data: null,
+      error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },
+    });
+  }
+}
+
+export async function verifyEmail(req: Request, res: Response): Promise<void> {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "Token is required" },
+      });
+      return;
+    }
+
+    const { user: authUser, session } = await supabaseAuth.verifyEmailToken(token);
+
+    if (!authUser) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "Verification failed" },
+      });
+      return;
+    }
+
+    const user = await userService.findByAuthId(authUser.id);
+
+    if (user && !user.activated_flag) {
+      await userService.activate(user.id, user.id);
+    }
+
+    res.json({
+      data: {
+        success: true,
+        ...(session && { ...session }),
+      },
+      error: null,
+    });
+  } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
+      res.status(503).json({
+        data: null,
+        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseTokenExpiredError) {
+      res.status(410).json({
+        data: null,
+        error: { code: ERROR_CODES.GONE, message: "Verification link has expired" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseAuthError) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: err.message },
+      });
+      return;
+    }
+    logger.error({ err }, "Email verification failed");
     res.status(500).json({
       data: null,
       error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },

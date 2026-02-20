@@ -13,6 +13,23 @@ export interface DeviceConfig {
   type: DeviceType;
 }
 
+export type DeviceConnectionStatus = "disconnected" | "connecting" | "connected";
+
+export interface ConnectedDevice {
+  id: string;
+  name: string;
+  platform: Platform;
+  status: DeviceConnectionStatus;
+}
+
+export interface ConsoleLog {
+  id: string;
+  type: "log" | "warn" | "error" | "info";
+  message: string;
+  timestamp: number;
+  payload?: unknown[];
+}
+
 export interface SnackState {
   isConnected: boolean;
   isLoading: boolean;
@@ -20,6 +37,9 @@ export interface SnackState {
   url: string | null;
   webPreviewURL: string | null;
   channel: string | null;
+  connectedDevices: ConnectedDevice[];
+  deviceCount: number;
+  logs: ConsoleLog[];
 }
 
 export interface SnackError {
@@ -75,9 +95,11 @@ export interface UseSnackReturn {
   updateDependencies: (deps: SnackDependencies) => void;
   getQRCodeURL: () => string | null;
   getWebPreviewURL: () => string | null;
+  getSnackURL: () => string | null;
   errors: SnackError[];
   connect: () => Promise<void>;
   disconnect: () => void;
+  clearLogs: () => void;
 }
 
 export interface UseSnackSyncOptions {

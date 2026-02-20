@@ -9,6 +9,8 @@ import type {
   SnackDependencies,
   UseSnackOptions,
   UseSnackReturn,
+  ConsoleLog,
+  ConnectedDevice,
 } from "../types";
 import {
   createSnackSession,
@@ -24,7 +26,16 @@ const initialState: SnackState = {
   url: null,
   webPreviewURL: null,
   channel: null,
+  connectedDevices: [],
+  deviceCount: 0,
+  logs: [],
 };
+
+const MAX_LOGS = 100;
+
+function generateLogId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
 export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
   const { name, description, sdkVersion, autoConnect = true, webPreviewRef } = options;
@@ -39,11 +50,36 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
       const snackState = snack.getState();
       const webPreviewURL = getSnackWebPreviewURL(snack);
 
+      const connectedDevices: ConnectedDevice[] = [];
+      let deviceCount = 0;
+
+      if (snackState.transports) {
+        const transports = snackState.transports as Record<string, { status?: string; connectedClients?: number }>;
+
+        Object.entries(transports).forEach(([key, transport]) => {
+          if (transport && typeof transport === "object") {
+            const clientCount = transport.connectedClients || 0;
+            deviceCount += clientCount;
+
+            if (clientCount > 0 && key !== "webplayer") {
+              connectedDevices.push({
+                id: key,
+                name: key === "pubsub" ? "Expo Go" : key,
+                platform: "ios",
+                status: transport.status === "connected" ? "connected" : "connecting",
+              });
+            }
+          }
+        });
+      }
+
       setState((prev) => ({
         ...prev,
         url: snackState.url || null,
         webPreviewURL,
         channel: snackState.channel || null,
+        connectedDevices,
+        deviceCount,
       }));
 
       const webplayerTransport = snackState.transports?.webplayer;
@@ -57,9 +93,32 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
       }
     };
 
+    const handleLog = (log: { type?: string; message?: string; payload?: unknown[] }) => {
+      const newLog: ConsoleLog = {
+        id: generateLogId(),
+        type: (log.type as ConsoleLog["type"]) || "log",
+        message: log.message || String(log),
+        timestamp: Date.now(),
+        payload: log.payload,
+      };
+
+      setState((prev) => ({
+        ...prev,
+        logs: [...prev.logs, newLog].slice(-MAX_LOGS),
+      }));
+    };
+
     const cleanup = snack.addStateListener(handleStateChange);
+
+    const logCleanup = (snack as unknown as { addLogListener?: (handler: typeof handleLog) => () => void })
+      .addLogListener?.(handleLog);
+
     handleStateChange();
-    return cleanup;
+
+    return () => {
+      cleanup();
+      if (logCleanup) logCleanup();
+    };
   }, []);
 
   const connect = useCallback(async () => {
@@ -123,6 +182,18 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
     return null;
   }, []);
 
+  const clearLogs = useCallback(() => {
+    setState((prev) => ({ ...prev, logs: [] }));
+  }, []);
+
+  const getSnackURL = useCallback((): string | null => {
+    if (snackRef.current) {
+      const snackState = snackRef.current.getState();
+      return snackState.url || null;
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
     const snack = createSnackSession({
       name,
@@ -149,8 +220,10 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
     updateDependencies,
     getQRCodeURL,
     getWebPreviewURL,
+    getSnackURL,
     errors,
     connect,
     disconnect,
+    clearLogs,
   };
 }
