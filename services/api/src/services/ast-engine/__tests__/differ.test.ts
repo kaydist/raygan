@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { ASTNode } from "@staq/shared";
 import { generatePatches, applyPatches } from "../differ";
-import { createNode, updateNode, addNode, removeNode } from "../ast";
+import { createNode } from "../ast";
 
 describe("AST Differ", () => {
   const createTestNode = (name: string, children: ASTNode[] = []): ASTNode =>

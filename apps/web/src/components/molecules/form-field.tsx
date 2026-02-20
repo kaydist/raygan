@@ -13,7 +13,7 @@ interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   };
 }
 
-export function FormField({
+export function InputField({
   label,
   error,
   action,

@@ -10,6 +10,14 @@ import type {
   RefreshTokenRequest,
 } from "@staq/shared";
 
+export type {
+  AuthResponse,
+  GoogleOAuthRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  RefreshTokenRequest,
+};
+
 import {
   setAuthToken,
   setRefreshToken,

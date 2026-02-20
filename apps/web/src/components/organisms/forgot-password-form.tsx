@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button, Heading, Paragraph } from '@/components/atoms';
-import { FormField } from '@/components/molecules';
+import { InputField } from '@/components/molecules';
 
 interface ForgotPasswordFormProps {
   onSubmit?: (email: string) => void;
@@ -84,7 +84,7 @@ export function ForgotPasswordForm({
           </div>
         )}
 
-        <FormField
+        <InputField
           label="Email"
           type="email"
           placeholder="you@company.com"

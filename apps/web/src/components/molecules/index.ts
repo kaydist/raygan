@@ -1,5 +1,5 @@
 export { GoogleOAuthButton, GitHubOAuthButton } from './oauth-button';
-export { FormField } from './form-field';
+export { InputField } from './form-field';
 export { OrDivider } from './or-divider';
 export { ProjectCard, NewProjectCard } from './project-card';
 export { NavItem, NavSection } from './nav-item';

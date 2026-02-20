@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { RegisterRequest } from '@staq/shared';
 import { Button, Heading, Paragraph } from '@/components/atoms';
-import { GoogleOAuthButton, GitHubOAuthButton, FormField, OrDivider } from '@/components/molecules';
+import { GoogleOAuthButton, GitHubOAuthButton, InputField, OrDivider } from '@/components/molecules';
 
 interface SignUpFormProps {
   onSubmit?: (data: RegisterRequest) => void;
@@ -101,7 +101,7 @@ export function SignUpForm({
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <FormField
+          <InputField
             label="First name"
             type="text"
             placeholder="John"
@@ -112,7 +112,7 @@ export function SignUpForm({
             disabled={isLoading}
           />
 
-          <FormField
+          <InputField
             label="Last name"
             type="text"
             placeholder="Doe"
@@ -124,7 +124,7 @@ export function SignUpForm({
           />
         </div>
 
-        <FormField
+        <InputField
           label="Email"
           type="email"
           placeholder="you@company.com"
@@ -134,7 +134,7 @@ export function SignUpForm({
           disabled={isLoading}
         />
 
-        <FormField
+        <InputField
           label="Password"
           type="password"
           placeholder="••••••••"

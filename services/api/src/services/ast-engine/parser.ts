@@ -35,12 +35,6 @@ export interface ParserConfig {
   componentName?: string;
 }
 
-const DEFAULT_CONFIG: Required<ParserConfig> = {
-  sourceType: "auto",
-  screenName: "Screen",
-  componentName: "Component",
-};
-
 export function parseSourceCode(
   source: string,
   _config: Partial<ParserConfig> = {}

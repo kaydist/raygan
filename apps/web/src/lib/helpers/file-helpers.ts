@@ -1,6 +1,6 @@
 export function getFileExtension(filename: string): string {
   const parts = filename.split(".");
-  return parts.length > 1 ? parts[parts.length - 1] : "";
+  return parts.length > 1 ? (parts[parts.length - 1] ?? "") : "";
 }
 
 export function getFileName(path: string): string {

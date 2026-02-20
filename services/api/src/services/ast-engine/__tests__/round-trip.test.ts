@@ -164,11 +164,11 @@ describe("Round-trip: AST → Code → AST", () => {
                 },
                 colors: {
                   backgroundColor: "#f0f0f0",
+                  borderColor: "#cccccc",
                 },
                 borders: {
                   borderRadius: 8,
                   borderWidth: 1,
-                  borderColor: "#cccccc",
                 },
                 effects: {
                   opacity: 0.9,

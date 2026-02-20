@@ -106,8 +106,8 @@ describe("FileStorageService", () => {
       const snackFiles = await service.getSnackFiles(1);
 
       expect(snackFiles["App.tsx"]).toBeDefined();
-      expect(snackFiles["App.tsx"].type).toBe("CODE");
-      expect(snackFiles["App.tsx"].contents).toBe("export default function App() {}");
+      expect(snackFiles["App.tsx"]?.type).toBe("CODE");
+      expect(snackFiles["App.tsx"]?.contents).toBe("export default function App() {}");
 
       expect(snackFiles["components/Button.tsx"]).toBeDefined();
     });

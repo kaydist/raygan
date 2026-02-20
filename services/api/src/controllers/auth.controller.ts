@@ -30,7 +30,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const result = await AppDataSource.transaction(async (manager) => {
+    const result = await AppDataSource.transaction(async (_manager) => {
       const user = await userService.create({
         auth_user_id: authUser.id,
         email,

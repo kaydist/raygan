@@ -12,7 +12,7 @@ import type { BaseEntity } from "../entities/base.entity";
 export class BaseRepository<T extends BaseEntity & ObjectLiteral> {
   protected repository: Repository<T>;
 
-  constructor(private entityClass: new () => T) {
+  constructor(entityClass: new () => T) {
     this.repository = AppDataSource.getRepository(entityClass);
   }
 

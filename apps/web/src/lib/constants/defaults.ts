@@ -1,4 +1,11 @@
-import type { PublicSettings } from "@staq/shared";
+interface PublicSettings {
+  plans: unknown[];
+  enabledModels: unknown[];
+  enabledBackends: unknown[];
+  featureFlags: Record<string, boolean>;
+  maxProjectsPerPlan: Record<string, number>;
+  maintenanceMode: boolean;
+}
 
 // Fallback values used when settings haven't loaded from backend yet
 export const DEFAULT_SETTINGS: Partial<PublicSettings> = {
@@ -15,11 +22,12 @@ export const DEFAULT_SETTINGS: Partial<PublicSettings> = {
   maintenanceMode: false,
 };
 
-export const DEFAULT_CREDITS = {
+export const DEFAULT_CREDITS: Record<string, number> = {
   free: 20,
   starter: 100,
   pro: 300,
   team: 700,
+  enterprise: -1,
 };
 
 export const DEFAULT_WORKSPACE_LAYOUT = {

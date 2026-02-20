@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { LoginRequest } from '@staq/shared';
 import { Button, Heading, Paragraph } from '@/components/atoms';
-import { GoogleOAuthButton, GitHubOAuthButton, FormField, OrDivider } from '@/components/molecules';
+import { GoogleOAuthButton, GitHubOAuthButton, InputField, OrDivider } from '@/components/molecules';
 
 interface SignInFormProps {
   onSubmit?: (data: LoginRequest) => void;
@@ -57,7 +57,7 @@ export function SignInForm({
           </div>
         )}
 
-        <FormField
+        <InputField
           label="Email"
           type="email"
           placeholder="you@company.com"
@@ -67,7 +67,7 @@ export function SignInForm({
           disabled={isLoading}
         />
 
-        <FormField
+        <InputField
           label="Password"
           type="password"
           placeholder="••••••••"

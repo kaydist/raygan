@@ -13,7 +13,7 @@ export async function listConversations(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { projectId } = req.params;
+    const projectId = req.params.projectId as string;
     const { status, page, limit } = req.query;
 
     const access = await conversationService.checkProjectAccess(
@@ -73,7 +73,7 @@ export async function getConversation(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { conversationId } = req.params;
+    const conversationId = req.params.conversationId as string;
 
     const conversation = await conversationService.findByUuid(conversationId);
     if (!conversation) {
@@ -130,7 +130,7 @@ export async function createConversation(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { projectId } = req.params;
+    const projectId = req.params.projectId as string;
     const { content, role } = req.body;
 
     const access = await conversationService.checkProjectAccess(
@@ -175,7 +175,7 @@ export async function updateConversation(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { conversationId } = req.params;
+    const conversationId = req.params.conversationId as string;
     const { content, status } = req.body;
 
     const conversation = await conversationService.findByUuid(conversationId);
@@ -232,7 +232,7 @@ export async function deleteConversation(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { conversationId } = req.params;
+    const conversationId = req.params.conversationId as string;
 
     const conversation = await conversationService.findByUuid(conversationId);
     if (!conversation) {

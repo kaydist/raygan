@@ -18,7 +18,6 @@ export {
   getFileExtension,
   getFileName,
   getFileDirectory,
-  formatFileSize,
   isImageFile,
   isCodeFile,
   getLanguageFromExtension,

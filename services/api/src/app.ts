@@ -1,5 +1,5 @@
 import cors from "cors";
-import express from "express";
+import express, { type Express } from "express";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 
@@ -7,7 +7,7 @@ import { env, logger } from "./config";
 import { errorHandler, notFoundHandler, requestContext } from "./middleware";
 import { v1Routes } from "./routes/v1";
 
-export function createApp() {
+export function createApp(): Express {
   const app = express();
 
   // Security middleware

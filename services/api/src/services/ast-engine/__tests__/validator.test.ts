@@ -53,7 +53,7 @@ describe("AST Validator", () => {
     it("should detect invalid name", () => {
       const ast = createValidTree();
       const invalidNode = ast.children[0]!;
-      (invalidNode as unknown as { name: null }).name = null as unknown as string;
+      (invalidNode as unknown as Record<string, unknown>).name = null;
 
       const result = validateAST(ast);
 
@@ -108,7 +108,7 @@ describe("AST Validator", () => {
         component_type: "View",
         name: "TestNode",
       });
-      (node as unknown as { children: string }).children = "not an array" as unknown as ASTNode[];
+      (node as unknown as Record<string, unknown>).children = "not an array";
 
       const result = validateAST(node);
 

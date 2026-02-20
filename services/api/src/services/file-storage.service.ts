@@ -1,5 +1,4 @@
 import { createHash } from "crypto";
-import { In } from "typeorm";
 
 import { AppDataSource, ProjectFile, type FileType } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
@@ -248,7 +247,7 @@ export class FileStorageService {
       let currentPath = "";
 
       for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
+        const part = parts[i]!;
         const isLast = i === parts.length - 1;
         const parentPath = currentPath;
         currentPath = currentPath ? `${currentPath}/${part}` : part;

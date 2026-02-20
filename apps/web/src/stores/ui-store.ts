@@ -148,7 +148,7 @@ const layoutPresets = {
 
 export const useUIStore = create<UIStore>()(
   persist(
-    immer((set, get) => ({
+    immer((set, _get) => ({
       ...initialState,
 
       setActiveMode: (mode) =>
@@ -279,7 +279,9 @@ export const useUIStore = create<UIStore>()(
       reorderFileTabs: (fromIndex, toIndex) =>
         set((state) => {
           const [removed] = state.openFileTabs.splice(fromIndex, 1);
-          state.openFileTabs.splice(toIndex, 0, removed);
+          if (removed) {
+            state.openFileTabs.splice(toIndex, 0, removed);
+          }
         }),
 
       toggleCommandPalette: () =>

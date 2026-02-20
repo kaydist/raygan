@@ -46,7 +46,7 @@ export async function getOrganization(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { orgId } = req.params;
+    const orgId = req.params.orgId as string;
 
     const org = await organizationService.findByUuid(orgId);
     if (!org) {
@@ -144,7 +144,7 @@ export async function updateOrganization(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { orgId } = req.params;
+    const orgId = req.params.orgId as string;
     const { name, slug, logo_url } = req.body;
 
     const org = await organizationService.findByUuid(orgId);
@@ -218,7 +218,7 @@ export async function deleteOrganization(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { orgId } = req.params;
+    const orgId = req.params.orgId as string;
 
     const org = await organizationService.findByUuid(orgId);
     if (!org) {
@@ -273,7 +273,7 @@ export async function deleteOrganization(
 export async function listMembers(req: Request, res: Response): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { orgId } = req.params;
+    const orgId = req.params.orgId as string;
 
     const org = await organizationService.findByUuid(orgId);
     if (!org) {
@@ -325,7 +325,7 @@ export async function listMembers(req: Request, res: Response): Promise<void> {
 export async function inviteMember(req: Request, res: Response): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { orgId } = req.params;
+    const orgId = req.params.orgId as string;
     const { user_id, role } = req.body;
 
     const org = await organizationService.findByUuid(orgId);
@@ -393,7 +393,8 @@ export async function updateMemberRole(
 ): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { orgId, memberId } = req.params;
+    const orgId = req.params.orgId as string;
+    const memberId = req.params.memberId as string;
     const { role } = req.body;
 
     const org = await organizationService.findByUuid(orgId);
@@ -454,7 +455,8 @@ export async function updateMemberRole(
 export async function removeMember(req: Request, res: Response): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
-    const { orgId, memberId } = req.params;
+    const orgId = req.params.orgId as string;
+    const memberId = req.params.memberId as string;
 
     const org = await organizationService.findByUuid(orgId);
     if (!org) {

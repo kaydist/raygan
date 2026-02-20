@@ -47,15 +47,21 @@ export const logger = {
     }
   },
 
-  error(message: string, error?: Error, context?: LogContext) {
+  error(message: string, errorOrContext?: Error | LogContext, context?: LogContext) {
     if (shouldLog("error")) {
-      console.error(
-        formatMessage("error", message, {
+      let finalContext: LogContext = {};
+
+      if (errorOrContext instanceof Error) {
+        finalContext = {
           ...context,
-          error: error?.message,
-          stack: error?.stack,
-        })
-      );
+          error: errorOrContext.message,
+          stack: errorOrContext.stack,
+        };
+      } else if (errorOrContext) {
+        finalContext = errorOrContext;
+      }
+
+      console.error(formatMessage("error", message, finalContext));
     }
   },
 };
