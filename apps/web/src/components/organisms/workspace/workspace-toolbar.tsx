@@ -14,11 +14,14 @@ import {
   LogOut,
   Settings,
   User,
+  Download,
+  Loader2,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { useUIStore } from "@/stores";
+import { cn, downloadBlob } from "@/lib/utils";
+import { useUIStore, useProjectStore } from "@/stores";
 import { useLogout } from "@/lib/api/queries";
+import { exportsApi } from "@/lib/api/routes";
 import {
   Button,
   Avatar,
@@ -47,11 +50,27 @@ export function WorkspaceToolbar({
 }: WorkspaceToolbarProps) {
   const router = useRouter();
   const { activeMode, setActiveMode } = useUIStore();
+  const currentProject = useProjectStore((state) => state.currentProject);
   const logout = useLogout();
+  const [isExporting, setIsExporting] = React.useState(false);
 
   const handleLogout = async () => {
     await logout.mutateAsync();
     router.push("/login");
+  };
+
+  const handleExport = async () => {
+    if (!currentProject) return;
+
+    setIsExporting(true);
+    try {
+      const blob = await exportsApi.downloadProjectZip(currentProject.uuid);
+      downloadBlob(blob, `${currentProject.slug}.zip`);
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -137,6 +156,21 @@ export function WorkspaceToolbar({
           />
           <span className="text-muted-foreground">847 credits</span>
         </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 px-3"
+          onClick={handleExport}
+          disabled={isExporting || !currentProject}
+        >
+          {isExporting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Download className="h-3.5 w-3.5" />
+          )}
+          {isExporting ? "Exporting..." : "Export"}
+        </Button>
 
         <Button size="sm" className="h-8 gap-1.5 bg-primary px-4">
           <Share2 className="h-3.5 w-3.5" />

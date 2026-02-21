@@ -16,3 +16,4 @@ export {
   clearRefreshToken,
   clearAllTokens,
 } from "./cookies";
+export { downloadBlob, downloadUrl } from "./download";

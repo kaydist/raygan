@@ -25,6 +25,7 @@
     "@google/generative-ai": "^0.24.1",
     "@staq/shared": "workspace:*",
     "@supabase/supabase-js": "^2.95.3",
+    "archiver": "^7.0.1",
     "cors": "^2.8.5",
     "express": "^5.0.1",
     "helmet": "^8.0.0",
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@staq/eslint-config": "workspace:*",
     "@staq/tsconfig": "workspace:*",
+    "@types/archiver": "^7.0.0",
     "@types/babel__traverse": "^7.28.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

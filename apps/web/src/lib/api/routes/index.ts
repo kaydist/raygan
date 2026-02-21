@@ -32,3 +32,6 @@ export { settingsApi } from "./settings";
 
 export { healthApi } from "./health";
 export type { HealthCheckResponse } from "./health";
+
+export { exportsApi } from "./exports";
+export type { ExportOptions } from "./exports";

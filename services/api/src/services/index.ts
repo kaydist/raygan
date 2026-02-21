@@ -28,3 +28,4 @@ export {
   type PublicSettings,
 } from "./settings.service";
 export * from "./ai-gateway";
+export { ExportService, type ExportOptions, type ExportResult } from "./export.service";

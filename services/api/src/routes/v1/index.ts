@@ -8,6 +8,7 @@ import { projectsRoutes } from "./projects.routes";
 import { filesRoutes } from "./files.routes";
 import { conversationsRoutes } from "./conversations.routes";
 import { generateRoutes } from "./generate.routes";
+import { exportsRoutes } from "./exports.routes";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use(projectsRoutes);
 router.use(filesRoutes);
 router.use(conversationsRoutes);
 router.use(generateRoutes);
+router.use(exportsRoutes);
 
 export const v1Routes: IRouter = router;
