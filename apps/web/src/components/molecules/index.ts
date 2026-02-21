@@ -11,3 +11,4 @@ export { Breadcrumb } from './breadcrumb';
 export { MobileHeader } from './mobile-header';
 export { ModelSelector } from './model-selector';
 export type { ModelOption } from './model-selector';
+export { DisclosureSection } from './disclosure-section';

@@ -10,5 +10,7 @@ export { PropertyInspector } from "./property-inspector";
 export { RightPanel } from "./right-panel";
 export { PreviewPanel } from "./preview-panel";
 export { StatusBar } from "./status-bar";
+export { BottomPanel } from "./bottom-panel";
+export { BuilderLeftPanel, BuilderCanvas, BuilderInspector } from "./builder";
 export { LAYOUT_STORAGE_KEY, defaultLayout, getStoredLayout, storeLayout } from "./constants";
 export type { LayoutState } from "./constants";
