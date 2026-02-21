@@ -7,8 +7,8 @@ import { useUIStore } from "@/stores";
 import { useProjectFilesSync } from "@/hooks";
 
 import { ResizeHandle } from "./resize-handle";
-import { AgentPanel } from "./agent-panel";
-import { CenterCanvas } from "./center-canvas";
+import { AgentPanel } from "./agent";
+import { CenterCanvas } from "./code";
 import { RightPanel } from "./right-panel";
 import { BottomPanel } from "./bottom-panel";
 import { BuilderLeftPanel, BuilderCanvas, BuilderInspector } from "./builder";

@@ -11,7 +11,7 @@ import { CodeEditor } from "@/features/code-editor";
 import { cn } from "@/lib/utils";
 
 import { FileExplorer } from "./file-explorer";
-import { ResizeHandle } from "./resize-handle";
+import { ResizeHandle } from "../resize-handle";
 
 const TerminalPanel = dynamic(
   () => import("@/features/terminal").then((mod) => mod.TerminalPanel),

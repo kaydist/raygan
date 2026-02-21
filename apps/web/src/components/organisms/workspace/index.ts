@@ -1,16 +1,21 @@
 export { WorkspaceLayout } from "./workspace-layout";
 export { ResizeHandle } from "./resize-handle";
 export { PanelHeader } from "./panel-header";
-export { LayersPanel } from "./layers-panel";
-export { ComponentPalette } from "./component-palette";
-export { AgentPanel } from "./agent-panel";
-export { CenterCanvas } from "./center-canvas";
-export { FileExplorer } from "./file-explorer";
-export { PropertyInspector } from "./property-inspector";
 export { RightPanel } from "./right-panel";
-export { PreviewPanel } from "./preview-panel";
 export { StatusBar } from "./status-bar";
 export { BottomPanel } from "./bottom-panel";
-export { BuilderLeftPanel, BuilderCanvas, BuilderInspector } from "./builder";
 export { LAYOUT_STORAGE_KEY, defaultLayout, getStoredLayout, storeLayout } from "./constants";
 export type { LayoutState } from "./constants";
+
+export { AgentPanel } from "./agent";
+export {
+  BuilderLeftPanel,
+  BuilderCanvas,
+  BuilderInspector,
+  LayersPanel,
+  PropertyInspector,
+  ComponentPalette,
+} from "./builder";
+export { FileExplorer, CenterCanvas } from "./code";
+export { PreviewPanel } from "./preview";
+export { WorkspaceToolbar } from "./workspace-toolbar";

@@ -3,7 +3,7 @@
 import { MessageSquare } from "lucide-react";
 
 import { ChatPanel } from "@/features/agent";
-import { PanelHeader } from "./panel-header";
+import { PanelHeader } from "../panel-header";
 
 interface AgentPanelProps {
   projectId: string;

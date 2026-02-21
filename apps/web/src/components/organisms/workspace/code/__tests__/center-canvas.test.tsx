@@ -37,7 +37,7 @@ vi.mock("react-resizable-panels", () => ({
   ),
 }));
 
-vi.mock("../resize-handle", () => ({
+vi.mock("../../resize-handle", () => ({
   ResizeHandle: () => <div data-testid="resize-handle" />,
 }));
 

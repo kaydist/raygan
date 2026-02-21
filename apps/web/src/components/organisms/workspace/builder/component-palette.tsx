@@ -2,7 +2,7 @@
 
 import { Blocks, Component } from "lucide-react";
 
-import { PanelHeader } from "./panel-header";
+import { PanelHeader } from "../panel-header";
 
 const components = [
   { name: "View", icon: Blocks },
