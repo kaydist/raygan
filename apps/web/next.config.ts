@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: "standalone",
   transpilePackages: ["@staq/shared"],
   serverExternalPackages: ["snack-sdk", "pubnub", "formidable"],
   images: {

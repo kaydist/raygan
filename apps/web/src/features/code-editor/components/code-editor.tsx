@@ -5,9 +5,9 @@ import Editor, { OnMount, loader, Monaco } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
 import { useProjectStore, useUIStore } from "@/stores";
+import { useDebounce } from "@/hooks";
 import { filesApi } from "@/lib/api";
 import { loadTypeDefinitions } from "../utils";
-import { useEditorKeyboard } from "../hooks";
 
 interface CodeEditorProps {
   filePath: string;
@@ -112,7 +112,12 @@ export function CodeEditor({
     [readOnly],
   );
 
-  useEditorKeyboard({ onSave: handleSave });
+  const debouncedSave = useDebounce(handleSave, 300);
+
+  useEffect(() => {
+    if (readOnly || !file?.modified) return;
+    debouncedSave(filePath, file.content ?? "");
+  }, [file?.content, file?.modified, filePath, debouncedSave, readOnly]);
 
   const syncProjectFilesToMonaco = useCallback((monaco: Monaco) => {
     const files = useProjectStore.getState().files;

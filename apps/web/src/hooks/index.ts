@@ -4,3 +4,4 @@ export type { GenerationState, GenerateOptions, UseGenerationOptions } from "./u
 export { useASTSync } from "./use-ast-sync";
 export { useSocket } from "./use-socket";
 export { useASTSocketSync } from "./use-ast-socket-sync";
+export { useDebounce } from "./use-debounce";
