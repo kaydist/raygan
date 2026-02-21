@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import { AppDataSource, ProjectFile, type FileType } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
 import { logger } from "../config";
+import { CacheService, CACHE_KEYS, CACHE_TTL } from "../lib";
 
 export interface CreateFileInput {
   project_id: number;
@@ -54,16 +55,38 @@ export class FileStorageService {
   private files = new BaseRepository(ProjectFile);
 
   async findByProjectId(projectId: number): Promise<ProjectFile[]> {
-    return this.files.findAll({
+    const cacheKey = CACHE_KEYS.projectFiles.all(projectId);
+    const cached = await CacheService.get<ProjectFile[]>(cacheKey);
+    if (cached) {
+      logger.debug({ projectId }, "Project files served from cache");
+      return cached;
+    }
+
+    const files = await this.files.findAll({
       where: { project_id: projectId },
       order: { path: "ASC" },
     });
+
+    await CacheService.set(cacheKey, files, CACHE_TTL.PROJECT_FILES);
+    return files;
   }
 
   async findByPath(projectId: number, path: string): Promise<ProjectFile | null> {
-    return this.files.findOne({
+    const cacheKey = CACHE_KEYS.projectFiles.byPath(projectId, path);
+    const cached = await CacheService.get<ProjectFile>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const file = await this.files.findOne({
       where: { project_id: projectId, path },
     });
+
+    if (file) {
+      await CacheService.set(cacheKey, file, CACHE_TTL.PROJECT_FILES);
+    }
+
+    return file;
   }
 
   async findByUuid(uuid: string): Promise<ProjectFile | null> {
@@ -105,6 +128,8 @@ export class FileStorageService {
       conversation_id: input.conversation_id,
     }, userId);
 
+    await CacheService.invalidateProjectFiles(input.project_id);
+
     logger.info({
       projectId: input.project_id,
       path: input.path,
@@ -140,6 +165,12 @@ export class FileStorageService {
       throw new Error(`File with id ${id} not found after update`);
     }
 
+    await CacheService.invalidateProjectFile(
+      existing.project_id,
+      id,
+      existing.path
+    );
+
     logger.info({
       fileId: id,
       path: updated.path,
@@ -150,13 +181,25 @@ export class FileStorageService {
   }
 
   async delete(id: number, userId: number): Promise<boolean> {
-    return this.files.softDelete(id, userId);
+    const file = await this.files.findById(id);
+    if (!file) return false;
+
+    const result = await this.files.softDelete(id, userId);
+    if (result) {
+      await CacheService.invalidateProjectFile(file.project_id, id, file.path);
+    }
+    return result;
   }
 
   async deleteByPath(projectId: number, path: string, userId: number): Promise<boolean> {
     const file = await this.findByPath(projectId, path);
     if (!file) return false;
-    return this.files.softDelete(file.id, userId);
+
+    const result = await this.files.softDelete(file.id, userId);
+    if (result) {
+      await CacheService.invalidateProjectFile(projectId, file.id, path);
+    }
+    return result;
   }
 
   async bulkCreateOrUpdate(
@@ -178,6 +221,8 @@ export class FileStorageService {
       results.push(result);
     }
 
+    await CacheService.invalidateProjectFiles(projectId);
+
     logger.info({
       projectId,
       fileCount: results.length,
@@ -188,11 +233,28 @@ export class FileStorageService {
   }
 
   async getFileTree(projectId: number): Promise<FileTreeNode[]> {
+    const cacheKey = CACHE_KEYS.projectFiles.tree(projectId);
+    const cached = await CacheService.get<FileTreeNode[]>(cacheKey);
+    if (cached) {
+      logger.debug({ projectId }, "File tree served from cache");
+      return cached;
+    }
+
     const files = await this.findByProjectId(projectId);
-    return this.buildFileTree(files);
+    const tree = this.buildFileTree(files);
+
+    await CacheService.set(cacheKey, tree, CACHE_TTL.PROJECT_FILE_TREE);
+    return tree;
   }
 
   async getSnackFiles(projectId: number): Promise<SnackFiles> {
+    const cacheKey = CACHE_KEYS.projectFiles.snack(projectId);
+    const cached = await CacheService.get<SnackFiles>(cacheKey);
+    if (cached) {
+      logger.debug({ projectId }, "Snack files served from cache");
+      return cached;
+    }
+
     const files = await this.findByProjectId(projectId);
     const snackFiles: SnackFiles = {};
 
@@ -208,6 +270,7 @@ export class FileStorageService {
       };
     }
 
+    await CacheService.set(cacheKey, snackFiles, CACHE_TTL.PROJECT_FILES);
     return snackFiles;
   }
 

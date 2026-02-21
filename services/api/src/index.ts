@@ -1,11 +1,12 @@
 import { createServer } from "http";
 import { createApp } from "./app";
-import { env, logger } from "./config";
+import { env, logger, initializeRedis, closeRedis } from "./config";
 import { initializeDatabase, closeDatabase } from "./db";
 import { setupSocketServer, closeSocketServer } from "./socket";
 
 async function main() {
   await initializeDatabase();
+  await initializeRedis();
 
   const app = createApp();
   const httpServer = createServer(app);
@@ -23,6 +24,7 @@ async function main() {
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
     await closeSocketServer();
+    await closeRedis();
     await closeDatabase();
     process.exit(0);
   };

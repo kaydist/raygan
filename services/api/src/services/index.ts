@@ -20,4 +20,11 @@ export {
   SupabaseTokenExpiredError,
   type FormattedSession,
 } from "./supabase-auth.service";
+export {
+  SettingsService,
+  type SettingResponse,
+  type CreateSettingInput,
+  type UpdateSettingInput,
+  type PublicSettings,
+} from "./settings.service";
 export * from "./ai-gateway";
