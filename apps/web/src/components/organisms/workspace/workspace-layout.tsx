@@ -34,12 +34,11 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
 
   const handleLayoutChange = (sizes: number[]) => {
     setLayout((prev) => {
-      if (activeMode === "agent" && sizes.length >= 3) {
+      if (activeMode === "agent" && sizes.length >= 2) {
         return {
           ...prev,
           leftSize: sizes[0] ?? prev.leftSize,
-          centerSize: sizes[1] ?? prev.centerSize,
-          rightSize: sizes[2] ?? prev.rightSize,
+          rightSize: sizes[1] ?? prev.rightSize,
         };
       } else if (sizes.length >= 2) {
         return {
@@ -71,7 +70,7 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
           onLayout={handleLayoutChange}
           className="h-full"
         >
-          {showLeftPanel && (
+          {showLeftPanel ? (
             <>
               <Panel
                 defaultSize={layout.leftSize}
@@ -82,26 +81,34 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
                 <AgentPanel projectId={projectId} />
               </Panel>
               <ResizeHandle />
+              <Panel
+                defaultSize={layout.rightSize}
+                minSize={40}
+                maxSize={70}
+                className="bg-background"
+              >
+                <RightPanel projectId={projectId} />
+              </Panel>
+            </>
+          ) : (
+            <>
+              <Panel
+                defaultSize={layout.centerSize}
+                minSize={30}
+              >
+                <CenterCanvas />
+              </Panel>
+              <ResizeHandle />
+              <Panel
+                defaultSize={layout.rightSize}
+                minSize={15}
+                maxSize={40}
+                className="border-l border-border bg-background"
+              >
+                <RightPanel projectId={projectId} />
+              </Panel>
             </>
           )}
-
-          <Panel
-            defaultSize={showLeftPanel ? 20 : 60}
-            minSize={showLeftPanel ? 15 : 30}
-            maxSize={showLeftPanel ? 30 : undefined}
-          >
-            <CenterCanvas />
-          </Panel>
-
-          <ResizeHandle />
-          <Panel
-            defaultSize={showLeftPanel ? 50 : layout.rightSize}
-            minSize={showLeftPanel ? 40 : 15}
-            maxSize={showLeftPanel ? 60 : 40}
-            className="border-l border-border bg-background"
-          >
-            <RightPanel projectId={projectId} />
-          </Panel>
         </PanelGroup>
       </div>
 

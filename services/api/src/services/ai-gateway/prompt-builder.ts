@@ -116,7 +116,27 @@ When generating styles, create a shared tokens file if one doesn't exist:
 - Lazy load screens where appropriate
 - Avoid defining functions or objects inline inside JSX
 - Use \`InteractionManager.runAfterInteractions\` for heavy post-navigation work
-- Optimize images (appropriate sizing, caching)`;
+- Optimize images (appropriate sizing, caching)
+
+### Package Selection (Expo SDK First)
+- ALWAYS prefer Expo SDK packages (\`expo-*\`) over third-party alternatives
+- Before using any third-party package, check if an Expo SDK equivalent exists
+- Common Expo SDK packages to prefer:
+  - \`expo-image\` over \`react-native-fast-image\`
+  - \`expo-av\` for audio/video instead of third-party players
+  - \`expo-camera\` over \`react-native-camera\`
+  - \`expo-linear-gradient\` over \`react-native-linear-gradient\`
+  - \`expo-blur\` over \`@react-native-community/blur\`
+  - \`expo-haptics\` over \`react-native-haptic-feedback\`
+  - \`expo-secure-store\` over \`react-native-keychain\`
+  - \`expo-local-authentication\` for biometrics
+  - \`@expo/vector-icons\` for icons
+- Only use third-party packages when:
+  1. No Expo SDK equivalent exists
+  2. The user explicitly requests a specific package
+  3. The feature requires native code not available in Expo SDK
+- For animations, prefer \`react-native-reanimated\` (Expo-compatible) or \`moti\`
+- Avoid packages with native dependencies that aren't in the Expo SDK, as they won't work in Expo Go or Snack preview`;
 
 const OUTPUT_FORMAT = `## Output Format
 
