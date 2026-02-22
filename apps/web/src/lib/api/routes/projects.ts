@@ -8,9 +8,11 @@ import type {
 
 import { axiosInstance, extractData } from "../client";
 
+export type ProjectStatus = "draft" | "deployed" | "archived";
+
 export interface ProjectListParams extends PaginationParams {
   organization_id?: number;
-  include_archived?: boolean;
+  status?: ProjectStatus;
 }
 
 export const projectsApi = {
@@ -43,14 +45,21 @@ export const projectsApi = {
 
   archive: async (uuid: string): Promise<ProjectResponse> => {
     const response = await axiosInstance.patch(`/api/v1/projects/${uuid}`, {
-      is_archived: true,
+      status: "archived" as ProjectStatus,
     });
     return extractData(response);
   },
 
   unarchive: async (uuid: string): Promise<ProjectResponse> => {
     const response = await axiosInstance.patch(`/api/v1/projects/${uuid}`, {
-      is_archived: false,
+      status: "draft" as ProjectStatus,
+    });
+    return extractData(response);
+  },
+
+  updateStatus: async (uuid: string, status: ProjectStatus): Promise<ProjectResponse> => {
+    const response = await axiosInstance.patch(`/api/v1/projects/${uuid}`, {
+      status,
     });
     return extractData(response);
   },

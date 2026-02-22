@@ -12,8 +12,12 @@ export async function listProjects(req: Request, res: Response): Promise<void> {
   try {
     const authReq = req as AuthenticatedRequest;
     const currentOrg = authReq.currentOrganization;
+    const { status } = req.query;
 
-    const projects = await projectService.findAllByOrgId(currentOrg.id);
+    const projects = await projectService.findAllByOrgId(
+      currentOrg.id,
+      status as "draft" | "deployed" | "archived" | undefined
+    );
 
     res.json({
       data: projects.map((p) => ({
@@ -23,7 +27,7 @@ export async function listProjects(req: Request, res: Response): Promise<void> {
         description: p.description,
         framework_version: p.framework_version,
         backend_provider: p.backend_provider,
-        is_archived: p.is_archived,
+        status: p.status,
         last_generated_at: p.last_generated_at,
         updated_on: p.updated_on,
         created_on: p.created_on,
@@ -77,7 +81,7 @@ export async function getProject(req: Request, res: Response): Promise<void> {
         default_model_id: project.default_model_id,
         ast_snapshot: project.ast_snapshot,
         file_tree: project.file_tree,
-        is_archived: project.is_archived,
+        status: project.status,
         last_generated_at: project.last_generated_at,
         updated_on: project.updated_on,
         created_on: project.created_on,
@@ -180,7 +184,7 @@ export async function updateProject(
   try {
     const authReq = req as AuthenticatedRequest;
     const projectId = req.params.projectId as string;
-    const { name, slug, description, framework_version, backend_provider, default_model_id } =
+    const { name, slug, description, framework_version, backend_provider, default_model_id, status } =
       req.body;
 
     const project = await projectService.findByUuid(projectId);
@@ -223,7 +227,7 @@ export async function updateProject(
 
     const updated = await projectService.update(
       project.id,
-      { name, slug, description, framework_version, backend_provider, default_model_id },
+      { name, slug, description, framework_version, backend_provider, default_model_id, status },
       authReq.dbUser.id,
     );
 
@@ -237,6 +241,7 @@ export async function updateProject(
         framework_version: updated?.framework_version,
         backend_provider: updated?.backend_provider,
         default_model_id: updated?.default_model_id,
+        status: updated?.status,
       },
       error: null,
     });

@@ -1,6 +1,7 @@
-import { In } from "typeorm";
+import { In, Not } from "typeorm";
 import { AppDataSource, Project, OrganizationMember, AIModel } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
+import type { ProjectStatusType } from "../db/entities/project.entity";
 
 export class ProjectService {
   private projects = new BaseRepository(Project);
@@ -19,7 +20,7 @@ export class ProjectService {
 
   async findAllByUserId(
     userId: number,
-    options?: { orgId?: number; includeArchived?: boolean },
+    options?: { orgId?: number; status?: ProjectStatusType },
   ) {
     const memberships = await AppDataSource.getRepository(
       OrganizationMember,
@@ -33,14 +34,22 @@ export class ProjectService {
     if (orgIds.length === 0) return [];
 
     const where: Record<string, unknown> = { organization_id: In(orgIds) };
-    if (!options?.includeArchived) where.is_archived = false;
+    if (options?.status) {
+      where.status = options.status;
+    } else {
+      where.status = Not("archived");
+    }
 
     return this.projects.findAll({ where, order: { updated_on: "DESC" } });
   }
 
-  async findAllByOrgId(orgId: number, includeArchived = false) {
+  async findAllByOrgId(orgId: number, status?: ProjectStatusType) {
     const where: Record<string, unknown> = { organization_id: orgId };
-    if (!includeArchived) where.is_archived = false;
+    if (status) {
+      where.status = status;
+    } else {
+      where.status = Not("archived");
+    }
 
     return this.projects.findAll({ where, order: { updated_on: "DESC" } });
   }
@@ -91,11 +100,15 @@ export class ProjectService {
   }
 
   async archive(id: number, updatedBy?: number) {
-    return this.projects.update(id, { is_archived: true }, updatedBy);
+    return this.projects.update(id, { status: "archived" as ProjectStatusType }, updatedBy);
   }
 
   async unarchive(id: number, updatedBy?: number) {
-    return this.projects.update(id, { is_archived: false }, updatedBy);
+    return this.projects.update(id, { status: "draft" as ProjectStatusType }, updatedBy);
+  }
+
+  async updateStatus(id: number, status: ProjectStatusType, updatedBy?: number) {
+    return this.projects.update(id, { status }, updatedBy);
   }
 
   async delete(id: number, deletedBy?: number) {

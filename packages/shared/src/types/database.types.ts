@@ -11,7 +11,7 @@ export type PlanTier = 'free' | 'starter' | 'pro' | 'team' | 'enterprise';
 
 export type OrgRole = 'owner' | 'admin' | 'member' | 'viewer';
 
-export type ProjectStatus = 'active' | 'deactivated' | 'archived' | 'deleted';
+export type ProjectStatus = 'draft' | 'deployed' | 'archived';
 
 export type ConversationStatus = 'active' | 'completed' | 'error';
 
@@ -167,7 +167,7 @@ export interface Project extends BaseEntity {
   backend_config: string | null;
   default_model_id: number | null;
   last_generated_at: string | null;
-  is_archived: boolean;
+  status: ProjectStatus;
 }
 
 export interface ProjectInsert {
@@ -183,7 +183,7 @@ export interface ProjectInsert {
   backend_config?: string | null;
   default_model_id?: number | null;
   last_generated_at?: string | null;
-  is_archived?: boolean;
+  status?: ProjectStatus;
   meta?: Record<string, unknown>;
   created_by?: number | null;
 }
@@ -200,7 +200,7 @@ export interface ProjectUpdate {
   backend_config?: string | null;
   default_model_id?: number | null;
   last_generated_at?: string | null;
-  is_archived?: boolean;
+  status?: ProjectStatus;
   meta?: Record<string, unknown>;
   updated_by?: number | null;
 }

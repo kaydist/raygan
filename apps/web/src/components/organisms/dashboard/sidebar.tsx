@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from "next/navigation";
 import {
   Clock,
   FileText,
@@ -8,16 +8,16 @@ import {
   LayoutTemplate,
   ChevronDown,
   FolderOpen,
-} from 'lucide-react';
-import { Logo, ScrollArea, Separator } from '@/components/atoms';
+} from "lucide-react";
+import { Logo, ScrollArea, Separator } from "@/components/atoms";
 import {
   NavItem,
   NavSection,
   SearchBar,
   CreditDisplay,
   UserMenu,
-} from '@/components/molecules';
-import { cn } from '@/lib/utils';
+} from "@/components/molecules";
+import { cn } from "@/lib/utils";
 
 interface Team {
   id: string;
@@ -53,12 +53,17 @@ export function Sidebar({
   className,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const onProfile = () => {
+    router.push("/profile");
+  };
 
   return (
     <aside
       className={cn(
-        'flex h-screen w-60 flex-col border-r border-border bg-background',
-        className
+        "flex h-screen w-60 flex-col border-r border-border bg-background",
+        className,
       )}
     >
       <div className="p-4">
@@ -75,26 +80,26 @@ export function Sidebar({
             icon={Clock}
             label="Recents"
             href="/dashboard/recents"
-            isActive={pathname === '/dashboard/recents'}
+            isActive={pathname === "/dashboard/recents"}
           />
           <NavItem
             icon={FileText}
             label="Drafts"
             href="/dashboard/drafts"
             count={5}
-            isActive={pathname === '/dashboard/drafts'}
+            isActive={pathname === "/dashboard/drafts"}
           />
           <NavItem
             icon={Star}
             label="Favorites"
             href="/dashboard/favorites"
-            isActive={pathname === '/dashboard/favorites'}
+            isActive={pathname === "/dashboard/favorites"}
           />
           <NavItem
             icon={LayoutTemplate}
             label="Templates"
             href="/dashboard/templates"
-            isActive={pathname === '/dashboard/templates'}
+            isActive={pathname === "/dashboard/templates"}
           />
         </NavSection>
 
@@ -133,6 +138,7 @@ export function Sidebar({
           name={user.name}
           email={user.email}
           avatarUrl={user.avatarUrl}
+          onProfile={onProfile}
           onLogout={onLogout}
         />
       </div>

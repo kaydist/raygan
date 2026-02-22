@@ -220,7 +220,7 @@ export interface UpdateProjectRequest {
   backend_provider?: string | null;
   backend_config?: string | null;
   default_model_id?: number | null;
-  is_archived?: boolean;
+  status?: "draft" | "deployed" | "archived";
 }
 
 export interface ProjectResponse {
@@ -233,7 +233,7 @@ export interface ProjectResponse {
   backend_provider: string | null;
   default_model_id: number | null;
   last_generated_at: string | null;
-  is_archived: boolean;
+  status: "draft" | "deployed" | "archived";
   created_on: string;
   updated_on: string;
 }

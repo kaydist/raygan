@@ -4,6 +4,8 @@ import { BaseEntity } from "./base.entity";
 import { Organization } from "./organization.entity";
 import type { Conversation } from "./conversation.entity";
 
+export type ProjectStatusType = "draft" | "deployed" | "archived";
+
 @Entity("projects")
 export class Project extends BaseEntity {
   @Column({ type: "integer" })
@@ -42,8 +44,8 @@ export class Project extends BaseEntity {
   @Column({ type: "timestamptz", nullable: true })
   last_generated_at!: Date | null;
 
-  @Column({ type: "boolean", default: false })
-  is_archived!: boolean;
+  @Column({ type: "varchar", length: 20, default: "draft" })
+  status!: ProjectStatusType;
 
   // Relations
   @ManyToOne(() => Organization, (org) => org.projects)

@@ -12,6 +12,12 @@ export const ERROR_CODES = {
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 
+export const PROJECT_STATUS = {
+  DRAFT: "draft",
+  DEPLOYED: "deployed",
+  ARCHIVED: "archived",
+} as const;
+
 export const SOCKET_EVENTS = {
   CONNECT: "connect",
   DISCONNECT: "disconnect",
