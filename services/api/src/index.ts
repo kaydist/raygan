@@ -13,11 +13,11 @@ async function main() {
 
   setupSocketServer(httpServer);
 
-  httpServer.listen(env.PORT, env.HOST, () => {
+  httpServer.listen(env.PORT, env.BIND_HOST, () => {
     logger.info(
-      `Server running at http://${env.HOST}:${env.PORT} in ${env.NODE_ENV} mode`
+      `Server running at http://${env.BIND_HOST}:${env.PORT} in ${env.NODE_ENV} mode`
     );
-    logger.info(`Health check: http://${env.HOST}:${env.PORT}/api/v1/health`);
+    logger.info(`Health check: http://${env.BIND_HOST}:${env.PORT}/api/v1/health`);
     logger.info(`WebSocket server ready`);
   });
 
