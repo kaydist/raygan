@@ -9,9 +9,9 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # =============================================================================
-# Stage 2: Install dependencies
+# Stage 2: Install dependencies and build
 # =============================================================================
-FROM base AS deps
+FROM base AS builder
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY packages/shared/package.json ./packages/shared/
@@ -20,16 +20,6 @@ COPY apps/web/package.json ./apps/web/
 
 RUN pnpm install --frozen-lockfile
 
-# =============================================================================
-# Stage 3: Build the application
-# =============================================================================
-FROM base AS builder
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-
-COPY package.json turbo.json pnpm-workspace.yaml ./
 COPY packages/shared ./packages/shared
 COPY packages/tsconfig ./packages/tsconfig
 COPY apps/web ./apps/web
@@ -48,7 +38,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter=@staq/web build
 
 # =============================================================================
-# Stage 4: Production image
+# Stage 3: Production image
 # =============================================================================
 FROM node:22-alpine AS runner
 
@@ -61,11 +51,9 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 RUN mkdir -p public .next
-RUN chown nextjs:nodejs public
+RUN chown nextjs:nodejs public .next
 
-COPY --from=builder /app/apps/web/public/ ./public/
-RUN chown nextjs:nodejs .next
-
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
