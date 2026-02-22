@@ -58,8 +58,6 @@ async function initializeMonaco() {
   });
 
   monacoInitialized = true;
-  console.log("[CodeEditor] Monaco initialized with TypeScript support");
-  console.log("[CodeEditor] Available languages:", monaco.languages.getLanguages().map((l: { id: string }) => l.id));
 }
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -258,15 +256,8 @@ export function CodeEditor({
 
       const model = editor.getModel();
       const expectedLanguage = getLanguageFromPath(filePath);
-      console.log("[CodeEditor] Monaco mounted");
-      console.log("[CodeEditor] filePath:", filePath);
-      console.log("[CodeEditor] Expected language:", expectedLanguage);
-      console.log("[CodeEditor] Model language:", model?.getLanguageId());
-      const storeFile = useProjectStore.getState().files.get(filePath);
-      console.log("[CodeEditor] file.language from store:", storeFile?.language);
 
       if (model && model.getLanguageId() !== expectedLanguage) {
-        console.log("[CodeEditor] Language mismatch! Forcing language to:", expectedLanguage);
         monaco.editor.setModelLanguage(model, expectedLanguage);
       }
 
@@ -460,7 +451,6 @@ export function CodeEditor({
   }
 
   const detectedLanguage = getLanguageFromPath(filePath);
-  console.log("[CodeEditor] filePath:", filePath, "| language:", detectedLanguage);
 
   return (
     <div className={className}>
