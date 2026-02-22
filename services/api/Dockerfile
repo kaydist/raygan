@@ -50,17 +50,17 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 expressjs
 
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/pnpm-lock.yaml ./
+COPY --from=builder /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/package.json ./
 
-COPY --from=builder /app/packages/shared ./packages/shared
-COPY --from=builder /app/packages/tsconfig ./packages/tsconfig
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder /app/packages/tsconfig/package.json ./packages/tsconfig/package.json
 
 COPY --from=builder /app/services/api/package.json ./services/api/
 COPY --from=builder /app/services/api/dist ./services/api/dist
 
-RUN pnpm install --frozen-lockfile --prod --filter=@staq/api
+RUN pnpm install --frozen-lockfile --prod --filter=@staq/api --ignore-scripts
 
 USER expressjs
 
