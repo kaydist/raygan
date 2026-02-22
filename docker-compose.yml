@@ -34,10 +34,10 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    expose:
+      - "${PORT:-4000}"
     ports:
       - "${PORT:-4000}:${PORT:-4000}"
-    labels:
-      - traefik.http.services.api.loadbalancer.server.port=${PORT:-4000}
     depends_on:
       redis:
         condition: service_healthy
@@ -65,8 +65,6 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
     ports:
       - "3000:3000"
-    labels:
-      - traefik.http.services.web.loadbalancer.server.port=3000
     depends_on:
       - api
     networks:
