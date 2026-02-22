@@ -44,6 +44,7 @@ interface ProjectState {
   currentProject: ProjectDetailResponse | null;
   files: Map<string, FileEntry>;
   fileTree: FileEntry[];
+  filesVersion: number;
   backendSchema: BackendSchema | null;
   connectedBackend: string | null;
   isLoading: boolean;
@@ -93,6 +94,7 @@ const initialState: ProjectState = {
   currentProject: null,
   files: new Map(),
   fileTree: [],
+  filesVersion: 0,
   backendSchema: null,
   connectedBackend: null,
   isLoading: false,
@@ -157,6 +159,7 @@ export const useProjectStore = create<ProjectStore>()(
     setFiles: (files) =>
       set((state) => {
         state.files = files;
+        state.filesVersion += 1;
       }),
 
     updateFile: (path, content) =>
@@ -164,6 +167,7 @@ export const useProjectStore = create<ProjectStore>()(
         const file = state.files.get(path);
         if (file) {
           state.files.set(path, { ...file, content, modified: true });
+          state.filesVersion += 1;
         }
       }),
 
@@ -178,11 +182,13 @@ export const useProjectStore = create<ProjectStore>()(
           modified: type === "file",
         };
         state.files.set(path, entry);
+        state.filesVersion += 1;
       }),
 
     deleteFile: (path) =>
       set((state) => {
         state.files.delete(path);
+        state.filesVersion += 1;
         const deleteFromTree = (nodes: FileEntry[]): FileEntry[] => {
           return nodes.filter((node) => {
             if (node.path === path) return false;

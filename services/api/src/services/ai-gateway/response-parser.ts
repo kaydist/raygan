@@ -293,7 +293,7 @@ export class ResponseParser {
       const hasReactNativeImport = /import\s+.*\s+from\s+['"]react-native['"]/.test(code);
 
       if (hasAppComponent || (hasReactNativeImport && hasDefaultExport)) {
-        return "App.js";
+        return `App${ext}`;
       }
 
       const componentMatch = code.match(/(?:export\s+(?:default\s+)?)?(?:function|const)\s+(\w+)/);
@@ -301,7 +301,7 @@ export class ResponseParser {
         const name = componentMatch[1];
 
         if (name === "App") {
-          return "App.js";
+          return `App${ext}`;
         }
         if (name.endsWith("Screen")) {
           return `screens/${name}${ext}`;
@@ -311,9 +311,8 @@ export class ResponseParser {
         }
       }
 
-      // Fallback: if it has React imports and default export, assume it's App.js
       if ((hasReactImport || hasReactNativeImport) && hasDefaultExport) {
-        return "App.js";
+        return `App${ext}`;
       }
     }
 

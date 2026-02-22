@@ -32,6 +32,7 @@ export function useSnackSync(
   const prevWebPreviewURLRef = useRef<string | null>(null);
 
   const files = useProjectStore((state) => state.files);
+  const filesVersion = useProjectStore((state) => state.filesVersion);
 
   const performSync = useCallback(() => {
     if (!enabled || !files || files.size === 0) {
@@ -39,13 +40,20 @@ export function useSnackSync(
     }
 
     const fileTree: Record<string, string> = {};
+    const paths: string[] = [];
     files.forEach((entry, path) => {
       if (entry.content) {
         fileTree[path] = entry.content;
+        paths.push(path);
       }
     });
 
-    const contentHash = JSON.stringify(fileTree);
+    paths.sort();
+    const contentHash = JSON.stringify({
+      version: filesVersion,
+      count: files.size,
+      paths,
+    });
     if (contentHash === lastSyncRef.current) {
       return;
     }
@@ -65,7 +73,7 @@ export function useSnackSync(
       snackDeps[name] = { version };
     }
     updateDependencies(snackDeps);
-  }, [enabled, files, updateFiles, updateDependencies, webPreviewURL]);
+  }, [enabled, files, filesVersion, updateFiles, updateDependencies, webPreviewURL]);
 
   const syncFiles = useCallback(() => {
     lastSyncRef.current = "";
@@ -98,6 +106,7 @@ export function useSnackSync(
     prevWebPreviewURLRef.current = webPreviewURL ?? null;
 
     if (enabled && !wasEnabled) {
+      lastSyncRef.current = "";
       performSync();
     }
 
@@ -106,6 +115,10 @@ export function useSnackSync(
       performSync();
     }
   }, [projectId, enabled, webPreviewURL, performSync]);
+
+  useEffect(() => {
+    lastSyncRef.current = "";
+  }, [projectId]);
 
   return { syncFiles };
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { createSSEStream, type FileUpdate } from "@/lib/api";
+import { queryKeys } from "@/lib/api/queries/query-keys";
 import { useProjectStore, useASTStore } from "@/stores";
 import type { Message, StreamingState } from "../types";
 
@@ -22,6 +24,7 @@ export function useGenerate({
   initialMessages = [],
   onMessageComplete,
 }: UseGenerateOptions) {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
 
   useEffect(() => {
@@ -108,6 +111,10 @@ export function useGenerate({
                   deleteFile(update.path);
                   break;
               }
+
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.files.list(projectId),
+              });
             },
             onDone: (_data) => {
               setMessages((prev) => {
@@ -131,6 +138,16 @@ export function useGenerate({
                 error: null,
               });
               streamingMessageIdRef.current = null;
+
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.files.list(projectId),
+              });
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.files.snack(projectId),
+              });
+              queryClient.invalidateQueries({
+                queryKey: queryKeys.files.tree(projectId),
+              });
             },
             onError: (error) => {
               setMessages((prev) =>

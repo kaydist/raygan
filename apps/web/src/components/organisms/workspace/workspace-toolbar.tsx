@@ -4,8 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
-  Undo2,
-  Redo2,
   Share2,
   ChevronDown,
   MessageSquare,
@@ -16,6 +14,7 @@ import {
   User,
   Download,
   Loader2,
+  Github,
 } from "lucide-react";
 
 import { cn, downloadBlob } from "@/lib/utils";
@@ -33,6 +32,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@/components/atoms";
 
 interface WorkspaceToolbarProps {
@@ -127,15 +130,6 @@ export function WorkspaceToolbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-0.5">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Undo2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Redo2 className="h-4 w-4" />
-          </Button>
-        </div>
-
         <div className="flex items-center gap-1.5 text-sm">
           <div
             className={cn(
@@ -144,7 +138,7 @@ export function WorkspaceToolbar({
                 ? "animate-pulse bg-amber-500"
                 : isConnected
                   ? "bg-emerald-500"
-                  : "bg-red-500"
+                  : "bg-red-500",
             )}
             title={
               isSyncing
@@ -157,30 +151,54 @@ export function WorkspaceToolbar({
           <span className="text-muted-foreground">847 credits</span>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 gap-1.5 px-3"
-          onClick={handleExport}
-          disabled={isExporting || !currentProject}
-        >
-          {isExporting ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Download className="h-3.5 w-3.5" />
-          )}
-          {isExporting ? "Exporting..." : "Export"}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" className="h-8 gap-1.5 px-4">
+                <Share2 className="h-3.5 w-3.5" />
+                Share
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Coming soon</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
 
-        <Button size="sm" className="h-8 gap-1.5 bg-primary px-4">
-          <Share2 className="h-3.5 w-3.5" />
-          Share
-        </Button>
-
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 px-3">
-          Deploy
-          <ChevronDown className="h-3.5 w-3.5" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 px-3">
+              Deploy
+              <ChevronDown className="h-3.5 w-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem
+              onClick={handleExport}
+              disabled={isExporting || !currentProject}
+            >
+              {isExporting ? (
+                <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5 mr-2" />
+              )}
+              {isExporting ? "Exporting..." : "Export"}
+            </DropdownMenuItem>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuItem className="cursor-not-allowed">
+                    <Github className="mr-2 h-4 w-4" />
+                    GitHub
+                  </DropdownMenuItem>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>Coming soon</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -196,11 +214,15 @@ export function WorkspaceToolbar({
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+            <DropdownMenuItem
+              onClick={() => router.push("/dashboard/settings")}
+            >
               <User className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+            <DropdownMenuItem
+              onClick={() => router.push("/dashboard/settings")}
+            >
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
