@@ -1,13 +1,13 @@
 "use client";
 
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, ArrowLeft, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import { Mail, ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
 
-import { Button } from "@/components/atoms";
+import { Button, Paragraph } from "@/components/atoms";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
   const [isResending, setIsResending] = useState(false);
@@ -103,5 +103,27 @@ export default function VerifyEmailPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+          <div className="w-full max-w-md space-y-8 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold tracking-tight">Loading...</h1>
+              <Paragraph variant="muted">Please wait...</Paragraph>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

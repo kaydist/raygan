@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
-import { Button } from "@/components/atoms";
+import { Button, Paragraph } from "@/components/atoms";
 
 type VerificationStatus = "loading" | "success" | "error" | "expired";
 
-export default function EmailVerifiedPage() {
+function EmailVerifiedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -123,5 +123,27 @@ export default function EmailVerifiedPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function EmailVerifiedPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+          <div className="w-full max-w-md space-y-8 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold tracking-tight">Loading...</h1>
+              <Paragraph variant="muted">Please wait...</Paragraph>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <EmailVerifiedContent />
+    </Suspense>
   );
 }

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Heading, Paragraph } from "@/components/atoms";
 import { setAuthToken, setRefreshToken } from "@/lib/utils";
 
-export default function CallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -56,5 +56,20 @@ export default function CallbackPage() {
       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       <Paragraph variant="muted">Completing sign in...</Paragraph>
     </div>
+  );
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Paragraph variant="muted">Loading...</Paragraph>
+        </div>
+      }
+    >
+      <CallbackContent />
+    </Suspense>
   );
 }

@@ -1,13 +1,16 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import type { LoginRequest } from "@staq/shared";
 import { SignInForm } from "@/components/organisms";
 import { useLogin } from "@/lib/api";
+import { Paragraph } from "@/components/atoms";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/dashboard";
@@ -44,5 +47,20 @@ export default function LoginPage() {
       isLoading={loginMutation.isPending}
       error={loginMutation.error?.message ?? null}
     />
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Paragraph variant="muted">Loading...</Paragraph>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
