@@ -21,6 +21,11 @@ const nextConfig: NextConfig = {
         path: false,
         os: false,
       };
+
+      config.module.rules.push({
+        test: /\.ttf$/,
+        type: "asset/resource",
+      });
     }
     return config;
   },
