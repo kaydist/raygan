@@ -2,17 +2,14 @@
 node_modules
 **/node_modules
 
-# Build outputs
+# Build outputs (but keep them for runner stage)
 .next
-**/dist
 **/.turbo
 
 # Development files
 .env
 .env.*
 !.env.example
-**/.env
-**/.env.*
 
 # Git
 .git
@@ -35,23 +32,7 @@ pnpm-debug.log*
 
 # Test
 coverage
-**/__tests__
-**/*.test.ts
-**/*.test.tsx
-**/*.spec.ts
-**/*.spec.tsx
-
-# Documentation
-*.md
-!README.md
-docs
-
-# Docker
-Dockerfile*
-docker-compose*
-.dockerignore
 
 # Misc
 .turbo
 .cache
-*.tsbuildinfo
