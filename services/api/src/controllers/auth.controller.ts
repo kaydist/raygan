@@ -452,9 +452,27 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
 
 export async function resetPassword(req: Request, res: Response): Promise<void> {
   try {
-    const { password } = req.body;
+    const { token, password } = req.body;
 
-    await supabaseAuth.updateUserPassword(password);
+    if (!token || !password) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "Token and password are required" },
+      });
+      return;
+    }
+
+    const { user: authUser } = await supabaseAuth.verifyRecoveryToken(token);
+
+    if (!authUser) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "Invalid or expired reset link" },
+      });
+      return;
+    }
+
+    await supabaseAuth.updatePasswordForUser(authUser.id, password);
 
     res.json({ data: { success: true }, error: null });
   } catch (err) {
@@ -462,6 +480,13 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
       res.status(503).json({
         data: null,
         error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseTokenExpiredError) {
+      res.status(410).json({
+        data: null,
+        error: { code: ERROR_CODES.GONE, message: "Reset link has expired" },
       });
       return;
     }

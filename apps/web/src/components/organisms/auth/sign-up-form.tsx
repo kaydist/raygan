@@ -6,6 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import type { RegisterRequest } from '@raygan/shared';
 import { Button, Heading, Paragraph } from '@/components/atoms';
 import { GoogleOAuthButton, GitHubOAuthButton, InputField, OrDivider } from '@/components/molecules';
+import { validatePassword } from '@/lib/helpers';
 
 interface SignUpFormProps {
   onSubmit?: (data: RegisterRequest) => void;
@@ -27,22 +28,6 @@ export function SignUpForm({
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
-
-  const validatePassword = (value: string): string | null => {
-    if (value.length < 8) {
-      return 'Password must be at least 8 characters';
-    }
-    if (!/(?=.*[a-z])/.test(value)) {
-      return 'Password must contain a lowercase letter';
-    }
-    if (!/(?=.*[A-Z])/.test(value)) {
-      return 'Password must contain an uppercase letter';
-    }
-    if (!/(?=.*\d)/.test(value)) {
-      return 'Password must contain a number';
-    }
-    return null;
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

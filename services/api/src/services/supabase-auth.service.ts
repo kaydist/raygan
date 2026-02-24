@@ -175,6 +175,37 @@ export class SupabaseAuthService {
     };
   }
 
+  async verifyRecoveryToken(token: string): Promise<SignInResult> {
+    const client = this.getClient();
+
+    const { data, error } = await client.auth.verifyOtp({
+      token_hash: token,
+      type: "recovery",
+    });
+
+    if (error) {
+      if (error.message.includes("expired")) {
+        throw new SupabaseTokenExpiredError(error.message);
+      }
+      throw new SupabaseAuthError(error.message);
+    }
+
+    return {
+      user: data.user,
+      session: this.formatSession(data.session),
+    };
+  }
+
+  async updatePasswordForUser(userId: string, password: string): Promise<void> {
+    const client = this.getClient();
+
+    const { error } = await client.auth.admin.updateUserById(userId, { password });
+
+    if (error) {
+      throw new SupabaseAuthError(error.message);
+    }
+  }
+
   isAvailable(): boolean {
     try {
       this.getClient();
