@@ -18,7 +18,7 @@ async function main() {
       `Server running at http://${env.BIND_HOST}:${env.PORT} in ${env.NODE_ENV} mode`
     );
     logger.info(`Health check: http://${env.BIND_HOST}:${env.PORT}/api/v1/health`);
-    logger.info(`WebSocket server ready`);
+    logger.info(`WebSocket server ready.`);
   });
 
   const shutdown = async (signal: string) => {
