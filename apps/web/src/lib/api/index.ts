@@ -33,6 +33,7 @@ export {
   useLogout,
   useForgotPassword,
   useResetPassword,
+  useResendVerification,
   useCurrentUser,
   useUpdateUser,
   useOrganizations,

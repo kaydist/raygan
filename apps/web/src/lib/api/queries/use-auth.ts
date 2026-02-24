@@ -66,3 +66,9 @@ export function useResetPassword() {
     mutationFn: (data) => authApi.resetPassword(data),
   });
 }
+
+export function useResendVerification() {
+  return useMutation<{ success: boolean }, Error, string>({
+    mutationFn: (email) => authApi.resendVerification(email),
+  });
+}

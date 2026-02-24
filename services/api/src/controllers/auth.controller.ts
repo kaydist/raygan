@@ -112,6 +112,18 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    if (!authUser.email_confirmed_at) {
+      res.status(403).json({
+        data: null,
+        error: {
+          code: ERROR_CODES.EMAIL_NOT_VERIFIED,
+          message: "Please verify your email address",
+          details: { email: authUser.email },
+        },
+      });
+      return;
+    }
+
     const user = await userService.findByAuthIdWithCurrentOrg(authUser.id);
     if (!user || user.deleted_flag) {
       res.status(401).json({

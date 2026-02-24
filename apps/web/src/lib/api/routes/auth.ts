@@ -80,4 +80,9 @@ export const authApi = {
     const response = await axiosInstance.get("/api/v1/auth/me");
     return extractData(response);
   },
+
+  resendVerification: async (email: string): Promise<{ success: boolean }> => {
+    const response = await axiosInstance.post("/api/v1/auth/resend-verification", { email });
+    return extractData(response);
+  },
 };
