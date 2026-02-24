@@ -76,7 +76,7 @@ export function useSnackPreview(
     const channel = state.channel;
     if (channel) {
       const platformParam = platform === "web" ? "web" : platform === "android" ? "android" : "ios";
-      return `https://snack-web-player.s3.us-west-1.amazonaws.com/v2/54.0.0/index.html?channel=${channel}&platform=${platformParam}`;
+      return `https://snack.expo.dev/embedded?channel=${channel}&platform=${platformParam}&preview=true&theme=dark&hideQueryParams=true`;
     }
 
     return null;
