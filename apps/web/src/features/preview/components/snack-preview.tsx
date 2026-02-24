@@ -179,13 +179,19 @@ export function SnackPreview({
           </div>
         ) : webPreviewURL ? (
           <DeviceFrame platform={platform} className="p-4">
-            <iframe
-              ref={handleIframeRef}
-              src={getEmbedURL(platform) || webPreviewURL}
-              className="h-full w-full border-0"
-              title="Simulator Preview"
-              allow="accelerometer; camera; geolocation; gyroscope; microphone; screen-wake-lock; clipboard-read; clipboard-write"
-            />
+            <div className="relative h-full w-full overflow-hidden">
+              <iframe
+                ref={handleIframeRef}
+                src={getEmbedURL(platform) || webPreviewURL}
+                className="absolute h-full border-0"
+                style={{
+                  width: "200%",
+                  left: "-100%",
+                }}
+                title="Simulator Preview"
+                allow="accelerometer; camera; geolocation; gyroscope; microphone; screen-wake-lock; clipboard-read; clipboard-write"
+              />
+            </div>
           </DeviceFrame>
         ) : (
           <div className="flex h-full w-full items-center justify-center">
