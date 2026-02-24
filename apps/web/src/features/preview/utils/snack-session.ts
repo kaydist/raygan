@@ -54,9 +54,22 @@ export function createSnackSession(config: SnackSessionConfig = {}): Snack {
   });
 }
 
-export function getSnackWebPreviewURL(snack: Snack): string | null {
+export function getSnackWebPreviewURL(snack: Snack, platform: string = "web"): string | null {
   const state = snack.getState();
-  return state.webPreviewURL || null;
+
+  const isLocalhost = typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+  if (isLocalhost && state.webPreviewURL) {
+    return state.webPreviewURL;
+  }
+
+  const channel = state.channel;
+  if (channel) {
+    return `https://snack.expo.dev/embedded?channel=${channel}&platform=${platform}&preview=true&theme=dark`;
+  }
+
+  return null;
 }
 
 export function getSnackQRCodeURL(snack: Snack): string | null {

@@ -43,6 +43,7 @@ export function SnackPreview({
     deviceCount,
     syncFiles,
     clearLogs,
+    getEmbedURL,
   } = useSnackPreview({
     projectId,
     name: projectName,
@@ -180,7 +181,7 @@ export function SnackPreview({
           <DeviceFrame platform={platform} className="p-4">
             <iframe
               ref={handleIframeRef}
-              src={webPreviewURL}
+              src={getEmbedURL(platform) || webPreviewURL}
               className="h-full w-full border-0"
               title="Simulator Preview"
               allow="accelerometer; camera; geolocation; gyroscope; microphone; screen-wake-lock; clipboard-read; clipboard-write"

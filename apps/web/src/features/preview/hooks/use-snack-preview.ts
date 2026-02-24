@@ -62,12 +62,23 @@ export function useSnackPreview(
   const { syncFiles } = useSnackSync(updateFiles, updateDependencies, syncOptions);
 
   const getEmbedURL = (platform: Platform): string | null => {
-    const baseURL = getWebPreviewURL();
-    if (!baseURL) return null;
+    const isLocalhost = typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
 
-    const url = new URL(baseURL);
-    url.searchParams.set("platform", platform);
-    return url.toString();
+    if (isLocalhost) {
+      const baseURL = getWebPreviewURL();
+      if (!baseURL) return null;
+      const url = new URL(baseURL);
+      url.searchParams.set("platform", platform);
+      return url.toString();
+    }
+
+    const channel = state.channel;
+    if (channel) {
+      return `https://snack.expo.dev/embedded?channel=${channel}&platform=${platform}&preview=true&theme=dark`;
+    }
+
+    return null;
   };
 
   return {
