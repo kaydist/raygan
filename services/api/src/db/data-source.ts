@@ -2,19 +2,38 @@ import "reflect-metadata";
 import { DataSource, type DataSourceOptions } from "typeorm";
 
 import { env, logger } from "../config";
+import {
+  User,
+  Organization,
+  OrganizationMember,
+  Project,
+  ProjectFile,
+  Conversation,
+  AIProvider,
+  AIModel,
+  CreditUsage,
+  Setting,
+} from "./entities";
 
-/**
- * Database connection options
- * Database-agnostic configuration - works with any PostgreSQL provider
- */
 const baseOptions: DataSourceOptions = {
   type: "postgres",
   url: env.DATABASE_URL,
-  synchronize: false, // Never in production - use migrations
+  synchronize: false,
   logging: env.isDev,
-  entities: ["src/db/entities/**/*.entity.ts"],
-  migrations: ["src/db/migrations/**/*.ts"],
-  subscribers: ["src/db/subscribers/**/*.ts"],
+  entities: [
+    User,
+    Organization,
+    OrganizationMember,
+    Project,
+    ProjectFile,
+    Conversation,
+    AIProvider,
+    AIModel,
+    CreditUsage,
+    Setting,
+  ],
+  migrations: [],
+  subscribers: [],
   extra: {
     // Connection pool settings
     max: env.isProd ? 60 : 10,
