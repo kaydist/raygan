@@ -1,5 +1,5 @@
 {
-  "extends": "@staq/tsconfig/base.json",
+  "extends": "@raygan/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src"

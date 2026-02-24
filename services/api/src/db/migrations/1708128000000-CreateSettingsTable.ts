@@ -55,7 +55,7 @@ export class CreateSettingsTable1708128000000 implements MigrationInterface {
 
     await queryRunner.query(`
       INSERT INTO "settings" ("slug", "value", "value_type", "category", "visibility", "description") VALUES
-      ('app.name', 'Staq', 'string', 'app', 'public', 'Application name'),
+      ('app.name', 'Raygan', 'string', 'app', 'public', 'Application name'),
       ('app.version', '1.0.0', 'string', 'app', 'public', 'Application version'),
       ('app.maintenance_mode', 'false', 'boolean', 'app', 'public', 'Enable maintenance mode');
     `);

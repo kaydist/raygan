@@ -9,7 +9,7 @@ import type {
   ProjectDetailResponse,
   CreateProjectRequest,
   UpdateProjectRequest,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 export interface FileEntry {
   uuid?: string;

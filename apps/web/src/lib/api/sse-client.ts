@@ -1,4 +1,4 @@
-import type { ASTNode, ASTOperation } from "@staq/shared";
+import type { ASTNode, ASTOperation } from "@raygan/shared";
 import { getAuthToken, logger } from "../utils";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";

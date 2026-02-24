@@ -8,7 +8,7 @@ import type {
   ForgotPasswordRequest,
   ResetPasswordRequest,
   RefreshTokenRequest,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 export type {
   AuthResponse,

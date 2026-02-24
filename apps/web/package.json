@@ -1,5 +1,5 @@
 {
-  "name": "@staq/web",
+  "name": "@raygan/web",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -34,7 +34,7 @@
     "@radix-ui/react-switch": "^1.1.0",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
-    "@staq/shared": "workspace:*",
+    "@raygan/shared": "workspace:*",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "@tanstack/react-query": "^5.60.0",
@@ -64,8 +64,8 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
-    "@staq/eslint-config": "workspace:*",
-    "@staq/tsconfig": "workspace:*",
+    "@raygan/eslint-config": "workspace:*",
+    "@raygan/tsconfig": "workspace:*",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

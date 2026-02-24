@@ -1,5 +1,5 @@
 {
-  "name": "@staq/eslint-config",
+  "name": "@raygan/eslint-config",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",

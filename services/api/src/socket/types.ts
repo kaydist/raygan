@@ -1,5 +1,5 @@
 import type { Socket } from "socket.io";
-import type { ASTNode, ASTOperation } from "@staq/shared";
+import type { ASTNode, ASTOperation } from "@raygan/shared";
 
 export interface SocketUser {
   id: number;

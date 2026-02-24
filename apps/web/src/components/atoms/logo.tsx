@@ -21,10 +21,10 @@ export function Logo({ size = 'md', showText = true, className }: LogoProps) {
           sizeMap[size]
         )}
       >
-        S
+        R
       </div>
       {showText && (
-        <span className="text-lg font-medium text-foreground">staq</span>
+        <span className="text-lg font-medium text-foreground">raygan</span>
       )}
     </div>
   );

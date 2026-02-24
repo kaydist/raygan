@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { SettingsResponse } from "@staq/shared";
+import type { SettingsResponse } from "@raygan/shared";
 
 import { settingsApi } from "../routes/settings";
 import { queryKeys } from "./query-keys";

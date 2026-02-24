@@ -34,7 +34,7 @@ COPY packages/shared ./packages/shared
 COPY packages/tsconfig ./packages/tsconfig
 COPY services/api ./services/api
 
-RUN pnpm --filter=@staq/api build
+RUN pnpm --filter=@raygan/api build
 
 # =============================================================================
 # Stage 4: Production image
@@ -60,7 +60,7 @@ COPY --from=builder /app/packages/tsconfig/package.json ./packages/tsconfig/pack
 COPY --from=builder /app/services/api/package.json ./services/api/
 COPY --from=builder /app/services/api/dist ./services/api/dist
 
-RUN pnpm install --frozen-lockfile --prod --filter=@staq/api --ignore-scripts
+RUN pnpm install --frozen-lockfile --prod --filter=@raygan/api --ignore-scripts
 
 USER expressjs
 

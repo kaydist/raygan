@@ -356,7 +356,7 @@ export const useUIStore = create<UIStore>()(
         })),
     })),
     {
-      name: "staq-ui-store",
+      name: "raygan-ui-store",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         theme: state.theme,

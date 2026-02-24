@@ -57,7 +57,7 @@ import archiver from "archiver";
 import { Readable } from "stream";
 import { serialize } from "./ast-engine";
 import type { Project } from "@/db/entities";
-import type { ASTNode } from "@staq/shared";
+import type { ASTNode } from "@raygan/shared";
 
 interface ExportOptions {
   includeBackendSDK?: boolean;

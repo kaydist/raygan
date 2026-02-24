@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../../"),
-  transpilePackages: ["@staq/shared"],
+  transpilePackages: ["@raygan/shared"],
   serverExternalPackages: ["snack-sdk", "pubnub", "formidable"],
   images: {
     remotePatterns: [

@@ -6,7 +6,7 @@ import type {
   GoogleOAuthRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 import { authApi } from "../routes/auth";
 import { queryKeys } from "./query-keys";

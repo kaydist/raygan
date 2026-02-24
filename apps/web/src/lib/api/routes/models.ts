@@ -1,4 +1,4 @@
-import type { AiModelConfig } from "@staq/shared";
+import type { AiModelConfig } from "@raygan/shared";
 
 import { axiosInstance, extractData } from "../client";
 

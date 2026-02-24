@@ -8,7 +8,7 @@ import {
   type ASTSnapshotEvent,
 } from "@/lib/api/socket-client";
 import { getAuthToken } from "@/lib/utils";
-import type { ASTOperation, ASTNode } from "@staq/shared";
+import type { ASTOperation, ASTNode } from "@raygan/shared";
 
 interface UseASTSocketSyncOptions {
   projectId?: string;

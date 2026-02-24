@@ -83,7 +83,7 @@ export function Terminal({ className, onReady }: TerminalProps) {
     fitAddonRef.current = fitAddon;
 
     terminal.writeln("\x1b[1;36m╔═══════════════════════════════════════════════════════════╗\x1b[0m");
-    terminal.writeln("\x1b[1;36m║\x1b[0m  \x1b[1;33mStaq Terminal\x1b[0m - WebContainer-powered development        \x1b[1;36m║\x1b[0m");
+    terminal.writeln("\x1b[1;36m║\x1b[0m  \x1b[1;33mRaygan Terminal\x1b[0m - WebContainer-powered development      \x1b[1;36m║\x1b[0m");
     terminal.writeln("\x1b[1;36m╚═══════════════════════════════════════════════════════════╝\x1b[0m");
     terminal.writeln("");
     terminal.writeln("\x1b[90mBooting WebContainer...\x1b[0m");

@@ -3,7 +3,7 @@
 import { useEffect, useCallback, useRef, useState } from "react";
 import { socketClient, type ASTPatchedEvent, type JoinResponse } from "@/lib/api/socket-client";
 import { getAuthToken } from "@/lib/utils";
-import type { ASTOperation } from "@staq/shared";
+import type { ASTOperation } from "@raygan/shared";
 
 interface UseSocketOptions {
   projectId?: string;

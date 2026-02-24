@@ -4,7 +4,7 @@ import type {
   OrganizationWithRole,
   CreateOrganizationRequest,
   UpdateOrganizationRequest,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 import { organizationsApi } from "../routes/organizations";
 import { queryKeys } from "./query-keys";

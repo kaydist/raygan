@@ -79,7 +79,7 @@ describe("Generation Flow Integration", () => {
 
       const prompt = builder.build("Create a todo app");
 
-      expect(prompt.system).toContain("Staq AI");
+      expect(prompt.system).toContain("Raygan AI");
       expect(prompt.system).toContain("React Native");
       expect(prompt.system).toContain("todo");
       expect(prompt.messages).toHaveLength(1);

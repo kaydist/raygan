@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { ConversationResponse, PaginationParams } from "@staq/shared";
+import type { ConversationResponse, PaginationParams } from "@raygan/shared";
 
 import { conversationsApi } from "../routes/conversations";
 import { queryKeys } from "./query-keys";

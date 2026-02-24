@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import type { LoginRequest } from '@staq/shared';
+import type { LoginRequest } from '@raygan/shared';
 import { Button, Heading, Paragraph } from '@/components/atoms';
 import { GoogleOAuthButton, GitHubOAuthButton, InputField, OrDivider } from '@/components/molecules';
 

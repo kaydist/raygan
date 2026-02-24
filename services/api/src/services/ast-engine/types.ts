@@ -1,4 +1,4 @@
-import type { ASTNode, ASTStyle, ComponentType } from "@staq/shared";
+import type { ASTNode, ASTStyle, ComponentType } from "@raygan/shared";
 
 export type Framework = "expo" | "bare-rn" | "flutter";
 

@@ -9,7 +9,7 @@ import type {
   ASTOperationDuplicate,
   CreateNodeOptions,
   ASTNodeMeta,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 export function createNode(options: CreateNodeOptions): ASTNode {
   const now = new Date().toISOString();

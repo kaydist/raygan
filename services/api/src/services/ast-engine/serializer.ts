@@ -1,4 +1,4 @@
-import type { ASTNode } from "@staq/shared";
+import type { ASTNode } from "@raygan/shared";
 import { createAdapter } from "./adapters";
 import {
   DependencyTracker,

@@ -6,7 +6,7 @@ import { FileStorageService } from "./file-storage.service";
 import { getAIGateway, PromptBuilder, ResponseParser } from "./ai-gateway";
 import type { CodeBlock } from "./ai-gateway/response-parser";
 import { parseAIResponse } from "./ast-engine";
-import type { ASTNode, ASTOperation } from "@staq/shared";
+import type { ASTNode, ASTOperation } from "@raygan/shared";
 import type { Project } from "../db";
 
 export type SSEEventType =

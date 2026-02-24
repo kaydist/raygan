@@ -35,7 +35,7 @@ describe("PromptBuilder", () => {
     it("should build a basic prompt with user message", () => {
       const result = builder.build("Create a login screen");
 
-      expect(result.system).toContain("Staq AI");
+      expect(result.system).toContain("Raygan AI");
       expect(result.system).toContain("React Native");
       expect(result.messages).toHaveLength(1);
       expect(result.messages[0]).toEqual({

@@ -1,9 +1,9 @@
 {
   "info": {
-    "name": "Staq API",
-    "description": "API documentation for Staq - AI-powered mobile app builder\n\n## Authentication\nAll authenticated endpoints require a Bearer token in the Authorization header:\n```\nAuthorization: Bearer <access_token>\n```\n\n## Response Format\nAll responses follow this envelope:\n```json\n{\n  \"data\": <response_data> | null,\n  \"error\": { \"code\": \"string\", \"message\": \"string\", \"details\": {} } | null,\n  \"meta\": { \"total\": number, \"page\": number, \"limit\": number } // for paginated responses\n}\n```",
+    "name": "Raygan API",
+    "description": "API documentation for Raygan - AI-powered mobile app builder\n\n## Authentication\nAll authenticated endpoints require a Bearer token in the Authorization header:\n```\nAuthorization: Bearer <access_token>\n```\n\n## Response Format\nAll responses follow this envelope:\n```json\n{\n  \"data\": <response_data> | null,\n  \"error\": { \"code\": \"string\", \"message\": \"string\", \"details\": {} } | null,\n  \"meta\": { \"total\": number, \"page\": number, \"limit\": number } // for paginated responses\n}\n```",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "staq-api"
+    "_exporter_id": "raygan-api"
   },
   "variable": [
     {
@@ -869,7 +869,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"name\": \"My App\",\n      \"slug\": \"my-app\",\n      \"description\": \"A mobile app built with Staq\",\n      \"framework_version\": \"SDK 52\",\n      \"backend_provider\": \"supabase\",\n      \"is_archived\": false,\n      \"last_generated_at\": \"2024-01-20T14:00:00.000Z\",\n      \"updated_on\": \"2024-01-20T14:00:00.000Z\",\n      \"created_on\": \"2024-01-15T10:30:00.000Z\"\n    }\n  ],\n  \"error\": null\n}"
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"uuid\",\n      \"name\": \"My App\",\n      \"slug\": \"my-app\",\n      \"description\": \"A mobile app built with Raygan\",\n      \"framework_version\": \"SDK 52\",\n      \"backend_provider\": \"supabase\",\n      \"is_archived\": false,\n      \"last_generated_at\": \"2024-01-20T14:00:00.000Z\",\n      \"updated_on\": \"2024-01-20T14:00:00.000Z\",\n      \"created_on\": \"2024-01-15T10:30:00.000Z\"\n    }\n  ],\n  \"error\": null\n}"
             }
           ]
         },
@@ -885,7 +885,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"My App\",\n  \"slug\": \"my-app\",\n  \"description\": \"A mobile app built with Staq\",\n  \"framework_version\": \"SDK 52\",\n  \"backend_provider\": \"supabase\"\n}"
+              "raw": "{\n  \"name\": \"My App\",\n  \"slug\": \"my-app\",\n  \"description\": \"A mobile app built with Raygan\",\n  \"framework_version\": \"SDK 52\",\n  \"backend_provider\": \"supabase\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/projects",
@@ -899,7 +899,7 @@
               "name": "Success",
               "status": "Created",
               "code": 201,
-              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"My App\",\n    \"slug\": \"my-app\",\n    \"description\": \"A mobile app built with Staq\",\n    \"framework_version\": \"SDK 52\",\n    \"backend_provider\": \"supabase\"\n  },\n  \"error\": null\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"My App\",\n    \"slug\": \"my-app\",\n    \"description\": \"A mobile app built with Raygan\",\n    \"framework_version\": \"SDK 52\",\n    \"backend_provider\": \"supabase\"\n  },\n  \"error\": null\n}"
             }
           ]
         },
@@ -926,7 +926,7 @@
               "name": "Success",
               "status": "OK",
               "code": 200,
-              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"My App\",\n    \"slug\": \"my-app\",\n    \"description\": \"A mobile app built with Staq\",\n    \"framework_version\": \"SDK 52\",\n    \"backend_provider\": \"supabase\",\n    \"ast_snapshot\": { },\n    \"file_tree\": { },\n    \"is_archived\": false,\n    \"last_generated_at\": \"2024-01-20T14:00:00.000Z\",\n    \"updated_on\": \"2024-01-20T14:00:00.000Z\",\n    \"created_on\": \"2024-01-15T10:30:00.000Z\"\n  },\n  \"error\": null\n}"
+              "body": "{\n  \"data\": {\n    \"id\": \"uuid\",\n    \"name\": \"My App\",\n    \"slug\": \"my-app\",\n    \"description\": \"A mobile app built with Raygan\",\n    \"framework_version\": \"SDK 52\",\n    \"backend_provider\": \"supabase\",\n    \"ast_snapshot\": { },\n    \"file_tree\": { },\n    \"is_archived\": false,\n    \"last_generated_at\": \"2024-01-20T14:00:00.000Z\",\n    \"updated_on\": \"2024-01-20T14:00:00.000Z\",\n    \"created_on\": \"2024-01-15T10:30:00.000Z\"\n  },\n  \"error\": null\n}"
             }
           ]
         },

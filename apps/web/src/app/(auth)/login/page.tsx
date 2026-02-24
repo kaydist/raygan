@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import type { LoginRequest } from "@staq/shared";
+import type { LoginRequest } from "@raygan/shared";
 import { SignInForm } from "@/components/organisms";
 import { useLogin } from "@/lib/api";
 import { Paragraph } from "@/components/atoms";

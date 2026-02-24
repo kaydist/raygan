@@ -4,7 +4,7 @@ import type {
   ProjectDetailResponse,
   CreateProjectRequest,
   UpdateProjectRequest,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 import { projectsApi, ProjectListParams } from "../routes/projects";
 import { queryKeys } from "./query-keys";

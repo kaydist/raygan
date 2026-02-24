@@ -4,7 +4,7 @@ import {
   parseCodeBlocksOnly,
   validateASTOperations,
 } from "../ai-response-parser";
-import type { ASTNode } from "@staq/shared";
+import type { ASTNode } from "@raygan/shared";
 
 describe("parseAIResponse", () => {
   describe("code block extraction", () => {

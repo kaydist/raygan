@@ -1,4 +1,4 @@
-export const LAYOUT_STORAGE_KEY = "staq-workspace-layout";
+export const LAYOUT_STORAGE_KEY = "raygan-workspace-layout";
 
 export interface LayoutState {
   leftSize: number;

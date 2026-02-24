@@ -3,7 +3,7 @@ import type {
   OrganizationWithRole,
   CreateOrganizationRequest,
   UpdateOrganizationRequest,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 import { axiosInstance, extractData } from "../client";
 

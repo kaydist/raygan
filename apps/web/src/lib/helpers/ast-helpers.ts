@@ -1,4 +1,4 @@
-import type { ASTNode } from "@staq/shared";
+import type { ASTNode } from "@raygan/shared";
 
 export function findNode(ast: ASTNode, nodeId: string): ASTNode | undefined {
   if (ast.id === nodeId) return ast;

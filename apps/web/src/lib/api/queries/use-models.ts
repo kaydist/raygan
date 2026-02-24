@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { AiModelConfig } from "@staq/shared";
+import type { AiModelConfig } from "@raygan/shared";
 
 import { modelsApi } from "../routes/models";
 import { queryKeys } from "./query-keys";

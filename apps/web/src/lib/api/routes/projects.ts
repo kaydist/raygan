@@ -4,7 +4,7 @@ import type {
   CreateProjectRequest,
   UpdateProjectRequest,
   PaginationParams,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 import { axiosInstance, extractData } from "../client";
 

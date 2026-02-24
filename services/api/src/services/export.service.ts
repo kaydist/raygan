@@ -1,7 +1,7 @@
 import archiver from "archiver";
 import { Readable } from "stream";
 
-import type { ASTNode } from "@staq/shared";
+import type { ASTNode } from "@raygan/shared";
 
 import { logger } from "../config";
 import type { Project, ProjectFile } from "../db";
@@ -116,7 +116,7 @@ export class ExportService {
   private generateReadme(project: Project): string {
     return `# ${project.name}
 
-Built with [Staq](https://staq.dev)
+Built with [Raygan](https://raygan.dev)
 
 ## Getting Started
 

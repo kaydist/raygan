@@ -161,7 +161,7 @@ export function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Welcome to ${projectName}</Text>
-        <Text style={styles.subtitle}>Built with Staq</Text>
+        <Text style={styles.subtitle}>Built with Raygan</Text>
 
         <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>Get Started</Text>

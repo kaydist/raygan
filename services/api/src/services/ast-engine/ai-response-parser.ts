@@ -6,7 +6,7 @@ import type {
   ASTOperationDelete,
   ASTOperationMove,
   ASTOperationDuplicate,
-} from "@staq/shared";
+} from "@raygan/shared";
 import { parseSourceCode, type ParseError } from "./parser";
 
 export interface AIResponseParseResult {

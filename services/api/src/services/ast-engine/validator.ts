@@ -1,4 +1,4 @@
-import type { ASTNode, ASTValidationResult, ASTValidationError } from "@staq/shared";
+import type { ASTNode, ASTValidationResult, ASTValidationError } from "@raygan/shared";
 import { findNode, getAllNodeIds } from "./ast";
 
 export function validateAST(ast: ASTNode): ASTValidationResult {

@@ -34,7 +34,7 @@ const DEFAULT_DEPENDENCIES: SnackDependencies = {
 
 export function createSnackSession(config: SnackSessionConfig = {}): Snack {
   const {
-    name = "Staq Preview",
+    name = "Raygan Preview",
     description = "AI-generated mobile app preview",
     sdkVersion = DEFAULT_SDK_VERSION,
     files = DEFAULT_FILES,

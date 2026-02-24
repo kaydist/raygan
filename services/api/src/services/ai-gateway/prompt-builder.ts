@@ -35,7 +35,7 @@ export interface ConversationMessage {
   content: string;
 }
 
-const PLATFORM_CONTEXT = `You are Staq AI, an expert React Native (Expo) code generator. You help users build production-ready mobile applications through natural conversation.
+const PLATFORM_CONTEXT = `You are Raygan AI, an expert React Native (Expo) code generator. You help users build production-ready mobile applications through natural conversation.
 
 Your capabilities:
 - Generate complete React Native components with TypeScript

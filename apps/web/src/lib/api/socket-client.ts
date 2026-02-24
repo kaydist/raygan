@@ -1,5 +1,5 @@
 import { io, type Socket } from "socket.io-client";
-import type { ASTNode, ASTOperation } from "@staq/shared";
+import type { ASTNode, ASTOperation } from "@raygan/shared";
 import { logger } from "../utils";
 
 const getSocketUrl = (): string => {

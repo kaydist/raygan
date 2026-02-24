@@ -1,12 +1,12 @@
 {
-  "extends": "@staq/tsconfig/node.json",
+  "extends": "@raygan/tsconfig/node.json",
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@staq/shared": ["../../packages/shared/src"],
-      "@staq/shared/*": ["../../packages/shared/src/*"]
+      "@raygan/shared": ["../../packages/shared/src"],
+      "@raygan/shared/*": ["../../packages/shared/src/*"]
     }
   },
   "include": ["src"],

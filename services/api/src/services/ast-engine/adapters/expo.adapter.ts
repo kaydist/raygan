@@ -1,4 +1,4 @@
-import type { ASTNode, ComponentType } from "@staq/shared";
+import type { ASTNode, ComponentType } from "@raygan/shared";
 import { BaseFrameworkAdapter } from "./base-adapter";
 import type {
   SerializerConfig,

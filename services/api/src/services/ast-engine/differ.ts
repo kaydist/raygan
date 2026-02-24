@@ -1,4 +1,4 @@
-import type { ASTNode, JSONPatch } from "@staq/shared";
+import type { ASTNode, JSONPatch } from "@raygan/shared";
 
 export function generatePatches(oldAst: ASTNode, newAst: ASTNode): JSONPatch[] {
   const patches: JSONPatch[] = [];

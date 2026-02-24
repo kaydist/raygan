@@ -103,7 +103,7 @@ export function CreateProjectModal({ isOpen, onClose }: CreateProjectModalProps)
           <DialogHeader>
             <DialogTitle>Create New Project</DialogTitle>
             <DialogDescription>
-              Start building your mobile app with Staq. Fill in the details below to create your project.
+              Start building your mobile app with Raygan. Fill in the details below to create your project.
             </DialogDescription>
           </DialogHeader>
 

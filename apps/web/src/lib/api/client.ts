@@ -3,7 +3,7 @@ import axios, {
   AxiosRequestConfig,
   InternalAxiosRequestConfig,
 } from "axios";
-import type { ApiResponse, TokenResponse } from "@staq/shared";
+import type { ApiResponse, TokenResponse } from "@raygan/shared";
 
 import {
   APIError,

@@ -162,7 +162,7 @@ GET    /api/v1/health/ready
 ### Completed Tasks
 
 #### 1. 5-Layer Prompt Builder
-- [x] Platform context - Staq AI capabilities and identity
+- [x] Platform context - Raygan AI capabilities and identity
 - [x] Project context - Current project state, file tree, selected code
 - [x] Code quality rules - TypeScript, React Native best practices
 - [x] Output format - Code block structure with filenames

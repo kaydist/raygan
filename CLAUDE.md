@@ -10,7 +10,7 @@ The detailed implementation plan and task breakdown is located in **`Implementat
 
 ## Project Overview
 
-This is **Staq** - an AI-powered, no-code mobile app builder that generates production-ready React Native (Expo) applications. The platform combines:
+This is **Raygan** - an AI-powered, no-code mobile app builder that generates production-ready React Native (Expo) applications. The platform combines:
 
 1. **Dual-Mode Interface**: Agent Mode (chat-based AI generation) + Builder Mode (Figma-like visual editor)
 2. **Multi-Model AI Gateway**: Provider-agnostic LLM routing (Claude, GPT-5, Grok, Gemini, Mistral, DeepSeek)

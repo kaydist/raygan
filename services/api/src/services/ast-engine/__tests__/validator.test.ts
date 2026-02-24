@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { ASTNode } from "@staq/shared";
+import type { ASTNode } from "@raygan/shared";
 import { validateAST, isValidAST } from "../validator";
 import { createNode, createRootNode, addNode } from "../ast";
 

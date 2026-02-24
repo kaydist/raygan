@@ -1,4 +1,4 @@
-import type { UserProfileResponse, UpdateUserRequest } from "@staq/shared";
+import type { UserProfileResponse, UpdateUserRequest } from "@raygan/shared";
 
 import { axiosInstance, extractData } from "../client";
 

@@ -1,15 +1,15 @@
 {
-  "extends": "@staq/tsconfig/next.json",
+  "extends": "@raygan/tsconfig/next.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ],
-      "@staq/shared": [
+      "@raygan/shared": [
         "../../packages/shared/src"
       ],
-      "@staq/shared/*": [
+      "@raygan/shared/*": [
         "../../packages/shared/src/*"
       ]
     },

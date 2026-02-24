@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { serialize } from "../serializer";
 import { parseSourceCode, parseMultipleFiles } from "../parser";
 import { createNode } from "../ast";
-import type { ASTNode } from "@staq/shared";
+import type { ASTNode } from "@raygan/shared";
 
 function createTestRootNode(children: ASTNode[]): ASTNode {
   return createNode({

@@ -1,4 +1,4 @@
-import type { SettingsResponse } from "@staq/shared";
+import type { SettingsResponse } from "@raygan/shared";
 
 import { axiosInstance, extractData } from "../client";
 

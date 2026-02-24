@@ -1,5 +1,5 @@
 {
-  "name": "@staq/shared",
+  "name": "@raygan/shared",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
@@ -16,7 +16,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@staq/tsconfig": "workspace:*",
+    "@raygan/tsconfig": "workspace:*",
     "typescript": "^5.7.0"
   }
 }

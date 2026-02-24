@@ -7,7 +7,7 @@ import * as t from "@babel/types";
 import { v4 as uuid } from "uuid";
 
 import { useASTStore, useProjectStore } from "@/stores";
-import type { ASTNode, ASTStyle, ASTNodeType, ASTNodeMeta } from "@staq/shared";
+import type { ASTNode, ASTStyle, ASTNodeType, ASTNodeMeta } from "@raygan/shared";
 
 const traverse =
   typeof _traverse === "function"

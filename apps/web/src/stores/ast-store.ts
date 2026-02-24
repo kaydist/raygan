@@ -11,7 +11,7 @@ import type {
   ASTOperationDuplicate,
   ASTSnapshot,
   JSONPatch,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 const MAX_HISTORY_SIZE = 50;
 

@@ -2,7 +2,7 @@ import type {
   ConversationResponse,
   CreateConversationRequest,
   PaginationParams,
-} from "@staq/shared";
+} from "@raygan/shared";
 
 import { axiosInstance, extractData } from "../client";
 

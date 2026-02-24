@@ -9,6 +9,6 @@ export default defineConfig({
   sourcemap: true,
   dts: false,
   splitting: false,
-  noExternal: ["@staq/shared"],
+  noExternal: ["@raygan/shared"],
   skipNodeModulesBundle: true,
 });

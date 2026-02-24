@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { UserProfileResponse, UpdateUserRequest } from "@staq/shared";
+import type { UserProfileResponse, UpdateUserRequest } from "@raygan/shared";
 
 import { usersApi } from "../routes/users";
 import { queryKeys } from "./query-keys";

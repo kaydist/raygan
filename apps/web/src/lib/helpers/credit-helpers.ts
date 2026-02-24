@@ -1,4 +1,4 @@
-import type { PlanTier } from "@staq/shared";
+import type { PlanTier } from "@raygan/shared";
 
 import { DEFAULT_CREDITS } from "../constants";
 

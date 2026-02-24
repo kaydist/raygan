@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import type { ASTNode, ASTOperation } from "@staq/shared";
+import type { ASTNode, ASTOperation } from "@raygan/shared";
 import {
   createNode,
   createRootNode,

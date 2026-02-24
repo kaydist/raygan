@@ -11,7 +11,7 @@ import type {
   ASTStyle,
   ComponentType,
   ASTNodeMeta,
-} from "@staq/shared";
+} from "@raygan/shared";
 import { v4 as uuid } from "uuid";
 
 export interface ParseResult {

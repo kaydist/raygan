@@ -5,7 +5,7 @@ import { useState, useCallback, useRef } from "react";
 import { createSSEStream, type SSECallbacks, type FileUpdate } from "@/lib/api/sse-client";
 import { useASTStore, useProjectStore } from "@/stores";
 import { logger } from "@/lib/utils";
-import type { ASTOperation } from "@staq/shared";
+import type { ASTOperation } from "@raygan/shared";
 
 export interface GenerationState {
   isGenerating: boolean;
