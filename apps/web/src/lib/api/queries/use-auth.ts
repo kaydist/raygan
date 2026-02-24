@@ -72,3 +72,14 @@ export function useResendVerification() {
     mutationFn: (email) => authApi.resendVerification(email),
   });
 }
+
+export function useVerifyEmail() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ success: boolean }, Error, string>({
+    mutationFn: (token) => authApi.verifyEmail(token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.me() });
+    },
+  });
+}

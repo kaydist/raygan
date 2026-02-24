@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { STORAGE_KEYS } from "../constants";
 
 const PUBLIC_ROUTES = ["/", "/pricing", "/docs", "/about", "/contact"];
-const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/callback"];
+const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/callback", "/email-verified"];
 const PROTECTED_ROUTE_PREFIXES = ["/dashboard", "/workspace"];
 
 function isPublicRoute(pathname: string): boolean {

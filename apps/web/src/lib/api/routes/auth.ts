@@ -18,6 +18,14 @@ export type {
   RefreshTokenRequest,
 };
 
+export interface VerifyEmailResponse {
+  success: boolean;
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  expires_at?: number;
+}
+
 import {
   setAuthToken,
   setRefreshToken,
@@ -84,5 +92,15 @@ export const authApi = {
   resendVerification: async (email: string): Promise<{ success: boolean }> => {
     const response = await axiosInstance.post("/api/v1/auth/resend-verification", { email });
     return extractData(response);
+  },
+
+  verifyEmail: async (token: string): Promise<VerifyEmailResponse> => {
+    const response = await axiosInstance.post("/api/v1/auth/verify-email", { token });
+    const result = extractData<VerifyEmailResponse>(response);
+    if (result.access_token && result.refresh_token && result.expires_in) {
+      setAuthToken(result.access_token, result.expires_in);
+      setRefreshToken(result.refresh_token);
+    }
+    return result;
   },
 };

@@ -34,6 +34,7 @@ export {
   useForgotPassword,
   useResetPassword,
   useResendVerification,
+  useVerifyEmail,
   useCurrentUser,
   useUpdateUser,
   useOrganizations,
