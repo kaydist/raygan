@@ -183,7 +183,7 @@ export function SnackPreview({
               src={webPreviewURL}
               className="h-full w-full border-0"
               title="Simulator Preview"
-              allow="accelerometer; camera; geolocation; gyroscope; microphone"
+              allow="accelerometer; camera; geolocation; gyroscope; microphone; screen-wake-lock; clipboard-read; clipboard-write"
             />
           </DeviceFrame>
         ) : (
