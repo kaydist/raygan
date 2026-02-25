@@ -21,6 +21,7 @@ RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
       find /app/runtime/src -name "*.ts" -exec grep -l "allowedOrigins" {} \; || true; \
     fi
 
+ENV EXPO_PUBLIC_SNACK_ENV=production
 RUN npx expo export --platform web
 
 FROM nginx:alpine
