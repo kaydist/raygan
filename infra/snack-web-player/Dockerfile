@@ -24,9 +24,12 @@ RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
     fi
 
 ENV EXPO_PUBLIC_SNACK_ENV=production
-RUN yarn expo export --platform web
+ENV NODE_PATH=/app/node_modules
+RUN EXPO_CLI=$(find /app -path "*/expo/bin/cli" -not -path "*/.cache/*" -type f | head -1) && \
+    echo "Found expo CLI at: $EXPO_CLI" && \
+    node "$EXPO_CLI" export --platform web
 
 FROM nginx:alpine
-COPY --from=builder /app/runtime/dist /usr/share/nginx/html/v2/55
+COPY --from=builder /app/runtime/dist /usr/share/nginx/html/_snack
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

@@ -40,7 +40,9 @@ export function useSnackPreview(
   } = options;
 
   const { data: settings } = useSettings();
-  const webPlayerURL = settings?.snack_web_player_url || undefined;
+  const webPlayerURL = settings?.snack_web_player_url
+    ? `${settings.snack_web_player_url.replace(/\/+$/, "")}/v2/%%SDK_VERSION%%`
+    : undefined;
 
   const {
     state,
