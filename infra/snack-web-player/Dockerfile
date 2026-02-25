@@ -8,12 +8,17 @@ RUN git clone --depth 1 https://github.com/expo/snack.git .
 # Install from monorepo root so workspace packages (snack-content, etc.) are linked
 RUN yarn install --frozen-lockfile
 
+# Build workspace packages so their build/ directories exist
+RUN for dir in packages/*/; do \
+      if [ -f "$dir/package.json" ]; then \
+        echo "Building $dir..." && \
+        (cd "$dir" && yarn build 2>/dev/null || npm run build 2>/dev/null || true); \
+      fi; \
+    done
+
 WORKDIR /app/runtime
 
 # Patch the origin allowlist to allow all origins.
-# The web player checks postMessage origins against a hardcoded list
-# that only includes localhost and Expo's own domains.
-# Self-hosting means we control access via our own domain/CORS instead.
 RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
     if [ -f "$TRANSPORT_FILE" ]; then \
       sed -i 's/return allowedOrigins\.includes(origin)/return true \|\| allowedOrigins.includes(origin)/' "$TRANSPORT_FILE" && \
@@ -25,7 +30,19 @@ RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
 
 ENV EXPO_PUBLIC_SNACK_ENV=production
 
-RUN npm install --no-save expo
+# Install expo locally, then re-link workspace packages that npm may have shadowed
+RUN npm install --no-save expo && \
+    for dir in /app/packages/*/; do \
+      if [ -f "$dir/package.json" ]; then \
+        pkgname=$(node -p "require('${dir}package.json').name" 2>/dev/null || true); \
+        if [ -n "$pkgname" ] && [ "$pkgname" != "undefined" ]; then \
+          rm -rf "node_modules/$pkgname" 2>/dev/null; \
+          ln -sf "$dir" "node_modules/$pkgname"; \
+          echo "Linked $pkgname"; \
+        fi; \
+      fi; \
+    done
+
 RUN npx expo export --platform web
 
 FROM nginx:alpine
