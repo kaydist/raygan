@@ -5,8 +5,10 @@ RUN apk add --no-cache git python3 make g++ sed
 WORKDIR /app
 RUN git clone --depth 1 https://github.com/expo/snack.git .
 
-WORKDIR /app/runtime
+# Install from monorepo root so workspace packages (snack-content, etc.) are linked
 RUN yarn install --frozen-lockfile
+
+WORKDIR /app/runtime
 
 # Patch the origin allowlist to allow all origins.
 # The web player checks postMessage origins against a hardcoded list
@@ -25,6 +27,6 @@ ENV EXPO_PUBLIC_SNACK_ENV=production
 RUN npx expo export --platform web
 
 FROM nginx:alpine
-COPY --from=builder /app/runtime/dist /usr/share/nginx/html/v2/54
+COPY --from=builder /app/runtime/dist /usr/share/nginx/html/v2/55
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
