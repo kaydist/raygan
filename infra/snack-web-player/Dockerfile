@@ -25,29 +25,8 @@ RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
 
 ENV EXPO_PUBLIC_SNACK_ENV=production
 
-RUN node -e " \
-  const {execFileSync} = require('child_process'); \
-  const paths = [ \
-    '/app/node_modules/expo/bin/cli', \
-    '/app/node_modules/expo/bin/cli.js', \
-    '/app/runtime/node_modules/expo/bin/cli', \
-    '/app/runtime/node_modules/expo/bin/cli.js', \
-  ]; \
-  const fs = require('fs'); \
-  let cli = paths.find(p => fs.existsSync(p)); \
-  if (!cli) { \
-    try { cli = require.resolve('expo/bin/cli'); } catch(e) {} \
-  } \
-  if (!cli) { \
-    console.log('Searching for expo CLI...'); \
-    const {execSync} = require('child_process'); \
-    const found = execSync('find /app -name \"cli.js\" -path \"*/expo/bin/*\" -not -path \"*/.cache/*\" 2>/dev/null || true').toString().trim().split('\\n')[0]; \
-    if (found) cli = found; \
-  } \
-  if (!cli) { throw new Error('Could not find expo CLI anywhere'); } \
-  console.log('Using expo CLI at:', cli); \
-  execFileSync('node', [cli, 'export', '--platform', 'web'], {stdio: 'inherit', cwd: '/app/runtime'}); \
-"
+RUN npm install -g expo
+RUN expo export --platform web
 
 FROM nginx:alpine
 COPY --from=builder /app/runtime/dist /usr/share/nginx/html/_snack
