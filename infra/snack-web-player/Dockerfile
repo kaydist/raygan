@@ -24,7 +24,7 @@ RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
     fi
 
 ENV EXPO_PUBLIC_SNACK_ENV=production
-RUN /app/node_modules/.bin/expo export --platform web
+RUN yarn expo export --platform web
 
 FROM nginx:alpine
 COPY --from=builder /app/runtime/dist /usr/share/nginx/html/v2/55
