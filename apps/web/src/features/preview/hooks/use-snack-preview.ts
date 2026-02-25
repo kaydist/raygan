@@ -40,8 +40,11 @@ export function useSnackPreview(
   } = options;
 
   const { data: settings } = useSettings();
-  const webPlayerURL = settings?.snack_web_player_url
-    ? `${settings.snack_web_player_url.replace(/\/+$/, "")}/v2/%%SDK_VERSION%%`
+  const baseUrl = settings?.snack_web_player_url;
+  const webPlayerURL = baseUrl
+    ? baseUrl.includes("%%SDK_VERSION%%")
+      ? baseUrl
+      : `${baseUrl.replace(/\/+$/, "")}/v2/%%SDK_VERSION%%`
     : undefined;
 
   const {
