@@ -26,7 +26,7 @@ RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
 ENV EXPO_PUBLIC_SNACK_ENV=production
 
 RUN npm install -g expo
-RUN expo export --platform web
+RUN NODE_PATH=/usr/local/lib/node_modules:/app/node_modules expo export --platform web
 
 FROM nginx:alpine
 COPY --from=builder /app/runtime/dist /usr/share/nginx/html/_snack
