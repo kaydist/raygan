@@ -8,6 +8,10 @@ RUN git clone --depth 1 https://github.com/expo/snack.git .
 # Install root workspace packages and build them (postinstall runs turbo build)
 RUN yarn install
 
+# Bootstrap standalone packages that need special build steps
+RUN yarn --cwd packages/snack-babel-standalone bootstrap || true
+RUN yarn --cwd packages/snack-eslint-standalone bootstrap || true
+
 # Install runtime dependencies (has its own yarn.lock, includes expo + local file refs)
 WORKDIR /app/runtime
 RUN yarn install
