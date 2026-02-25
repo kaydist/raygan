@@ -6,3 +6,4 @@ export * from "./files.controller";
 export * from "./conversations.controller";
 export * from "./generate.controller";
 export * from "./exports.controller";
+export * from "./settings.controller";

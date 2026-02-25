@@ -40,9 +40,10 @@ export function createSnackSession(config: SnackSessionConfig = {}): Snack {
     files = DEFAULT_FILES,
     dependencies = DEFAULT_DEPENDENCIES,
     webPreviewRef,
+    webPlayerURL,
   } = config;
 
-  return new Snack({
+  const snackOptions: Record<string, unknown> = {
     name,
     description,
     sdkVersion: sdkVersion as SDKVersion,
@@ -51,16 +52,19 @@ export function createSnackSession(config: SnackSessionConfig = {}): Snack {
     codeChangesDelay: 500,
     online: true,
     webPreviewRef,
-  });
+  };
+
+  if (webPlayerURL) {
+    snackOptions.webPlayerURL = webPlayerURL;
+  }
+
+  return new Snack(snackOptions as ConstructorParameters<typeof Snack>[0]);
 }
 
 export function getSnackWebPreviewURL(snack: Snack, platform: string = "web"): string | null {
   const state = snack.getState();
 
-  const isLocalhost = typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-
-  if (isLocalhost && state.webPreviewURL) {
+  if (state.webPreviewURL) {
     return state.webPreviewURL;
   }
 

@@ -34,11 +34,11 @@ const initialState: SnackState = {
 const MAX_LOGS = 100;
 
 function generateLogId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
-  const { name, description, sdkVersion, autoConnect = true, webPreviewRef } = options;
+  const { name, description, sdkVersion, autoConnect = true, webPreviewRef, webPlayerURL } = options;
 
   const [state, setState] = useState<SnackState>(initialState);
   const [errors, setErrors] = useState<SnackError[]>([]);
@@ -200,6 +200,7 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
       description,
       sdkVersion,
       webPreviewRef,
+      webPlayerURL,
     });
 
     snackRef.current = snack;
@@ -212,7 +213,7 @@ export function useSnack(options: UseSnackOptions = {}): UseSnackReturn {
     return () => {
       disconnect();
     };
-  }, [name, description, sdkVersion, autoConnect, setupListeners, connect, disconnect, webPreviewRef]);
+  }, [name, description, sdkVersion, autoConnect, setupListeners, connect, disconnect, webPreviewRef, webPlayerURL]);
 
   return {
     state,

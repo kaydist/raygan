@@ -79,6 +79,7 @@ export interface SnackSessionConfig {
   files?: SnackFiles;
   dependencies?: SnackDependencies;
   webPreviewRef?: React.RefObject<Window | null>;
+  webPlayerURL?: string;
 }
 
 export interface UseSnackOptions {
@@ -87,6 +88,7 @@ export interface UseSnackOptions {
   sdkVersion?: string;
   autoConnect?: boolean;
   webPreviewRef?: React.RefObject<Window | null>;
+  webPlayerURL?: string;
 }
 
 export interface UseSnackReturn {

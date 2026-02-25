@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 
+import { useSettings } from "@/lib/api";
 import type { UseSnackOptions, UseSnackSyncOptions, Platform, ConsoleLog, ConnectedDevice } from "../types";
 import { useSnack } from "./use-snack";
 import { useSnackSync } from "./use-snack-sync";
@@ -38,6 +39,9 @@ export function useSnackPreview(
     ...snackOptions
   } = options;
 
+  const { data: settings } = useSettings();
+  const webPlayerURL = settings?.snack_web_player_url || undefined;
+
   const {
     state,
     updateFiles,
@@ -47,7 +51,7 @@ export function useSnackPreview(
     getSnackURL,
     errors,
     clearLogs,
-  } = useSnack(snackOptions);
+  } = useSnack({ ...snackOptions, webPlayerURL });
 
   const syncOptions: UseSnackSyncOptions = useMemo(() => {
     const enabled = syncEnabled && state.isConnected;
@@ -62,15 +66,15 @@ export function useSnackPreview(
   const { syncFiles } = useSnackSync(updateFiles, updateDependencies, syncOptions);
 
   const getEmbedURL = (platform: Platform): string | null => {
-    const isLocalhost = typeof window !== "undefined" &&
-      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-
-    if (isLocalhost) {
-      const baseURL = getWebPreviewURL();
-      if (!baseURL) return null;
-      const url = new URL(baseURL);
-      url.searchParams.set("platform", platform);
-      return url.toString();
+    const baseURL = getWebPreviewURL();
+    if (baseURL) {
+      try {
+        const url = new URL(baseURL);
+        url.searchParams.set("platform", platform);
+        return url.toString();
+      } catch {
+        return baseURL;
+      }
     }
 
     const channel = state.channel;

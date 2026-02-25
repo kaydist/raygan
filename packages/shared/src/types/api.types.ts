@@ -290,6 +290,7 @@ export interface SettingsResponse {
   supabase_url?: string;
   supabase_anon_key?: string;
   stripe_publishable_key?: string;
+  snack_web_player_url?: string;
   features: {
     agent_mode: boolean;
     builder_mode: boolean;

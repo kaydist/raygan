@@ -37,6 +37,7 @@ export interface PublicSettings {
   featureFlags: Record<string, boolean>;
   maxProjectsPerPlan: Record<string, number>;
   maintenanceMode: boolean;
+  snack_web_player_url?: string;
   [key: string]: unknown;
 }
 

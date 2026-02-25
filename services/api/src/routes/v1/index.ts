@@ -9,6 +9,7 @@ import { filesRoutes } from "./files.routes";
 import { conversationsRoutes } from "./conversations.routes";
 import { generateRoutes } from "./generate.routes";
 import { exportsRoutes } from "./exports.routes";
+import { settingsRoutes } from "./settings.routes";
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use(filesRoutes);
 router.use(conversationsRoutes);
 router.use(generateRoutes);
 router.use(exportsRoutes);
+router.use(settingsRoutes);
 
 export const v1Routes: IRouter = router;
