@@ -5,18 +5,12 @@ RUN apk add --no-cache git python3 make g++ sed
 WORKDIR /app
 RUN git clone --depth 1 https://github.com/expo/snack.git .
 
-# Install from monorepo root so workspace packages (snack-content, etc.) are linked
-RUN yarn install --frozen-lockfile
+# Install root workspace packages and build them (postinstall runs turbo build)
+RUN yarn install
 
-# Build workspace packages so their build/ directories exist
-RUN for dir in packages/*/; do \
-      if [ -f "$dir/package.json" ]; then \
-        echo "Building $dir..." && \
-        (cd "$dir" && yarn build 2>/dev/null || npm run build 2>/dev/null || true); \
-      fi; \
-    done
-
+# Install runtime dependencies (has its own yarn.lock, includes expo + local file refs)
 WORKDIR /app/runtime
+RUN yarn install
 
 # Patch the origin allowlist to allow all origins.
 RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
@@ -29,20 +23,6 @@ RUN TRANSPORT_FILE="src/transports/RuntimeTransportImplWebPlayer.ts" && \
     fi
 
 ENV EXPO_PUBLIC_SNACK_ENV=production
-
-# Install expo locally, then re-link workspace packages that npm may have shadowed
-RUN npm install --no-save expo && \
-    for dir in /app/packages/*/; do \
-      if [ -f "$dir/package.json" ]; then \
-        pkgname=$(node -p "require('${dir}package.json').name" 2>/dev/null || true); \
-        if [ -n "$pkgname" ] && [ "$pkgname" != "undefined" ]; then \
-          rm -rf "node_modules/$pkgname" 2>/dev/null; \
-          ln -sf "$dir" "node_modules/$pkgname"; \
-          echo "Linked $pkgname"; \
-        fi; \
-      fi; \
-    done
-
 RUN npx expo export --platform web
 
 FROM nginx:alpine
