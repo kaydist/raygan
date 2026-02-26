@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Loader2, AlertCircle, RefreshCw, QrCode, Monitor, Terminal } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  QrCode,
+  Monitor,
+  Terminal,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/atoms";
@@ -179,19 +186,13 @@ export function SnackPreview({
           </div>
         ) : webPreviewURL ? (
           <DeviceFrame platform={platform} className="p-4">
-            <div className="relative h-full w-full overflow-hidden">
-              <iframe
-                ref={handleIframeRef}
-                src={getEmbedURL(platform) || webPreviewURL}
-                className="absolute h-full border-0"
-                style={{
-                  width: "200%",
-                  left: "-100%",
-                }}
-                title="Simulator Preview"
-                allow="accelerometer; camera; geolocation; gyroscope; microphone; screen-wake-lock; clipboard-read; clipboard-write"
-              />
-            </div>
+            <iframe
+              ref={handleIframeRef}
+              src={getEmbedURL(platform) || webPreviewURL}
+              className="h-full w-full border-0"
+              title="Simulator Preview"
+              allow="accelerometer; camera; geolocation; gyroscope; microphone; screen-wake-lock; clipboard-read; clipboard-write"
+            />
           </DeviceFrame>
         ) : (
           <div className="flex h-full w-full items-center justify-center">
@@ -214,11 +215,7 @@ export function SnackPreview({
       </div>
 
       {showConsole && (
-        <ConsolePanel
-          logs={logs}
-          onClear={clearLogs}
-          maxHeight={150}
-        />
+        <ConsolePanel logs={logs} onClear={clearLogs} maxHeight={150} />
       )}
     </div>
   );
