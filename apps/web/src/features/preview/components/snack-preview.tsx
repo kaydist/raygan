@@ -34,6 +34,7 @@ export function SnackPreview({
   const [platform, setPlatform] = useState<Platform>("ios");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("web");
   const [showConsole, setShowConsole] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const webPreviewRef = useRef<Window | null>(null);
 
@@ -58,6 +59,11 @@ export function SnackPreview({
     debounceMs: 500,
     webPreviewRef,
   });
+
+  const handleRefresh = useCallback(() => {
+    syncFiles();
+    setRefreshKey((k) => k + 1);
+  }, [syncFiles]);
 
   const handleDeepLinkTest = useCallback((url: string) => {
     console.log("[Preview] Testing deep link:", url);
@@ -116,9 +122,10 @@ export function SnackPreview({
           <Button
             variant="ghost"
             size="sm"
-            onClick={syncFiles}
-            disabled={isLoading || !isConnected}
+            onClick={handleRefresh}
+            disabled={isLoading}
             className="h-8 w-8 p-0"
+            title="Refresh preview"
           >
             <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
           </Button>
@@ -187,6 +194,7 @@ export function SnackPreview({
         ) : webPreviewURL ? (
           <DeviceFrame platform={platform} className="p-4">
             <iframe
+              key={refreshKey}
               ref={handleIframeRef}
               src={getEmbedURL(platform) || webPreviewURL}
               className="h-full w-full border-0"
@@ -204,7 +212,7 @@ export function SnackPreview({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={syncFiles}
+                onClick={handleRefresh}
                 className="mt-2"
               >
                 Refresh Preview
