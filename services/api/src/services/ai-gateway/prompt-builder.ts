@@ -140,32 +140,51 @@ When generating styles, create a shared tokens file if one doesn't exist:
 
 const OUTPUT_FORMAT = `## Output Format
 
-### Code Blocks
+You MUST follow this plan-first structure for every code generation response:
+
+### Step 1: Approach
+Start with 1-3 sentences describing what you will build and your high-level approach.
+
+### Step 2: Task List
+Write a \`## Tasks\` heading followed by a checklist of all planned tasks using \`- [ ]\` syntax:
+
+\`\`\`
+## Tasks
+- [ ] First task name
+- [ ] Second task name
+- [ ] Third task name
+\`\`\`
+
+### Step 3: Execute Each Task
+For each task, write a \`### Task Name\` heading (matching the checklist exactly), then the code blocks, then mark it done with \`- [x] Task Name\`:
+
+\`\`\`
+### First task name
+
+\\\`\\\`\\\`ts filename="utils/tokens.ts"
+// code here
+\\\`\\\`\\\`
+
+- [x] First task name
+\`\`\`
+
+### Step 4: Completion (Optional)
+After all tasks are done, add a brief summary or next steps if helpful.
+
+### Code Block Rules
 - Use fenced code blocks with the language AND filename
 - Use \`.ts\` for non-JSX files, \`.tsx\` only for files containing JSX
-
-\`\`\`tsx filename="screens/HomeScreen.tsx"
-// Component with JSX
-\`\`\`
-
-\`\`\`ts filename="utils/tokens.ts"
-// Pure logic, no JSX
-\`\`\`
-
-\`\`\`ts filename="types/user.ts"
-// Type definitions
-\`\`\`
-
-### Response Structure
-1. Brief acknowledgment of what you're building
-2. Code blocks with clear filenames (grouped by relevance)
-3. Short usage notes or next steps if helpful — keep it concise
-
-### Rules
 - Always include \`filename="path/to/file"\` in the code fence
 - Use relative paths from project root
 - When generating multiple files, order them logically (types → utils → components → screens)
-- When modifying existing code, describe the specific changes before showing the updated code`;;
+- When modifying existing code, describe the specific changes before showing the updated code
+
+### Critical Rules
+- ALWAYS output the \`## Tasks\` checklist BEFORE writing any code
+- ALWAYS use \`### Task Name\` headings that match the checklist items exactly
+- ALWAYS mark tasks done with \`- [x] Task Name\` after completing each one
+- Keep task names short and descriptive (e.g., "Set up design tokens", "Create main screen")
+- Aim for 2-6 tasks per response — group related files into one task`;
 
 export class PromptBuilder {
   private context: PromptContext;

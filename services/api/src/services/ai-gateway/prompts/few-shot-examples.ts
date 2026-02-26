@@ -7,12 +7,41 @@ export interface FewShotExample {
 export const SIMPLE_APP_EXAMPLE: FewShotExample = {
   tags: ["app", "simple", "starter"],
   userMessage: "Create a simple counter app",
-  assistantResponse: `I'll create a simple counter app with increment and decrement functionality.
+  assistantResponse: `I'll create a simple counter app with increment/decrement functionality and a clean design.
+
+## Tasks
+- [ ] Set up design tokens
+- [ ] Create counter screen
+
+### Set up design tokens
+
+\`\`\`ts filename="utils/tokens.ts"
+export const colors = {
+  background: "#f5f5f5",
+  text: "#1a1a1a",
+  textSecondary: "#333",
+  white: "#fff",
+  danger: "#ef4444",
+  success: "#22c55e",
+} as const;
+
+export const spacing = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+} as const;
+\`\`\`
+
+- [x] Set up design tokens
+
+### Create counter screen
 
 \`\`\`tsx filename="App.tsx"
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { colors, spacing } from "./utils/tokens";
 
 export default function App() {
   const [count, setCount] = useState(0);
@@ -45,21 +74,21 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
+    padding: spacing.xl,
   },
   title: {
     fontSize: 24,
     fontWeight: "600",
-    color: "#333",
+    color: colors.textSecondary,
     marginBottom: 20,
   },
   count: {
     fontSize: 72,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: colors.text,
     marginBottom: 40,
   },
   buttons: {
@@ -74,60 +103,74 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   decrementButton: {
-    backgroundColor: "#ef4444",
+    backgroundColor: colors.danger,
   },
   incrementButton: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.success,
   },
   buttonText: {
     fontSize: 32,
     fontWeight: "600",
-    color: "#fff",
+    color: colors.white,
   },
 });
 \`\`\`
 
-This creates a minimal counter app with:
-- State management using useState
-- Styled increment/decrement buttons
-- Accessibility labels for screen readers`,
+- [x] Create counter screen`,
 };
 
 export const TODO_APP_EXAMPLE: FewShotExample = {
   tags: ["app", "todo", "list", "crud"],
   userMessage: "Create a todo app",
-  assistantResponse: `I'll create a complete todo app with add, complete, and delete functionality.
+  assistantResponse: `I'll create a complete todo app with add, complete, and delete functionality using a clean architecture.
 
-\`\`\`tsx filename="App.tsx"
-import { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+## Tasks
+- [ ] Set up types and design tokens
+- [ ] Create TodoItem component
+- [ ] Build main App screen
 
-interface Todo {
+### Set up types and design tokens
+
+\`\`\`ts filename="types/todo.ts"
+export interface Todo {
   id: string;
   text: string;
   completed: boolean;
 }
+\`\`\`
 
-function TodoItem({
-  todo,
-  onToggle,
-  onDelete,
-}: {
+\`\`\`ts filename="utils/tokens.ts"
+export const colors = {
+  background: "#fff",
+  surface: "#f9fafb",
+  inputBg: "#f3f4f6",
+  primary: "#3b82f6",
+  primaryMuted: "#93c5fd",
+  text: "#1a1a1a",
+  textSecondary: "#6b7280",
+  textMuted: "#9ca3af",
+  border: "#d1d5db",
+  danger: "#ef4444",
+  white: "#fff",
+} as const;
+\`\`\`
+
+- [x] Set up types and design tokens
+
+### Create TodoItem component
+
+\`\`\`tsx filename="components/TodoItem.tsx"
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { colors } from "../utils/tokens";
+import type { Todo } from "../types/todo";
+
+interface TodoItemProps {
   todo: Todo;
   onToggle: () => void;
   onDelete: () => void;
-}) {
+}
+
+export function TodoItem({ todo, onToggle, onDelete }: TodoItemProps) {
   return (
     <View style={styles.todoItem}>
       <TouchableOpacity
@@ -143,16 +186,38 @@ function TodoItem({
           {todo.text}
         </Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        onPress={onDelete}
-        style={styles.deleteButton}
-        accessibilityLabel="Delete todo"
-      >
+      <TouchableOpacity onPress={onDelete} style={styles.deleteButton} accessibilityLabel="Delete todo">
         <Text style={styles.deleteText}>×</Text>
       </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  todoItem: { flexDirection: "row", alignItems: "center", backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 8 },
+  todoContent: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12 },
+  checkbox: { width: 24, height: 24, borderRadius: 6, borderWidth: 2, borderColor: colors.border, alignItems: "center", justifyContent: "center" },
+  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkmark: { color: colors.white, fontSize: 14, fontWeight: "700" },
+  todoText: { flex: 1, fontSize: 16, color: colors.text },
+  todoTextCompleted: { textDecorationLine: "line-through", color: colors.textMuted },
+  deleteButton: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
+  deleteText: { fontSize: 24, color: colors.danger, fontWeight: "300" },
+});
+\`\`\`
+
+- [x] Create TodoItem component
+
+### Build main App screen
+
+\`\`\`tsx filename="App.tsx"
+import { useState, useCallback } from "react";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { TodoItem } from "./components/TodoItem";
+import { colors } from "./utils/tokens";
+import type { Todo } from "./types/todo";
 
 export default function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -161,18 +226,12 @@ export default function App() {
   const addTodo = useCallback(() => {
     const trimmed = input.trim();
     if (!trimmed) return;
-
-    setTodos(prev => [
-      { id: Date.now().toString(), text: trimmed, completed: false },
-      ...prev,
-    ]);
+    setTodos(prev => [{ id: Date.now().toString(), text: trimmed, completed: false }, ...prev]);
     setInput("");
   }, [input]);
 
   const toggleTodo = useCallback((id: string) => {
-    setTodos(prev =>
-      prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t))
-    );
+    setTodos(prev => prev.map(t => (t.id === id ? { ...t, completed: !t.completed } : t)));
   }, []);
 
   const deleteTodo = useCallback((id: string) => {
@@ -181,11 +240,7 @@ export default function App() {
 
   const renderTodo = useCallback(
     ({ item }: { item: Todo }) => (
-      <TodoItem
-        todo={item}
-        onToggle={() => toggleTodo(item.id)}
-        onDelete={() => deleteTodo(item.id)}
-      />
+      <TodoItem todo={item} onToggle={() => toggleTodo(item.id)} onDelete={() => deleteTodo(item.id)} />
     ),
     [toggleTodo, deleteTodo]
   );
@@ -196,50 +251,22 @@ export default function App() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <StatusBar style="dark" />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.content}
-        >
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.content}>
           <Text style={styles.title}>My Todos</Text>
-          {todos.length > 0 && (
-            <Text style={styles.stats}>
-              {completedCount} of {todos.length} completed
-            </Text>
-          )}
-
+          {todos.length > 0 && <Text style={styles.stats}>{completedCount} of {todos.length} completed</Text>}
           <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              placeholder="Add a new todo..."
-              placeholderTextColor="#9ca3af"
-              onSubmitEditing={addTodo}
-              returnKeyType="done"
-            />
-            <TouchableOpacity
-              style={[styles.addButton, !input.trim() && styles.addButtonDisabled]}
-              onPress={addTodo}
-              disabled={!input.trim()}
-              accessibilityLabel="Add todo"
-            >
+            <TextInput style={styles.input} value={input} onChangeText={setInput} placeholder="Add a new todo..." placeholderTextColor={colors.textMuted} onSubmitEditing={addTodo} returnKeyType="done" />
+            <TouchableOpacity style={[styles.addButton, !input.trim() && styles.addButtonDisabled]} onPress={addTodo} disabled={!input.trim()} accessibilityLabel="Add todo">
               <Text style={styles.addButtonText}>Add</Text>
             </TouchableOpacity>
           </View>
-
           {todos.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>No todos yet</Text>
               <Text style={styles.emptySubtext}>Add one above to get started</Text>
             </View>
           ) : (
-            <FlatList
-              data={todos}
-              renderItem={renderTodo}
-              keyExtractor={item => item.id}
-              style={styles.list}
-              showsVerticalScrollIndicator={false}
-            />
+            <FlatList data={todos} renderItem={renderTodo} keyExtractor={item => item.id} style={styles.list} showsVerticalScrollIndicator={false} />
           )}
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -248,134 +275,23 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1a1a1a",
-    marginBottom: 4,
-  },
-  stats: {
-    fontSize: 14,
-    color: "#6b7280",
-    marginBottom: 20,
-  },
-  inputRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    height: 48,
-    backgroundColor: "#f3f4f6",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#1a1a1a",
-  },
-  addButton: {
-    height: 48,
-    paddingHorizontal: 20,
-    backgroundColor: "#3b82f6",
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addButtonDisabled: {
-    backgroundColor: "#93c5fd",
-  },
-  addButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  list: {
-    flex: 1,
-  },
-  todoItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f9fafb",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-  },
-  todoContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#d1d5db",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkboxChecked: {
-    backgroundColor: "#3b82f6",
-    borderColor: "#3b82f6",
-  },
-  checkmark: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  todoText: {
-    flex: 1,
-    fontSize: 16,
-    color: "#1a1a1a",
-  },
-  todoTextCompleted: {
-    textDecorationLine: "line-through",
-    color: "#9ca3af",
-  },
-  deleteButton: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteText: {
-    fontSize: 24,
-    color: "#ef4444",
-    fontWeight: "300",
-  },
-  empty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#6b7280",
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: "#9ca3af",
-    marginTop: 4,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { flex: 1, padding: 20 },
+  title: { fontSize: 28, fontWeight: "700", color: colors.text, marginBottom: 4 },
+  stats: { fontSize: 14, color: colors.textSecondary, marginBottom: 20 },
+  inputRow: { flexDirection: "row", gap: 12, marginBottom: 20 },
+  input: { flex: 1, height: 48, backgroundColor: colors.inputBg, borderRadius: 12, paddingHorizontal: 16, fontSize: 16, color: colors.text },
+  addButton: { height: 48, paddingHorizontal: 20, backgroundColor: colors.primary, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  addButtonDisabled: { backgroundColor: colors.primaryMuted },
+  addButtonText: { color: colors.white, fontSize: 16, fontWeight: "600" },
+  list: { flex: 1 },
+  empty: { flex: 1, alignItems: "center", justifyContent: "center" },
+  emptyText: { fontSize: 18, fontWeight: "600", color: colors.textSecondary },
+  emptySubtext: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
 });
 \`\`\`
 
-This todo app includes:
-- Add, toggle complete, and delete functionality
-- FlatList for efficient rendering
-- Empty state handling
-- Keyboard handling for iOS
-- Accessibility support`,
+- [x] Build main App screen`,
 };
 
 export const CALCULATOR_EXAMPLE: FewShotExample = {
