@@ -165,7 +165,7 @@ export function FileTabs() {
   }, [contextMenu.path, openFileTabs, closeFileTab]);
 
   const handleDeleteFile = useCallback(async () => {
-    if (!contextMenu.path || !currentProject?.id) return;
+    if (!contextMenu.path || !currentProject?.uuid) return;
 
     const file = files.get(contextMenu.path);
     const path = contextMenu.path;
@@ -174,7 +174,7 @@ export function FileTabs() {
     setIsDeleting(true);
     try {
       if (file?.uuid) {
-        await filesApi.delete(currentProject.id.toString(), file.uuid);
+        await filesApi.delete(currentProject.uuid, file.uuid);
       }
       deleteFile(path);
       closeFileTab(path);
@@ -183,7 +183,7 @@ export function FileTabs() {
     } finally {
       setIsDeleting(false);
     }
-  }, [contextMenu.path, currentProject?.id, files, deleteFile, closeFileTab]);
+  }, [contextMenu.path, currentProject?.uuid, files, deleteFile, closeFileTab]);
 
   if (openFileTabs.length === 0) {
     return null;

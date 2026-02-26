@@ -114,7 +114,7 @@ export function CodeEditor({
       const state = useProjectStore.getState();
       const currentProject = state.currentProject;
       const file = state.files.get(path);
-      if (!currentProject?.id) return;
+      if (!currentProject?.uuid) return;
 
       useProjectStore.setState((s) => {
         const f = s.files.get(path);
@@ -127,7 +127,7 @@ export function CodeEditor({
         let fileUuid = file?.uuid;
         if (!fileUuid) {
           const fileData = await filesApi.getByPath(
-            currentProject.id.toString(),
+            currentProject.uuid,
             path,
           );
           fileUuid = fileData.uuid;
@@ -139,7 +139,7 @@ export function CodeEditor({
           });
         }
 
-        await filesApi.update(currentProject.id.toString(), fileUuid, {
+        await filesApi.update(currentProject.uuid, fileUuid, {
           content,
           language: file?.language,
         });

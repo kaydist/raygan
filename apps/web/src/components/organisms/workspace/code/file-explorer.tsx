@@ -157,28 +157,46 @@ export function FileExplorer() {
   }, []);
 
   const handleDelete = useCallback(async () => {
-    if (!contextMenu.entry || !currentProject?.id) return;
+    if (!contextMenu.entry || !currentProject?.uuid) return;
 
     const entry = contextMenu.entry;
     closeContextMenu();
 
-    if (entry.type === "folder") {
-      return;
-    }
-
     setIsDeleting(true);
     try {
-      if (entry.uuid) {
-        await filesApi.delete(currentProject.id.toString(), entry.uuid);
+      if (entry.type === "folder") {
+        const folderPrefix = entry.path + "/";
+        const childPaths = Array.from(files.keys()).filter(
+          (p) => p.startsWith(folderPrefix)
+        );
+
+        await Promise.all(
+          childPaths.map(async (p) => {
+            const file = files.get(p);
+            if (file?.uuid) {
+              await filesApi.delete(currentProject.uuid, file.uuid);
+            }
+          })
+        );
+
+        for (const p of childPaths) {
+          deleteFile(p);
+          closeFileTab(p);
+        }
+        deleteFile(entry.path);
+      } else {
+        if (entry.uuid) {
+          await filesApi.delete(currentProject.uuid, entry.uuid);
+        }
+        deleteFile(entry.path);
+        closeFileTab(entry.path);
       }
-      deleteFile(entry.path);
-      closeFileTab(entry.path);
     } catch (error) {
-      console.error("Failed to delete file:", error);
+      console.error("Failed to delete:", error);
     } finally {
       setIsDeleting(false);
     }
-  }, [contextMenu.entry, currentProject?.id, deleteFile, closeFileTab, closeContextMenu]);
+  }, [contextMenu.entry, currentProject?.uuid, files, deleteFile, closeFileTab, closeContextMenu]);
 
   const handleOpenCreateDialog = useCallback((type: "file" | "folder", parentPath = "") => {
     setCreateDialog({ isOpen: true, type, parentPath });
@@ -187,7 +205,7 @@ export function FileExplorer() {
   }, [closeContextMenu]);
 
   const handleCreate = useCallback(async () => {
-    if (!newItemName.trim() || !currentProject?.id) return;
+    if (!newItemName.trim() || !currentProject?.uuid) return;
 
     const path = createDialog.parentPath
       ? `${createDialog.parentPath}/${newItemName.trim()}`
@@ -197,7 +215,7 @@ export function FileExplorer() {
     try {
       const defaultContent = getDefaultContent(newItemName.trim());
 
-      const response = await filesApi.create(currentProject.id.toString(), {
+      const response = await filesApi.create(currentProject.uuid, {
         path,
         content: defaultContent,
         language: getLanguageFromName(newItemName.trim()),
@@ -362,11 +380,11 @@ export function FileExplorer() {
             )}
             <button
               onClick={handleDelete}
-              disabled={isDeleting || contextMenu.entry?.type === "folder"}
+              disabled={isDeleting}
               className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? "Deleting..." : contextMenu.entry?.type === "folder" ? "Delete Folder" : "Delete"}
             </button>
           </div>
         </>
