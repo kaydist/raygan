@@ -66,6 +66,10 @@ export function PromptInput({
       e.preventDefault();
       handleSubmit();
     }
+    if (e.key === "Escape" && isGenerating) {
+      e.preventDefault();
+      onStop?.();
+    }
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

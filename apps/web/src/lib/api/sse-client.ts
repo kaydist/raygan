@@ -42,6 +42,7 @@ export async function createSSEStream(
   path: string,
   body: unknown,
   callbacks: SSECallbacks,
+  options?: { signal?: AbortSignal },
 ): Promise<void> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -57,6 +58,7 @@ export async function createSSEStream(
     headers,
     credentials: "include",
     body: JSON.stringify(body),
+    signal: options?.signal,
   });
 
   if (!response.ok) {
@@ -77,12 +79,19 @@ export async function createSSEStream(
     return;
   }
 
+  if (options?.signal) {
+    const onAbort = () => reader.cancel();
+    options.signal.addEventListener("abort", onAbort, { once: true });
+  }
+
   const decoder = new TextDecoder();
   let buffer = "";
   let currentEventType = "";
 
   try {
     while (true) {
+      if (options?.signal?.aborted) break;
+
       const { done, value } = await reader.read();
       if (done) break;
 
@@ -91,7 +100,6 @@ export async function createSSEStream(
       buffer = lines.pop() || "";
 
       for (let line of lines) {
-        // Remove carriage return if present (handles \r\n line endings)
         line = line.replace(/\r$/, "").trim();
 
         if (!line) continue;
@@ -120,6 +128,9 @@ export async function createSSEStream(
         }
       }
     }
+  } catch {
+    if (options?.signal?.aborted) return;
+    throw new Error("SSE stream read failed");
   } finally {
     reader.releaseLock();
   }

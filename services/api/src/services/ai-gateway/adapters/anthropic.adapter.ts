@@ -90,7 +90,14 @@ export class AnthropicAdapter extends BaseAdapter {
           stop_sequences: request.stop_sequences,
         });
 
+        if (request.signal) {
+          const onAbort = () => stream.abort();
+          request.signal.addEventListener("abort", onAbort, { once: true });
+        }
+
         for await (const event of stream) {
+          if (request.signal?.aborted) break;
+
           if (event.type === "content_block_delta") {
             const delta = event.delta;
             if ("text" in delta) {
@@ -111,6 +118,8 @@ export class AnthropicAdapter extends BaseAdapter {
             yield { type: "done", finish_reason: "stop" };
           }
         }
+
+        if (request.signal?.aborted) return;
 
         const finalMessage = await stream.finalMessage();
         yield {

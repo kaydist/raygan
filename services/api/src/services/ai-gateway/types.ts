@@ -16,6 +16,7 @@ export interface GenerateRequest {
   temperature?: number;
   stop_sequences?: string[];
   metadata?: Record<string, unknown>;
+  signal?: AbortSignal;
 }
 
 export interface GenerateResponse {

@@ -156,8 +156,16 @@ export async function generateForProject(req: Request, res: Response): Promise<v
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
 
+  const abortController = new AbortController();
+
+  req.on("close", () => {
+    abortController.abort();
+  });
+
   const heartbeatInterval = setInterval(() => {
-    res.write(": heartbeat\n\n");
+    if (!abortController.signal.aborted) {
+      res.write(": heartbeat\n\n");
+    }
   }, 15000);
 
   try {
@@ -170,9 +178,12 @@ export async function generateForProject(req: Request, res: Response): Promise<v
       selectedCode: selected_code,
       maxTokens: max_tokens,
       temperature,
+      signal: abortController.signal,
     });
 
     for await (const event of stream) {
+      if (abortController.signal.aborted) break;
+
       res.write(`event: ${event.type}\n`);
       res.write(`data: ${JSON.stringify(event.data)}\n\n`);
 
@@ -181,12 +192,17 @@ export async function generateForProject(req: Request, res: Response): Promise<v
       }
     }
 
-    res.write("event: close\ndata: {}\n\n");
+    if (!abortController.signal.aborted) {
+      res.write("event: close\ndata: {}\n\n");
+    }
   } catch (err) {
-    logger.error({ err, projectId }, "Project generation failed");
-
-    res.write(`event: error\n`);
-    res.write(`data: ${JSON.stringify({ message: "Generation failed", code: "INTERNAL_ERROR" })}\n\n`);
+    if (abortController.signal.aborted) {
+      logger.info({ projectId }, "Generation aborted by client");
+    } else {
+      logger.error({ err, projectId }, "Project generation failed");
+      res.write(`event: error\n`);
+      res.write(`data: ${JSON.stringify({ message: "Generation failed", code: "INTERNAL_ERROR" })}\n\n`);
+    }
   } finally {
     clearInterval(heartbeatInterval);
     res.end();

@@ -89,6 +89,7 @@ export interface GenerateOptions {
   selectedCode?: string;
   maxTokens?: number;
   temperature?: number;
+  signal?: AbortSignal;
 }
 
 export class GenerationService {
@@ -168,12 +169,15 @@ export class GenerationService {
         max_tokens: maxTokens || modelConfig.max_output_tokens,
         temperature: temperature ?? 0.7,
         metadata: { user_id: userId, project_id: projectId },
+        signal: options.signal,
       });
 
       let totalInputTokens = 0;
       let totalOutputTokens = 0;
 
       for await (const chunk of stream) {
+        if (options.signal?.aborted) break;
+
         if (chunk.type === "text_delta" && chunk.content) {
           fullContent += chunk.content;
 

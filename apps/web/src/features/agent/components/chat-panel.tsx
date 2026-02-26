@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useCallback } from "react";
 import { AlertCircle, Loader2, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -35,6 +35,21 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
 
   const { messages, isGenerating, error, generate, stop, clearMessages } =
     useGenerate({ projectId, initialMessages });
+
+  const handleEscapeStop = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isGenerating) {
+        e.preventDefault();
+        stop();
+      }
+    },
+    [isGenerating, stop],
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleEscapeStop);
+    return () => document.removeEventListener("keydown", handleEscapeStop);
+  }, [handleEscapeStop]);
 
   const selectedModelId = project?.default_model_id ?? null;
 

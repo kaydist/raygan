@@ -170,8 +170,13 @@ export function useGenerate({
               streamingMessageIdRef.current = null;
             },
           },
+          { signal: abortControllerRef.current.signal },
         );
       } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
         const errorMessage =
           error instanceof Error ? error.message : "Generation failed";
 
