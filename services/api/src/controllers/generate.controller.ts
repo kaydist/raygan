@@ -154,7 +154,8 @@ const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 export async function generateForProject(req: Request, res: Response): Promise<void> {
   const authReq = req as AuthenticatedRequest;
   const projectId = req.params.projectId as string;
-  const { prompt, model_id, current_file, selected_code, max_tokens, temperature, images: rawImages } = req.body;
+  const { prompt: rawPrompt, model_id, current_file, selected_code, max_tokens, temperature, images: rawImages } = req.body;
+  const prompt = typeof rawPrompt === "string" ? rawPrompt : "";
 
   const validatedImages: Array<{ media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp"; data: string }> = [];
   if (Array.isArray(rawImages) && rawImages.length > 0) {

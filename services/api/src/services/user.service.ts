@@ -1,5 +1,6 @@
 import { User } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
+import { CacheService } from "../lib";
 
 export class UserService {
   private users = new BaseRepository(User);
@@ -46,26 +47,47 @@ export class UserService {
   }
 
   async update(id: number, data: Partial<User>, updatedBy?: number) {
-    return this.users.update(id, data, updatedBy);
+    const result = await this.users.update(id, data, updatedBy);
+    if (result) {
+      await CacheService.invalidateAuthUser(result.auth_user_id);
+    }
+    return result;
   }
 
   async setCurrentOrganization(userId: number, organizationId: number) {
-    return this.users.update(userId, { current_organization_id: organizationId }, userId);
+    const result = await this.users.update(userId, { current_organization_id: organizationId }, userId);
+    if (result) {
+      await CacheService.invalidateAuthUser(result.auth_user_id);
+    }
+    return result;
   }
 
   async completeOnboarding(id: number) {
-    return this.users.update(id, { onboarding_completed: true }, id);
+    const result = await this.users.update(id, { onboarding_completed: true }, id);
+    if (result) {
+      await CacheService.invalidateAuthUser(result.auth_user_id);
+    }
+    return result;
   }
 
   async activate(id: number, activatedBy: number) {
-    return this.users.update(
+    const result = await this.users.update(
       id,
       { activated_flag: true, activated_on: new Date(), activated_by: activatedBy },
       activatedBy
     );
+    if (result) {
+      await CacheService.invalidateAuthUser(result.auth_user_id);
+    }
+    return result;
   }
 
   async delete(id: number, deletedBy?: number) {
-    return this.users.softDelete(id, deletedBy);
+    const user = await this.users.findById(id);
+    const result = await this.users.softDelete(id, deletedBy);
+    if (result && user) {
+      await CacheService.invalidateAuthUser(user.auth_user_id);
+    }
+    return result;
   }
 }

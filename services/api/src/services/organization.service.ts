@@ -1,5 +1,6 @@
 import { AppDataSource, Organization, OrganizationMember } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
+import { CacheService } from "../lib";
 import type { OrgRole } from "../db/entities/organization-member.entity";
 
 export class OrganizationService {
@@ -81,7 +82,7 @@ export class OrganizationService {
   }
 
   async addMember(orgId: number, userId: number, role: OrgRole, invitedBy: number) {
-    return this.members.create(
+    const result = await this.members.create(
       {
         organization_id: orgId,
         user_id: userId,
@@ -92,18 +93,24 @@ export class OrganizationService {
       },
       invitedBy
     );
+    await CacheService.invalidateUserProjectAccess(userId);
+    return result;
   }
 
   async updateMemberRole(orgId: number, userId: number, role: OrgRole, updatedBy: number) {
     const membership = await this.getMembership(orgId, userId);
     if (!membership) return null;
-    return this.members.update(membership.id, { role }, updatedBy);
+    const result = await this.members.update(membership.id, { role }, updatedBy);
+    await CacheService.invalidateUserProjectAccess(userId);
+    return result;
   }
 
   async removeMember(orgId: number, userId: number, removedBy: number) {
     const membership = await this.getMembership(orgId, userId);
     if (!membership) return false;
-    return this.members.softDelete(membership.id, removedBy);
+    const result = await this.members.softDelete(membership.id, removedBy);
+    await CacheService.invalidateUserProjectAccess(userId);
+    return result;
   }
 
   hasPermission(role: string, requiredRoles: string[]): boolean {

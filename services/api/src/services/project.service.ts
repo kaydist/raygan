@@ -1,6 +1,7 @@
 import { In, Not } from "typeorm";
 import { AppDataSource, Project, OrganizationMember, AIModel } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
+import { CacheService, CACHE_KEYS, CACHE_TTL } from "../lib";
 import type { ProjectStatusType } from "../db/entities/project.entity";
 
 export class ProjectService {
@@ -11,7 +12,11 @@ export class ProjectService {
   }
 
   async findByUuid(uuid: string) {
-    return this.projects.findByUuid(uuid);
+    return CacheService.getOrSet(
+      CACHE_KEYS.project.byUuid(uuid),
+      () => this.projects.findByUuid(uuid),
+      CACHE_TTL.PROJECT_FILES
+    );
   }
 
   async findBySlug(orgId: number, slug: string) {
@@ -80,7 +85,9 @@ export class ProjectService {
   }
 
   async update(id: number, data: Partial<Project>, updatedBy?: number) {
-    return this.projects.update(id, data, updatedBy);
+    const result = await this.projects.update(id, data, updatedBy);
+    if (result) await CacheService.invalidateProject(result.uuid);
+    return result;
   }
 
   async updateAst(
@@ -88,31 +95,44 @@ export class ProjectService {
     astSnapshot: Record<string, unknown>,
     updatedBy?: number,
   ) {
-    return this.projects.update(
+    const result = await this.projects.update(
       id,
       { ast_snapshot: astSnapshot, last_generated_at: new Date() },
       updatedBy,
     );
+    if (result) await CacheService.invalidateProject(result.uuid);
+    return result;
   }
 
   async updateFileTree(id: number, fileTree: unknown[], updatedBy?: number) {
-    return this.projects.update(id, { file_tree: fileTree }, updatedBy);
+    const result = await this.projects.update(id, { file_tree: fileTree }, updatedBy);
+    if (result) await CacheService.invalidateProject(result.uuid);
+    return result;
   }
 
   async archive(id: number, updatedBy?: number) {
-    return this.projects.update(id, { status: "archived" as ProjectStatusType }, updatedBy);
+    const result = await this.projects.update(id, { status: "archived" as ProjectStatusType }, updatedBy);
+    if (result) await CacheService.invalidateProject(result.uuid);
+    return result;
   }
 
   async unarchive(id: number, updatedBy?: number) {
-    return this.projects.update(id, { status: "draft" as ProjectStatusType }, updatedBy);
+    const result = await this.projects.update(id, { status: "draft" as ProjectStatusType }, updatedBy);
+    if (result) await CacheService.invalidateProject(result.uuid);
+    return result;
   }
 
   async updateStatus(id: number, status: ProjectStatusType, updatedBy?: number) {
-    return this.projects.update(id, { status }, updatedBy);
+    const result = await this.projects.update(id, { status }, updatedBy);
+    if (result) await CacheService.invalidateProject(result.uuid);
+    return result;
   }
 
   async delete(id: number, deletedBy?: number) {
-    return this.projects.softDelete(id, deletedBy);
+    const project = await this.findById(id);
+    const result = await this.projects.softDelete(id, deletedBy);
+    if (result && project) await CacheService.invalidateProject(project.uuid);
+    return result;
   }
 
   async checkAccess(
@@ -121,6 +141,20 @@ export class ProjectService {
   ): Promise<{ project: Project; role: string } | null> {
     const project = await this.findById(projectId);
     if (!project) return null;
+
+    return this.checkAccessWithProject(userId, project);
+  }
+
+  async checkAccessWithProject(
+    userId: number,
+    project: Project,
+  ): Promise<{ project: Project; role: string } | null> {
+    const cacheKey = CACHE_KEYS.project.access(userId, project.id);
+    const cachedRole = await CacheService.get<string>(cacheKey);
+
+    if (cachedRole) {
+      return { project, role: cachedRole };
+    }
 
     const membership = await AppDataSource.getRepository(
       OrganizationMember,
@@ -133,6 +167,8 @@ export class ProjectService {
     });
 
     if (!membership) return null;
+
+    await CacheService.set(cacheKey, membership.role, CACHE_TTL.PROJECT_ACCESS);
     return { project, role: membership.role };
   }
 }

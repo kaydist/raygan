@@ -12,6 +12,15 @@ export interface ToolExecutorContext {
 
 export class ToolExecutor {
   private fileStorageService = new FileStorageService();
+  private projectFilesCache = new Map<number, Awaited<ReturnType<FileStorageService["findByProjectId"]>>>();
+
+  private async getProjectFiles(projectId: number) {
+    const cached = this.projectFilesCache.get(projectId);
+    if (cached) return cached;
+    const files = await this.fileStorageService.findByProjectId(projectId);
+    this.projectFilesCache.set(projectId, files);
+    return files;
+  }
 
   async execute(
     toolCall: AgentToolCall,
@@ -64,7 +73,7 @@ export class ToolExecutor {
     toolUseId: string,
     context: ToolExecutorContext,
   ): Promise<AgentToolResult> {
-    const files = await this.fileStorageService.findByProjectId(context.projectId);
+    const files = await this.getProjectFiles(context.projectId);
     const listing = files.map((f) => ({
       path: f.path,
       language: f.language || "unknown",
@@ -104,7 +113,7 @@ export class ToolExecutor {
     input: { query: string },
     context: ToolExecutorContext,
   ): Promise<AgentToolResult> {
-    const files = await this.fileStorageService.findByProjectId(context.projectId);
+    const files = await this.getProjectFiles(context.projectId);
     const matches: string[] = [];
     const queryLower = input.query.toLowerCase();
 
@@ -161,6 +170,7 @@ export class ToolExecutor {
       },
       context.userId,
     );
+    this.projectFilesCache.delete(context.projectId);
 
     const sideEffect: AgentSideEffect = {
       type: "file_created",
@@ -191,6 +201,7 @@ export class ToolExecutor {
       },
       context.userId,
     );
+    this.projectFilesCache.delete(context.projectId);
 
     const sideEffect: AgentSideEffect = {
       type: "file_modified",
@@ -215,6 +226,7 @@ export class ToolExecutor {
       input.path,
       context.userId,
     );
+    this.projectFilesCache.delete(context.projectId);
 
     if (!deleted) {
       return {

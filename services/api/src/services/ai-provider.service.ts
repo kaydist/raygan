@@ -1,6 +1,7 @@
 import { AIProvider, AIModel } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
 import { Not } from "typeorm";
+import { CacheService, CACHE_KEYS, CACHE_TTL } from "../lib";
 
 export class AIProviderService {
   private providers = new BaseRepository(AIProvider);
@@ -27,52 +28,80 @@ export class AIProviderService {
   }
 
   async getModels(providerId: number) {
-    return this.models.findAll({
-      where: { provider_id: providerId, is_enabled: true, deleted_flag: false },
-      order: { priority: "ASC" },
-    });
+    return CacheService.getOrSet(
+      CACHE_KEYS.aiModels.byProvider(providerId),
+      () => this.models.findAll({
+        where: { provider_id: providerId, is_enabled: true, deleted_flag: false },
+        order: { priority: "ASC" },
+      }),
+      CACHE_TTL.AI_MODELS
+    );
   }
 
-  async getModelById(modelId: string) {
-    const model = await this.models.findOne({
-      where: { model_id: modelId, deleted_flag: false },
-      relations: ["provider"],
-    });
-    if (model && (!model.provider || !model.provider.is_enabled)) {
-      return null;
-    }
-    return model;
+  async getModelById(modelId: string): Promise<AIModel | null> {
+    return CacheService.getOrSet(
+      CACHE_KEYS.aiModels.byModelId(modelId),
+      async () => {
+        const model = await this.models.findOne({
+          where: { model_id: modelId, deleted_flag: false },
+          relations: ["provider"],
+        });
+        if (model && (!model.provider || !model.provider.is_enabled)) {
+          return null;
+        }
+        return model;
+      },
+      CACHE_TTL.AI_MODELS
+    );
   }
 
-  async getModelByPrimaryId(id: number) {
-    const model = await this.models.findOne({
-      where: { id, deleted_flag: false },
-      relations: ["provider"],
-    });
-    if (model && (!model.provider || !model.provider.is_enabled)) {
-      return null;
-    }
-    return model;
+  async getModelByPrimaryId(id: number): Promise<AIModel | null> {
+    return CacheService.getOrSet(
+      CACHE_KEYS.aiModels.byPrimaryId(id),
+      async () => {
+        const model = await this.models.findOne({
+          where: { id, deleted_flag: false },
+          relations: ["provider"],
+        });
+        if (model && (!model.provider || !model.provider.is_enabled)) {
+          return null;
+        }
+        return model;
+      },
+      CACHE_TTL.AI_MODELS
+    );
   }
 
-  async getDefaultModel() {
-    const model = await this.models.findOne({
-      where: { is_default: true, is_enabled: true, deleted_flag: false },
-      relations: ["provider"],
-    });
-    if (model && (!model.provider || !model.provider.is_enabled)) {
-      return null;
-    }
-    return model;
+  async getDefaultModel(): Promise<AIModel | null> {
+    return CacheService.getOrSet(
+      CACHE_KEYS.aiModels.default(),
+      async () => {
+        const model = await this.models.findOne({
+          where: { is_default: true, is_enabled: true, deleted_flag: false },
+          relations: ["provider"],
+        });
+        if (model && (!model.provider || !model.provider.is_enabled)) {
+          return null;
+        }
+        return model;
+      },
+      CACHE_TTL.AI_MODELS
+    );
   }
 
-  async getAllEnabledModels() {
-    const models = await this.models.findAll({
-      where: { is_enabled: true, deleted_flag: false },
-      relations: ["provider"],
-      order: { priority: "ASC" },
-    });
-    return models.filter((m) => m.provider?.is_enabled);
+  async getAllEnabledModels(): Promise<AIModel[]> {
+    return CacheService.getOrSet(
+      CACHE_KEYS.aiModels.enabled(),
+      async () => {
+        const models = await this.models.findAll({
+          where: { is_enabled: true, deleted_flag: false },
+          relations: ["provider"],
+          order: { priority: "ASC" },
+        });
+        return models.filter((m) => m.provider?.is_enabled);
+      },
+      CACHE_TTL.AI_MODELS
+    );
   }
 
   async getFallbackModels(
