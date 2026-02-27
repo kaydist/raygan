@@ -4,10 +4,12 @@ import { ConversationService } from "./conversation.service";
 import { AIProviderService } from "./ai-provider.service";
 import { FileStorageService } from "./file-storage.service";
 import { getAIGateway, PromptBuilder, ResponseParser } from "./ai-gateway";
+import { runAgentLoop } from "./ai-gateway/agent-loop";
 import type { CodeBlock } from "./ai-gateway/response-parser";
 import { parseAIResponse } from "./ast-engine";
 import type { ASTNode, ASTOperation } from "@raygan/shared";
-import type { Project } from "../db";
+import type { Project, AIModel } from "../db";
+import type { Message as GatewayMessage, MessageContentBlock } from "./ai-gateway/types";
 
 export type SSEEventType =
   | "text"
@@ -17,7 +19,15 @@ export type SSEEventType =
   | "file_update"
   | "usage"
   | "done"
-  | "error";
+  | "error"
+  | "tool_call"
+  | "tool_result"
+  | "plan_proposed"
+  | "plan_approved"
+  | "plan_rejected"
+  | "file_created"
+  | "file_modified"
+  | "file_deleted";
 
 export interface SSEEvent {
   type: SSEEventType;
@@ -80,6 +90,11 @@ export interface ErrorEvent {
   data: { message: string; code?: string };
 }
 
+export interface ImageInput {
+  media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+  data: string;
+}
+
 export interface GenerateOptions {
   projectId: string;
   prompt: string;
@@ -90,6 +105,7 @@ export interface GenerateOptions {
   maxTokens?: number;
   temperature?: number;
   signal?: AbortSignal;
+  images?: ImageInput[];
 }
 
 export class GenerationService {
@@ -99,7 +115,7 @@ export class GenerationService {
   private fileStorageService = new FileStorageService();
 
   async *generate(options: GenerateOptions): AsyncGenerator<SSEEvent> {
-    const { projectId, prompt, userId, modelId, currentFile, selectedCode, maxTokens, temperature } = options;
+    const { projectId, prompt, userId, modelId, currentFile, selectedCode, maxTokens, temperature, images } = options;
 
     const startTime = Date.now();
     let userConversation;
@@ -108,7 +124,8 @@ export class GenerationService {
     const filesToPersist: Array<{ path: string; content: string; type: "create" | "update" }> = [];
 
     try {
-      if (!prompt || prompt.trim().length === 0) {
+      const hasImages = images && images.length > 0;
+      if ((!prompt || prompt.trim().length === 0) && !hasImages) {
         yield { type: "error", data: { message: "Prompt cannot be empty", code: "INVALID_PROMPT" } };
         return;
       }
@@ -156,7 +173,17 @@ export class GenerationService {
         return;
       }
 
-      const { system, messages } = await this.buildPrompt(project, prompt, currentFile, selectedCode);
+      if (modelConfig.supports_tools) {
+        yield* this.generateAgentMode(
+          project, prompt, userId, modelConfig, userConversation, options,
+        );
+        return;
+      }
+
+      const { system, messages: builtMessages } = await this.buildPrompt(project, prompt, currentFile, selectedCode);
+      const messages: GatewayMessage[] = hasImages
+        ? this.injectImagesIntoMessages(builtMessages, images!)
+        : builtMessages.map((m) => ({ role: m.role, content: m.content }));
 
       const gateway = getAIGateway();
       const parser = new ResponseParser();
@@ -346,6 +373,105 @@ export class GenerationService {
     }
   }
 
+  private async *generateAgentMode(
+    project: Project,
+    prompt: string,
+    userId: number,
+    modelConfig: AIModel,
+    userConversation: { id: number; uuid: string },
+    options: GenerateOptions,
+  ): AsyncGenerator<SSEEvent> {
+    const startTime = Date.now();
+    let fullTextContent = "";
+
+    try {
+      const fileTree = project.file_tree && typeof project.file_tree === "object" && !Array.isArray(project.file_tree)
+        ? (project.file_tree as Record<string, unknown>)
+        : {};
+
+      const builder = new PromptBuilder()
+        .setAgentMode(true)
+        .setProject(project)
+        .setFileTree(fileTree);
+
+      if (project.backend_provider) {
+        builder.setBackendSchema({ provider: project.backend_provider });
+      }
+
+      const conversationHistory = await this.getConversationHistory(project.id);
+      if (conversationHistory.length > 0) {
+        builder.setConversationHistory(conversationHistory);
+      }
+
+      const { system, messages: promptMessages } = builder.build(prompt);
+
+      const agentMessages = promptMessages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+
+      const loop = runAgentLoop({
+        projectId: project.id,
+        userId,
+        conversationId: userConversation.id,
+        modelId: modelConfig.model_id,
+        providerSlug: modelConfig.provider.slug,
+        systemPrompt: system,
+        userPrompt: prompt,
+        conversationHistory: agentMessages.slice(0, -1),
+        maxTokens: options.maxTokens || modelConfig.max_output_tokens || 4096,
+        temperature: options.temperature ?? 0.7,
+        signal: options.signal,
+        images: options.images,
+      });
+
+      for await (const event of loop) {
+        if (options.signal?.aborted) break;
+
+        if (event.type === "text") {
+          fullTextContent += (event.data as { content: string }).content;
+        }
+
+        yield event;
+      }
+
+      const generationTimeMs = Date.now() - startTime;
+
+      const assistantConversation = await this.conversationService.createAssistantMessage(
+        {
+          project_id: project.id,
+          content: fullTextContent,
+          model_id: modelConfig.id,
+          tokens_in: 0,
+          tokens_out: 0,
+          generation_time_ms: generationTimeMs,
+          cost_usd: 0,
+        },
+        userId,
+      );
+
+      await this.conversationService.markCompleted(userConversation.id, userId);
+
+      yield {
+        type: "done",
+        data: {
+          conversation_id: assistantConversation.uuid,
+          finish_reason: "stop",
+        },
+      };
+    } catch (error) {
+      logger.error({ error, projectId: project.uuid, userId }, "Agent mode generation failed");
+      await this.conversationService.markError(userConversation.id, userId);
+      yield {
+        type: "error",
+        data: {
+          message: error instanceof Error ? error.message : "Agent mode generation failed",
+          code: "AGENT_ERROR",
+        },
+      };
+    }
+  }
+
   private async buildPrompt(
     project: Project,
     userMessage: string,
@@ -438,5 +564,24 @@ export class GenerationService {
     const inputCost = ((model.input_cost_per_1k || 0) / 1_000) * inputTokens;
     const outputCost = ((model.output_cost_per_1k || 0) / 1_000) * outputTokens;
     return Math.round((inputCost + outputCost) * 1_000_000) / 1_000_000;
+  }
+
+  private injectImagesIntoMessages(
+    messages: Array<{ role: "user" | "assistant"; content: string }>,
+    images: ImageInput[],
+  ): GatewayMessage[] {
+    return messages.map((m, i) => {
+      const isLastUserMessage = i === messages.length - 1 && m.role === "user";
+      if (isLastUserMessage && images.length > 0) {
+        const blocks: MessageContentBlock[] = images.map((img) => ({
+          type: "image" as const,
+          source: { type: "base64" as const, media_type: img.media_type, data: img.data },
+        }));
+        const text = m.content.trim() || "Analyze this image and generate the corresponding React Native (Expo) code.";
+        blocks.push({ type: "text" as const, text });
+        return { role: m.role, content: blocks };
+      }
+      return { role: m.role, content: m.content };
+    });
   }
 }

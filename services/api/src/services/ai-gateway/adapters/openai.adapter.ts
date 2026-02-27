@@ -150,9 +150,15 @@ export class OpenAIAdapter extends BaseAdapter {
     }
 
     for (const msg of request.messages) {
+      const content = typeof msg.content === "string"
+        ? msg.content
+        : msg.content
+            .filter((b): b is { type: "text"; text: string } => b.type === "text")
+            .map((b) => b.text)
+            .join("");
       messages.push({
         role: msg.role as "user" | "assistant" | "system",
-        content: msg.content,
+        content,
       });
     }
 

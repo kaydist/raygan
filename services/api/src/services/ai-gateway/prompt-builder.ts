@@ -186,18 +186,60 @@ After all tasks are done, add a brief summary or next steps if helpful.
 - Keep task names short and descriptive (e.g., "Set up design tokens", "Create main screen")
 - Aim for 2-6 tasks per response — group related files into one task`;
 
+const AGENT_OUTPUT_FORMAT = `## Agent Mode — How to Work
+
+You have access to tools that let you explore and modify the project. Follow this workflow:
+
+### Step 1: Explore
+Use \`list_files\`, \`read_file\`, and \`search_code\` to understand the current project structure and existing code patterns. ALWAYS read relevant files before making changes.
+
+### Step 2: Plan
+Once you understand the codebase, call \`propose_plan\` with a summary and list of changes. Wait for the user to approve before proceeding.
+
+### Step 3: Execute
+After plan approval, execute changes one file at a time using \`create_file\`, \`modify_file\`, or \`delete_file\`.
+
+### Critical Rules
+- ALWAYS explore before modifying — never guess file contents
+- ALWAYS call \`propose_plan\` before any write operations
+- Update root wiring files (App.tsx, navigation config, barrel exports) when adding new screens/components
+- Execute one file operation per tool call
+- When modifying a file, provide the COMPLETE new content, not just the diff
+- Maintain consistency with existing code patterns and naming conventions
+- If a tokens file or theme file exists, use those values instead of hardcoding`;
+
 export class PromptBuilder {
   private context: PromptContext;
+  private agentMode = false;
 
   constructor(context: PromptContext = {}) {
     this.context = context;
   }
 
+  setAgentMode(enabled: boolean): this {
+    this.agentMode = enabled;
+    return this;
+  }
+
   build(userMessage: string): { system: string; messages: ConversationMessage[] } {
-    const systemPrompt = this.buildSystemPrompt(userMessage);
+    const systemPrompt = this.agentMode
+      ? this.buildAgentSystemPrompt()
+      : this.buildSystemPrompt(userMessage);
     const messages = this.buildMessages(userMessage);
 
     return { system: systemPrompt, messages };
+  }
+
+  private buildAgentSystemPrompt(): string {
+    const layers: string[] = [
+      PLATFORM_CONTEXT,
+      this.buildProjectContext(),
+      CODE_QUALITY_RULES,
+      AGENT_OUTPUT_FORMAT,
+      this.buildBackendContext(),
+    ];
+
+    return layers.filter(Boolean).join("\n\n---\n\n");
   }
 
   private buildSystemPrompt(userMessage: string): string {

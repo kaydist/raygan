@@ -1,172 +1,193 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
-import { User, Bot, FileCode, Loader2 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import { User, Sparkles, Loader2, AlertCircle, StopCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/atoms";
 import type { Message } from "../types";
-import { parseMessageSegments } from "../utils/task-parser";
-import { TaskProgress } from "./task-progress";
+import { AgentActivity } from "./agent-activity";
+import { ChangePlan } from "./change-plan";
 
 interface MessageListProps {
   messages: Message[];
   className?: string;
+  onApprovePlan?: (planId: string) => void;
+  onRejectPlan?: (planId: string) => void;
 }
 
-interface ParsedContent {
-  text: string;
-  files: Array<{ filename: string; language: string }>;
-}
-
-function parseMessageContent(content: string): ParsedContent {
-  const codeBlockRegex = /```(\w+)?(?:\s+filename="([^"]+)")?\n[\s\S]*?```/g;
-  const files: Array<{ filename: string; language: string }> = [];
-
-  let match;
-  while ((match = codeBlockRegex.exec(content)) !== null) {
-    const language = match[1] || "text";
-    const filename = match[2];
-    if (filename) {
-      files.push({ filename, language });
-    }
-  }
-
-  const text = content
-    .replace(codeBlockRegex, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  return { text, files };
-}
-
-function StreamingDots() {
-  return (
-    <span className="inline-flex items-center gap-1 pl-0.5">
-      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60 [animation-delay:0ms]" />
-      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60 [animation-delay:200ms]" />
-      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60 [animation-delay:400ms]" />
-    </span>
-  );
-}
-
-function StreamingIndicator({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-2.5 py-1">
-      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary/70" />
-      <span className="text-[13px] text-muted-foreground">{label}</span>
-    </div>
-  );
-}
-
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({
+  message,
+  onApprovePlan,
+  onRejectPlan,
+}: {
+  message: Message;
+  onApprovePlan?: (planId: string) => void;
+  onRejectPlan?: (planId: string) => void;
+}) {
   const isUser = message.role === "user";
 
-  const parsed = useMemo(() => {
-    if (isUser) return null;
+  if (isUser) {
+    const hasImages = message.images && message.images.length > 0;
+    const hasText = message.content?.trim();
+    if (!hasImages && !hasText) return null;
 
-    const { segments, taskState } = parseMessageSegments(message.content);
-    if (taskState) {
-      return { mode: "tasks" as const, segments, taskState };
-    }
+    return (
+      <div className="flex gap-3 px-5 py-4">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted border border-border/60">
+          <User className="h-3.5 w-3.5 text-foreground/70" />
+        </div>
+        <div className="flex-1 min-w-0 pt-0.5 space-y-2">
+          {hasImages && (
+            <div className="flex flex-wrap gap-2">
+              {message.images!.map((img) => (
+                <img
+                  key={img.id}
+                  src={img.preview}
+                  alt="Uploaded"
+                  className="h-16 w-16 rounded-lg object-cover border border-border/60"
+                />
+              ))}
+            </div>
+          )}
+          {hasText && (
+            <p className="text-[14px] leading-relaxed text-foreground whitespace-pre-wrap break-words">
+              {message.content}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
-    const legacy = parseMessageContent(message.content);
-    return { mode: "legacy" as const, ...legacy };
-  }, [message.content, isUser]);
+  const hasContent = message.content.trim().length > 0;
+  const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
+  const hasPlan = !!message.plan;
+  const isEmpty = !hasContent && !hasToolCalls && !hasPlan;
 
   return (
-    <div
-      className={cn(
-        "flex gap-3 px-5 py-4",
-        isUser ? "bg-muted/40" : "bg-background"
-      )}
-    >
-      <div
-        className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-sm"
-        )}
-      >
-        {isUser ? (
-          <User className="h-3.5 w-3.5" />
-        ) : (
-          <Bot className="h-3.5 w-3.5" />
-        )}
+    <div className="flex gap-3 px-5 py-4">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary text-primary-foreground shadow-sm">
+        <Sparkles className="h-3.5 w-3.5" />
       </div>
-
       <div className="flex-1 min-w-0 space-y-3 pt-0.5">
-        {isUser && (
-          <p className="text-[14px] leading-relaxed text-foreground whitespace-pre-wrap break-words">
-            {message.content}
-          </p>
-        )}
-
-        {!isUser && parsed?.mode === "tasks" && (
-          <>
-            {parsed.segments.map((segment, index) => {
-              switch (segment.type) {
-                case "text":
+        {hasContent && (
+          <div className="prose-chat text-[14px] leading-relaxed text-foreground break-words">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => (
+                  <p className="mb-2 last:mb-0">{children}</p>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-semibold">{children}</strong>
+                ),
+                ul: ({ children }) => (
+                  <ul className="mb-2 ml-4 list-disc space-y-0.5 last:mb-0">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="mb-2 ml-4 list-decimal space-y-0.5 last:mb-0">{children}</ol>
+                ),
+                li: ({ children }) => (
+                  <li className="text-[14px]">{children}</li>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="mb-1.5 mt-3 text-[14px] font-semibold first:mt-0">{children}</h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="mb-1 mt-2.5 text-[14px] font-semibold first:mt-0">{children}</h3>
+                ),
+                code: ({ children, className }) => {
+                  const isBlock = className?.includes("language-");
+                  if (isBlock) {
+                    return (
+                      <code className="block overflow-x-auto rounded-md bg-accent/60 px-3 py-2 font-mono text-xs text-foreground/90">
+                        {children}
+                      </code>
+                    );
+                  }
                   return (
-                    <p
-                      key={index}
-                      className="text-[14px] leading-relaxed text-foreground whitespace-pre-wrap break-words"
-                    >
-                      {segment.content}
-                    </p>
+                    <code className="rounded bg-accent/60 px-1 py-0.5 font-mono text-[13px]">
+                      {children}
+                    </code>
                   );
-                case "task_list":
-                  return (
-                    <TaskProgress
-                      key={index}
-                      tasks={parsed.taskState.tasks}
-                      completedCount={parsed.taskState.completedCount}
-                      totalCount={parsed.taskState.totalCount}
-                    />
-                  );
-              }
-            })}
-            {message.isStreaming && <StreamingIndicator label="Working..." />}
-          </>
-        )}
-
-        {!isUser && parsed?.mode === "legacy" && (
-          <>
-            {parsed.text && (
-              <p className="text-[14px] leading-relaxed text-foreground whitespace-pre-wrap break-words">
-                {parsed.text}
-                {message.isStreaming && <StreamingDots />}
-              </p>
-            )}
-            {parsed.files.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {parsed.files.map((file, index) => (
-                  <div
-                    key={`${file.filename}-${index}`}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-accent/50 px-2.5 py-1 text-xs transition-colors hover:bg-accent"
+                },
+                pre: ({ children }) => (
+                  <pre className="mb-2 last:mb-0">{children}</pre>
+                ),
+                a: ({ children, href }) => (
+                  <a
+                    href={href}
+                    className="text-primary underline underline-offset-2"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    <FileCode className="h-3 w-3 text-muted-foreground/60" />
-                    <span className="font-mono text-muted-foreground">{file.filename}</span>
-                  </div>
-                ))}
-              </div>
+                    {children}
+                  </a>
+                ),
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+            {message.isStreaming && !hasToolCalls && (
+              <span className="inline-flex items-center gap-1 pl-0.5 align-middle">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60 [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60 [animation-delay:200ms]" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary/60 [animation-delay:400ms]" />
+              </span>
             )}
-            {!parsed.text && parsed.files.length === 0 && message.isStreaming && (
-              <StreamingIndicator label="Grinding..." />
-            )}
-          </>
+          </div>
         )}
 
-        {!isUser && !parsed && message.isStreaming && (
-          <StreamingIndicator label="Grinding..." />
+        {hasToolCalls && (
+          <AgentActivity toolCalls={message.toolCalls!} isStreaming={message.isStreaming} />
+        )}
+
+        {hasPlan && (
+          <ChangePlan
+            plan={message.plan!}
+            toolCalls={message.toolCalls}
+            isStreaming={message.isStreaming}
+            onApprove={() => onApprovePlan?.(message.plan!.plan_id)}
+            onReject={() => onRejectPlan?.(message.plan!.plan_id)}
+          />
+        )}
+
+        {isEmpty && message.isStreaming && (
+          <div className="flex items-center gap-2.5 py-1">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary/70" />
+            <span className="text-[13px] text-muted-foreground">Thinking...</span>
+          </div>
+        )}
+
+        {message.status === "error" && (
+          <div className="flex items-center gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+            <span className="text-[13px] text-destructive">
+              {message.error || "An error occurred"}
+            </span>
+          </div>
+        )}
+
+        {message.status === "cancelled" && (
+          <div className="flex items-center gap-2 rounded-md bg-muted/60 border border-border/60 px-3 py-2">
+            <StopCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="text-[13px] text-muted-foreground">
+              Generation stopped
+            </span>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-export function MessageList({ messages, className }: MessageListProps) {
+export function MessageList({
+  messages,
+  className,
+  onApprovePlan,
+  onRejectPlan,
+}: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -179,12 +200,12 @@ export function MessageList({ messages, className }: MessageListProps) {
       <div className={cn("flex flex-1 items-center justify-center", className)}>
         <div className="text-center space-y-3">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5">
-            <Bot className="h-6 w-6 text-primary/60" />
+            <Sparkles className="h-6 w-6 text-primary/60" />
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">What do you want to build?</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Describe your app and I'll generate the code for you
+              Describe your app and I&apos;ll generate the code
             </p>
           </div>
         </div>
@@ -194,9 +215,14 @@ export function MessageList({ messages, className }: MessageListProps) {
 
   return (
     <ScrollArea className={cn("flex-1", className)} ref={scrollRef}>
-      <div>
+      <div className="divide-y divide-border/40">
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble
+            key={message.id}
+            message={message}
+            onApprovePlan={onApprovePlan}
+            onRejectPlan={onRejectPlan}
+          />
         ))}
       </div>
       <div ref={bottomRef} className="h-4" />

@@ -9,7 +9,7 @@ import { useConversations, useProject, useUpdateProject } from "@/lib/api";
 import { useGenerate } from "../hooks/use-generate";
 import { MessageList } from "./message-list";
 import { PromptInput } from "./prompt-input";
-import type { Message } from "../types";
+import type { Message, ImageAttachment } from "../types";
 import type { ModelOption } from "@/components/molecules";
 
 interface ChatPanelProps {
@@ -25,16 +25,26 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
 
   const initialMessages = useMemo<Message[]>(() => {
     if (!conversations?.length) return [];
-    return conversations.map((msg) => ({
-      id: msg.uuid,
-      role: msg.role as "user" | "assistant",
-      content: msg.content,
-      createdAt: new Date(msg.created_on),
-    }));
+    return conversations
+      .filter((msg) => msg.content?.trim())
+      .map((msg) => ({
+        id: msg.uuid,
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+        createdAt: new Date(msg.created_on),
+      }));
   }, [conversations]);
 
-  const { messages, isGenerating, error, generate, stop, clearMessages } =
-    useGenerate({ projectId, initialMessages });
+  const {
+    messages,
+    isGenerating,
+    error,
+    generate,
+    stop,
+    clearMessages,
+    approvePlan,
+    rejectPlan,
+  } = useGenerate({ projectId, initialMessages });
 
   const handleEscapeStop = useCallback(
     (e: KeyboardEvent) => {
@@ -53,8 +63,8 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
 
   const selectedModelId = project?.default_model_id ?? null;
 
-  const handleSubmit = (prompt: string, modelId?: number) => {
-    generate({ prompt, modelId: modelId?.toString() });
+  const handleSubmit = (prompt: string, modelId?: number, images?: ImageAttachment[]) => {
+    generate({ prompt, modelId: modelId?.toString(), images });
   };
 
   const handleModelChange = (model: ModelOption) => {
@@ -99,7 +109,12 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <MessageList messages={messages} className="flex-1" />
+        <MessageList
+          messages={messages}
+          className="flex-1"
+          onApprovePlan={approvePlan}
+          onRejectPlan={rejectPlan}
+        />
       )}
 
       {/* Input */}

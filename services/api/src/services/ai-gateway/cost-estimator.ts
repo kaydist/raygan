@@ -59,7 +59,13 @@ export class CostEstimator {
     }
 
     for (const message of request.messages) {
-      totalTokens += this.countTokens(message.content, model);
+      const text = typeof message.content === "string"
+        ? message.content
+        : message.content
+            .filter((b): b is { type: "text"; text: string } => b.type === "text")
+            .map((b) => b.text)
+            .join("");
+      totalTokens += this.countTokens(text, model);
       totalTokens += 4;
     }
 

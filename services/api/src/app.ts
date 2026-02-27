@@ -34,8 +34,8 @@ export function createApp(): Express {
   );
 
   // Body parsing
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  app.use(express.json({ limit: "75mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "75mb" }));
 
   // Request context (adds requestId)
   app.use(requestContext);

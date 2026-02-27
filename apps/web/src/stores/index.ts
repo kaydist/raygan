@@ -22,6 +22,8 @@ export type {
 } from "./ui-store";
 
 export { useASTStore } from "./ast-store";
+
+export { useAgentStore } from "./agent-store";
 export type {
   ASTNode,
   ASTOperation,

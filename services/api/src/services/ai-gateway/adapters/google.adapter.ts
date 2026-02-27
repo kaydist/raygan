@@ -126,9 +126,15 @@ export class GoogleAdapter extends BaseAdapter {
     const contents: Content[] = [];
 
     for (const msg of request.messages) {
+      const text = typeof msg.content === "string"
+        ? msg.content
+        : msg.content
+            .filter((b): b is { type: "text"; text: string } => b.type === "text")
+            .map((b) => b.text)
+            .join("");
       contents.push({
         role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
+        parts: [{ text }],
       });
     }
 

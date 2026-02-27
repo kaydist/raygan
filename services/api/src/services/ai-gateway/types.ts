@@ -2,9 +2,53 @@ export type AIProvider = "anthropic" | "openai" | "xai" | "google" | "mistral" |
 
 export type MessageRole = "user" | "assistant" | "system";
 
+export interface TextBlock {
+  type: "text";
+  text: string;
+}
+
+export interface ToolUseBlock {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+export interface ToolResultBlock {
+  type: "tool_result";
+  tool_use_id: string;
+  content: string;
+  is_error?: boolean;
+}
+
+export interface ImageBlock {
+  type: "image";
+  source: {
+    type: "base64";
+    media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+    data: string;
+  };
+}
+
+export type MessageContentBlock = TextBlock | ToolUseBlock | ToolResultBlock | ImageBlock;
+
 export interface Message {
   role: MessageRole;
-  content: string;
+  content: string | MessageContentBlock[];
+}
+
+export function getMessageText(content: string | MessageContentBlock[]): string {
+  if (typeof content === "string") return content;
+  return content
+    .filter((b): b is TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("");
+}
+
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown>;
 }
 
 export interface GenerateRequest {
@@ -15,6 +59,7 @@ export interface GenerateRequest {
   max_tokens?: number;
   temperature?: number;
   stop_sequences?: string[];
+  tools?: ToolDefinition[];
   metadata?: Record<string, unknown>;
   signal?: AbortSignal;
 }
@@ -29,12 +74,19 @@ export interface GenerateResponse {
   generation_time_ms: number;
 }
 
+export interface StreamChunkToolUse {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
 export interface StreamChunk {
-  type: "text_delta" | "usage" | "done" | "error";
+  type: "text_delta" | "usage" | "done" | "error" | "tool_use_start" | "tool_use_delta" | "tool_use_end";
   content?: string;
   usage?: TokenUsage;
   error?: string;
-  finish_reason?: "stop" | "max_tokens" | "error";
+  finish_reason?: "stop" | "max_tokens" | "error" | "tool_use";
+  tool_use?: StreamChunkToolUse;
 }
 
 export interface TokenUsage {

@@ -42,7 +42,13 @@ export abstract class BaseAdapter implements AIAdapter {
     }
 
     const inputTokens = this.estimateTokenCount(
-      request.messages.map((m) => m.content).join(" "),
+      request.messages.map((m) => {
+        if (typeof m.content === "string") return m.content;
+        return m.content
+          .filter((b): b is { type: "text"; text: string } => b.type === "text")
+          .map((b) => b.text)
+          .join("");
+      }).join(" "),
     );
     const outputTokens = request.max_tokens || model.max_output_tokens;
 

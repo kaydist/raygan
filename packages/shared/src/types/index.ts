@@ -6,3 +6,6 @@ export * from './api.types';
 
 // AST types (Component AST structure)
 export * from './ast.types';
+
+// Agent types (agentic tool-use architecture)
+export * from './agent.types';

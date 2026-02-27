@@ -1,4 +1,4 @@
-import type { ASTNode, ASTOperation } from "@raygan/shared";
+import type { ASTNode, ASTOperation, AgentToolCall, AgentPlan } from "@raygan/shared";
 import { getAuthToken, logger } from "../utils";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -20,6 +20,12 @@ export interface CodeBlock {
   content: string;
 }
 
+export interface ToolResultData {
+  tool_use_id: string;
+  content: string;
+  is_error?: boolean;
+}
+
 export interface SSECallbacks {
   onText?: (content: string) => void;
   onCodeBlock?: (block: CodeBlock) => void;
@@ -36,6 +42,14 @@ export interface SSECallbacks {
   }) => void;
   onDone?: (data: { conversation_id: string; finish_reason: string }) => void;
   onError?: (error: { code: string; message: string }) => void;
+  onToolCall?: (toolCall: AgentToolCall) => void;
+  onToolResult?: (result: ToolResultData) => void;
+  onPlanProposed?: (plan: AgentPlan) => void;
+  onPlanApproved?: (data: { plan_id: string }) => void;
+  onPlanRejected?: (data: { plan_id: string }) => void;
+  onFileCreated?: (data: { path: string }) => void;
+  onFileModified?: (data: { path: string }) => void;
+  onFileDeleted?: (data: { path: string }) => void;
 }
 
 export async function createSSEStream(
@@ -178,6 +192,30 @@ function handleEvent(
       break;
     case "error":
       callbacks.onError?.(data as { code: string; message: string });
+      break;
+    case "tool_call":
+      callbacks.onToolCall?.(data as unknown as AgentToolCall);
+      break;
+    case "tool_result":
+      callbacks.onToolResult?.(data as unknown as ToolResultData);
+      break;
+    case "plan_proposed":
+      callbacks.onPlanProposed?.(data as unknown as AgentPlan);
+      break;
+    case "plan_approved":
+      callbacks.onPlanApproved?.(data as { plan_id: string });
+      break;
+    case "plan_rejected":
+      callbacks.onPlanRejected?.(data as { plan_id: string });
+      break;
+    case "file_created":
+      callbacks.onFileCreated?.(data as { path: string });
+      break;
+    case "file_modified":
+      callbacks.onFileModified?.(data as { path: string });
+      break;
+    case "file_deleted":
+      callbacks.onFileDeleted?.(data as { path: string });
       break;
     case "close":
       break;

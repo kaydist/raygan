@@ -3,6 +3,7 @@ import type { AuthenticatedRequest } from "../middleware/auth";
 import { logger } from "../config";
 import { ERROR_CODES } from "../constants";
 import { getAIGateway } from "../services/ai-gateway";
+import { getPlanApprovalGate } from "../services/ai-gateway/plan-approval-gate";
 import { AIProviderService } from "../services";
 import { GenerationService } from "../services/generation.service";
 
@@ -146,10 +147,51 @@ export async function streamGenerate(req: Request, res: Response): Promise<void>
   }
 }
 
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"]);
+const MAX_IMAGES = 5;
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+
 export async function generateForProject(req: Request, res: Response): Promise<void> {
   const authReq = req as AuthenticatedRequest;
   const projectId = req.params.projectId as string;
-  const { prompt, model_id, current_file, selected_code, max_tokens, temperature } = req.body;
+  const { prompt, model_id, current_file, selected_code, max_tokens, temperature, images: rawImages } = req.body;
+
+  const validatedImages: Array<{ media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp"; data: string }> = [];
+  if (Array.isArray(rawImages) && rawImages.length > 0) {
+    if (rawImages.length > MAX_IMAGES) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: `Maximum ${MAX_IMAGES} images allowed` },
+      });
+      return;
+    }
+
+    for (const img of rawImages) {
+      if (!img || typeof img.media_type !== "string" || typeof img.data !== "string") {
+        res.status(400).json({
+          data: null,
+          error: { code: ERROR_CODES.BAD_REQUEST, message: "Invalid image format" },
+        });
+        return;
+      }
+      if (!ALLOWED_IMAGE_TYPES.has(img.media_type)) {
+        res.status(400).json({
+          data: null,
+          error: { code: ERROR_CODES.BAD_REQUEST, message: `Unsupported image type: ${img.media_type}` },
+        });
+        return;
+      }
+      const sizeBytes = Math.ceil((img.data.length * 3) / 4);
+      if (sizeBytes > MAX_IMAGE_SIZE_BYTES) {
+        res.status(400).json({
+          data: null,
+          error: { code: ERROR_CODES.BAD_REQUEST, message: "Image exceeds 10MB limit" },
+        });
+        return;
+      }
+      validatedImages.push({ media_type: img.media_type, data: img.data });
+    }
+  }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -179,6 +221,7 @@ export async function generateForProject(req: Request, res: Response): Promise<v
       maxTokens: max_tokens,
       temperature,
       signal: abortController.signal,
+      images: validatedImages.length > 0 ? validatedImages : undefined,
     });
 
     for await (const event of stream) {
@@ -206,5 +249,69 @@ export async function generateForProject(req: Request, res: Response): Promise<v
   } finally {
     clearInterval(heartbeatInterval);
     res.end();
+  }
+}
+
+export async function approvePlan(req: Request, res: Response): Promise<void> {
+  try {
+    const planId = req.params.planId as string;
+    if (!planId) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "Plan ID is required" },
+      });
+      return;
+    }
+
+    const gate = getPlanApprovalGate();
+    const resolved = gate.resolve(planId, "approved");
+
+    if (!resolved) {
+      res.status(404).json({
+        data: null,
+        error: { code: "PLAN_NOT_FOUND", message: "Plan not found or already resolved" },
+      });
+      return;
+    }
+
+    res.json({ data: { plan_id: planId, status: "approved" }, error: null });
+  } catch (err) {
+    logger.error({ err }, "Approve plan failed");
+    res.status(500).json({
+      data: null,
+      error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },
+    });
+  }
+}
+
+export async function rejectPlan(req: Request, res: Response): Promise<void> {
+  try {
+    const planId = req.params.planId as string;
+    if (!planId) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "Plan ID is required" },
+      });
+      return;
+    }
+
+    const gate = getPlanApprovalGate();
+    const resolved = gate.resolve(planId, "rejected");
+
+    if (!resolved) {
+      res.status(404).json({
+        data: null,
+        error: { code: "PLAN_NOT_FOUND", message: "Plan not found or already resolved" },
+      });
+      return;
+    }
+
+    res.json({ data: { plan_id: planId, status: "rejected" }, error: null });
+  } catch (err) {
+    logger.error({ err }, "Reject plan failed");
+    res.status(500).json({
+      data: null,
+      error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },
+    });
   }
 }

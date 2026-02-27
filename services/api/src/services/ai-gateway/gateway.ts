@@ -268,6 +268,29 @@ export class AIGateway {
     return this.estimateCost(request, model);
   }
 
+  async *streamWithTools(request: GenerateRequest): AsyncIterable<StreamChunk> {
+    await this.ensureInitialized();
+
+    const model = await this.providerService.getModelById(request.model);
+    if (!model) {
+      yield { type: "error", error: `Model not found: ${request.model}` };
+      return;
+    }
+
+    const adapter = this.adapters.get(model.provider.slug);
+    if (!adapter) {
+      yield { type: "error", error: `Provider not configured: ${model.provider.slug}` };
+      return;
+    }
+
+    if (!("streamWithTools" in adapter)) {
+      yield { type: "error", error: `Provider ${model.provider.slug} does not support tool-use streaming` };
+      return;
+    }
+
+    yield* (adapter as AnthropicAdapter).streamWithTools(request, model);
+  }
+
   async *stream(request: GenerateRequest): AsyncIterable<StreamChunk> {
     await this.ensureInitialized();
 
