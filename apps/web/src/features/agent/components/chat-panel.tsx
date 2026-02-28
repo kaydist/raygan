@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useEffect, useCallback } from "react";
-import { AlertCircle, Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/atoms";
@@ -26,11 +26,13 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
   const initialMessages = useMemo<Message[]>(() => {
     if (!conversations?.length) return [];
     return conversations
-      .filter((msg) => msg.content?.trim())
+      .filter((msg) => msg.content?.trim() || msg.status === "error")
       .map((msg) => ({
-        id: msg.uuid,
+        id: String(msg.id),
         role: msg.role as "user" | "assistant",
-        content: msg.content,
+        content: msg.content || "",
+        status: msg.role === "assistant" && msg.status === "error" ? "error" as const : undefined,
+        modelId: msg.model_id?.toString(),
         createdAt: new Date(msg.created_on),
       }));
   }, [conversations]);
@@ -38,10 +40,10 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
   const {
     messages,
     isGenerating,
-    error,
     generate,
     stop,
     clearMessages,
+    retry,
     approvePlan,
     rejectPlan,
   } = useGenerate({ projectId, initialMessages });
@@ -95,14 +97,6 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
         )}
       </div>
 
-      {/* Error banner */}
-      {error && (
-        <div className="flex items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span className="flex-1">{error}</span>
-        </div>
-      )}
-
       {/* Messages */}
       {isLoadingHistory ? (
         <div className="flex flex-1 items-center justify-center">
@@ -114,6 +108,7 @@ export function ChatPanel({ projectId, className }: ChatPanelProps) {
           className="flex-1"
           onApprovePlan={approvePlan}
           onRejectPlan={rejectPlan}
+          onRetry={retry}
         />
       )}
 

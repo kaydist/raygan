@@ -8,6 +8,9 @@ const ASSET_EXTENSIONS = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"];
 
 export function transformProjectFilesToSnack(files: ProjectFile[]): SnackFiles {
   const snackFiles: SnackFiles = {};
+  const normalizedPaths = new Set(
+    files.filter((f) => isSupportedCodeFile(f.path)).map((f) => normalizeFilePath(f.path))
+  );
 
   for (const file of files) {
     const normalizedPath = normalizeFilePath(file.path);
@@ -20,11 +23,12 @@ export function transformProjectFilesToSnack(files: ProjectFile[]): SnackFiles {
     } else if (isSupportedCodeFile(file.path)) {
       snackFiles[normalizedPath] = {
         type: "CODE",
-        contents: file.content,
+        contents: transformLocalImports(file.content, normalizedPath, normalizedPaths),
       };
     }
   }
 
+  injectEntryShim(snackFiles);
   return snackFiles;
 }
 
@@ -36,7 +40,7 @@ export function transformFileTreeToSnack(
   const filePaths = new Set(normalizedPaths);
 
   for (const [path, content] of Object.entries(fileTree)) {
-    let normalizedPath = normalizeFilePath(path);
+    const normalizedPath = normalizeFilePath(path);
 
     if (isAssetFile(path)) {
       snackFiles[normalizedPath] = {
@@ -52,7 +56,49 @@ export function transformFileTreeToSnack(
     }
   }
 
+  injectEntryShim(snackFiles);
   return snackFiles;
+}
+
+function injectEntryShim(snackFiles: SnackFiles): void {
+  if (snackFiles["App.tsx"] || snackFiles["App.js"]) return;
+
+  const entryPath = detectEntryPath(snackFiles);
+  if (!entryPath) return;
+
+  snackFiles["App.tsx"] = {
+    type: "CODE",
+    contents: `export { default } from "./${entryPath}";\n`,
+  };
+}
+
+function detectEntryPath(snackFiles: SnackFiles): string | null {
+  const candidates = [
+    "app/_layout",
+    "app/index",
+    "src/app/_layout",
+    "src/app/index",
+    "index",
+  ];
+
+  const extensions = [".tsx", ".ts", ".jsx", ".js"];
+
+  for (const candidate of candidates) {
+    for (const ext of extensions) {
+      if (`${candidate}${ext}` in snackFiles) {
+        return candidate;
+      }
+    }
+  }
+
+  const screenFiles = Object.keys(snackFiles).filter(
+    (p) => p.startsWith("screens/") && extensions.some((ext) => p.endsWith(ext))
+  );
+  if (screenFiles.length === 1) {
+    return screenFiles[0]!.replace(/\.(tsx|ts|jsx|js)$/, "");
+  }
+
+  return null;
 }
 
 export function normalizeFilePath(path: string): string {
@@ -103,6 +149,9 @@ export function extractDependenciesFromCode(
 }
 
 function getPackageName(importPath: string): string {
+  if (importPath.startsWith("@/") || importPath.startsWith("src/")) {
+    return "";
+  }
   if (importPath.startsWith("@")) {
     const parts = importPath.split("/");
     return parts.slice(0, 2).join("/") || importPath;
@@ -120,54 +169,82 @@ function isBuiltInModule(moduleName: string): boolean {
   return BUILT_IN_MODULES.has(moduleName);
 }
 
-function transformLocalImports(code: string, _currentFilePath: string, projectFilePaths: Set<string>): string {
+function stripFileExtension(importPath: string): string {
+  return importPath.replace(/\.(ts|tsx|js|jsx)$/, "");
+}
+
+function computeRelativePath(fromDir: string, toPath: string): string {
+  if (!fromDir) return `./${toPath}`;
+
+  const fromParts = fromDir.split("/");
+  const toParts = toPath.split("/");
+
+  let common = 0;
+  while (
+    common < fromParts.length &&
+    common < toParts.length &&
+    fromParts[common] === toParts[common]
+  ) {
+    common++;
+  }
+
+  const ups = fromParts.length - common;
+  const remainder = toParts.slice(common).join("/");
+
+  return ups === 0 ? `./${remainder}` : `${"../".repeat(ups)}${remainder}`;
+}
+
+function transformLocalImports(code: string, currentFilePath: string, projectFilePaths: Set<string>): string {
   const importRegex = /(import\s+(?:[\w\s{},*]+\s+from\s+)?['"])([^'"]+)(['"])/g;
   const requireRegex = /(require\s*\(\s*['"])([^'"]+)(['"]\s*\))/g;
 
-  const resolveImportPath = (importPath: string): string | null => {
-    const hasRelativePrefix = importPath.startsWith("./") || importPath.startsWith("../");
-    const hasAbsolutePrefix = importPath.startsWith("/");
+  const currentDir = currentFilePath.includes("/")
+    ? currentFilePath.substring(0, currentFilePath.lastIndexOf("/"))
+    : "";
 
-    let basePath = importPath;
-    if (importPath.startsWith("./")) {
-      basePath = importPath.slice(2);
-    } else if (importPath.startsWith("/")) {
-      basePath = importPath.slice(1);
+  const resolveImportPath = (importPath: string): string | null => {
+    let normalized = importPath;
+
+    if (normalized.startsWith("@/")) {
+      normalized = normalized.slice(2);
+      return computeRelativePath(currentDir, stripFileExtension(normalized));
     }
 
+    if (normalized.startsWith("src/")) {
+      normalized = normalized.slice(4);
+      return computeRelativePath(currentDir, stripFileExtension(normalized));
+    }
+
+    const hasRelativePrefix = normalized.startsWith("./") || normalized.startsWith("../");
+    if (hasRelativePrefix) {
+      const stripped = stripFileExtension(normalized);
+      return stripped !== normalized ? stripped : null;
+    }
+
+    const hasAbsolutePrefix = normalized.startsWith("/");
+    let basePath = normalized;
+    if (hasAbsolutePrefix) {
+      basePath = normalized.slice(1);
+    }
+
+    basePath = stripFileExtension(basePath);
+
     if (projectFilePaths.has(basePath)) {
-      return hasRelativePrefix ? importPath : `./${basePath}`;
+      return `./${basePath}`;
     }
 
     const extensions = [".ts", ".tsx", ".js", ".jsx"];
     for (const ext of extensions) {
       if (projectFilePaths.has(`${basePath}${ext}`)) {
-        return hasRelativePrefix ? importPath : `./${basePath}`;
+        return `./${basePath}`;
       }
     }
 
     const indexFiles = ["index.ts", "index.tsx", "index.js", "index.jsx"];
     for (const indexFile of indexFiles) {
-      const indexPath = `${basePath}/${indexFile}`;
-      if (projectFilePaths.has(indexPath)) {
-        return `./${basePath}/index`;
+      if (projectFilePaths.has(`${basePath}/${indexFile}`)) {
+        return `./${basePath}`;
       }
-    }
-
-    const isDirectoryWithFiles = Array.from(projectFilePaths).some(
-      (p) => p.startsWith(`${basePath}/`)
-    );
-
-    if (isDirectoryWithFiles) {
-      for (const indexFile of indexFiles) {
-        if (projectFilePaths.has(`${basePath}/${indexFile}`)) {
-          return `./${basePath}/index`;
-        }
-      }
-    }
-
-    if (!hasRelativePrefix && !hasAbsolutePrefix && isDirectoryWithFiles) {
-      return `./${basePath}`;
     }
 
     return null;

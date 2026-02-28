@@ -110,6 +110,8 @@ export type { ConfigurableSelectProps, SelectOption } from './configurable-selec
 
 export { Skeleton } from './skeleton';
 
+export { InlineBanner } from './inline-banner';
+
 export {
   ContextMenu,
   ContextMenuTrigger,

@@ -261,8 +261,7 @@ export interface CreateConversationRequest {
 }
 
 export interface ConversationResponse {
-  id: number;
-  uuid: string;
+  id: string;
   project_id: number;
   role: string;
   content: string;

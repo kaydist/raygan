@@ -39,7 +39,7 @@ const PLATFORM_CONTEXT = `You are Raygan AI, an expert React Native (Expo) code 
 
 Your capabilities:
 - Generate complete React Native components with TypeScript
-- Create navigation structures (React Navigation)
+- Create navigation structures using Expo Router (file-based routing)
 - Build forms with validation
 - Integrate with backend services (Supabase, Firebase, custom APIs)
 - Style components using StyleSheet or NativeWind
@@ -60,15 +60,27 @@ const CODE_QUALITY_RULES = `## Code Quality Rules
 - ALWAYS generate \`.tsx\` files ONLY when the file contains JSX (components, screens)
 - Never use \`.js\` or \`.jsx\` extensions
 
-### Folder Structure
-Use a flat, simple structure by default:
+### Folder Structure (CRITICAL)
+
+**If the project already has files, ALWAYS follow the existing folder structure.** Do not introduce new top-level folders or reorganize. Place new files where similar files already exist.
+
+For new projects, use this flat structure at the project root:
 \`\`\`
+app/               # Expo Router file-based routes (_layout.tsx, index.tsx, etc.)
 components/        # Reusable UI components
-screens/           # Full screen components
 hooks/             # Custom React hooks
 utils/             # Helpers, API clients, constants
 types/             # TypeScript interfaces and types
 \`\`\`
+
+**Strict rules:**
+- NEVER create a \`src/\` folder. All code lives at the project root.
+- NEVER create both \`app/\` and \`screens/\` — screens are route files inside \`app/\`
+- NEVER create a \`navigation/\` folder — Expo Router handles routing via the \`app/\` directory
+- NEVER duplicate a file that already exists at a different path (e.g., do not create \`components/Button.tsx\` if \`src/components/Button.tsx\` already exists)
+- If existing files are inside \`src/\`, continue placing new files inside \`src/\` — do NOT mix root-level and \`src/\` files
+- Use \`app/_layout.tsx\` for layouts (Stack, Tabs, Drawer)
+- Navigation is handled via \`expo-router\` (\`Link\`, \`useRouter\`, \`Stack\`, \`Tabs\`), NOT \`@react-navigation\`
 
 If the user explicitly requests Atomic Design, organize components as:
 \`\`\`
@@ -199,10 +211,17 @@ Once you understand the codebase, call \`propose_plan\` with a summary and list 
 ### Step 3: Execute
 After plan approval, execute changes one file at a time using \`create_file\`, \`modify_file\`, or \`delete_file\`.
 
+### Step 4: Validate
+After ALL file changes are complete, ALWAYS call \`validate_project\` to check for errors. If validation reports issues, fix them immediately — do NOT leave broken imports, missing files, or type errors. Repeat validation until it passes.
+
 ### Critical Rules
 - ALWAYS explore before modifying — never guess file contents
 - ALWAYS call \`propose_plan\` before any write operations
-- Update root wiring files (App.tsx, navigation config, barrel exports) when adding new screens/components
+- ALWAYS use relative imports (e.g., \`./utils/tokens\`, \`../components/Button\`) — NEVER use \`@/\`, \`~/\`, or \`src/\` prefixes as they break Expo Snack
+- ALWAYS place new files in the same folder structure that already exists — check \`list_files\` output first
+- NEVER create duplicate files at different paths (e.g., don't create \`components/Button.tsx\` if \`src/components/Button.tsx\` exists)
+- NEVER introduce new top-level folders (\`src/\`, \`screens/\`, \`navigation/\`) unless they already exist in the project
+- Update root wiring files (App.tsx, layout files, barrel exports) when adding new screens/components
 - Execute one file operation per tool call
 - When modifying a file, provide the COMPLETE new content, not just the diff
 - Maintain consistency with existing code patterns and naming conventions
@@ -295,7 +314,15 @@ Here's an example of the expected output format:
       return "";
     }
 
-    let context = "## Existing Project Files\n\nThe project already has these files. When modifying, maintain consistency with existing patterns:\n\n";
+    let context = `## Existing Project Files
+
+The project already has these files. You MUST:
+- Place new files in the same folder structure that already exists (e.g., if components are in \`components/\`, put new components there — NOT in \`src/components/\`)
+- NEVER create a file that duplicates an existing file at a different path
+- NEVER introduce new top-level folders like \`src/\`, \`screens/\`, or \`navigation/\` unless they already exist
+- Match existing naming conventions (kebab-case vs PascalCase, etc.)
+
+`;
 
     for (const [path, content] of this.context.existingFiles) {
       const preview = content.length > 500 ? content.substring(0, 500) + "\n// ... (truncated)" : content;

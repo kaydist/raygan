@@ -131,6 +131,16 @@ export const AGENT_TOOLS: ToolDefinition[] = [
       required: ["path"],
     },
   },
+  {
+    name: "validate_project",
+    description:
+      "Validate the project for common errors after making changes. Checks for: missing imports, broken references between files, duplicate files, TypeScript type issues, and missing dependencies. ALWAYS call this after finishing all file changes.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
 ];
 
 export const READ_ONLY_TOOL_NAMES = new Set([

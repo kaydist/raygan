@@ -76,11 +76,18 @@ export async function createSSEStream(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    callbacks.onError?.({
-      code: error.error?.code || "GENERATION_FAILED",
-      message: error.error?.message || "Generation failed",
-    });
+    try {
+      const error = await response.json();
+      callbacks.onError?.({
+        code: error.error?.code || "GENERATION_FAILED",
+        message: error.error?.message || "Generation failed",
+      });
+    } catch {
+      callbacks.onError?.({
+        code: "GENERATION_FAILED",
+        message: `Request failed with status ${response.status}`,
+      });
+    }
     return;
   }
 
@@ -101,6 +108,7 @@ export async function createSSEStream(
   const decoder = new TextDecoder();
   let buffer = "";
   let currentEventType = "";
+  let receivedTerminalEvent = false;
 
   try {
     while (true) {
@@ -129,6 +137,9 @@ export async function createSSEStream(
 
           try {
             const parsed = JSON.parse(data);
+            if (currentEventType === "done" || currentEventType === "error") {
+              receivedTerminalEvent = true;
+            }
             handleEvent(currentEventType, parsed, callbacks);
             currentEventType = "";
           } catch (e) {
@@ -142,9 +153,19 @@ export async function createSSEStream(
         }
       }
     }
+
+    if (!receivedTerminalEvent && !options?.signal?.aborted) {
+      callbacks.onError?.({
+        code: "STREAM_CLOSED",
+        message: "Something went wrong. Please try again.",
+      });
+    }
   } catch {
     if (options?.signal?.aborted) return;
-    throw new Error("SSE stream read failed");
+    callbacks.onError?.({
+      code: "STREAM_FAILED",
+      message: "Connection lost. Please try again.",
+    });
   } finally {
     reader.releaseLock();
   }

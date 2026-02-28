@@ -225,8 +225,22 @@ export class GenerationService {
         }
 
         if (chunk.type === "error") {
-          yield { type: "error", data: { message: chunk.error || "Generation failed" } };
-          await this.conversationService.markError(userConversation.id, userId);
+          const errorMessage = chunk.error || "Generation failed";
+          try {
+            logger.info({ projectId, errorMessage }, "Creating error assistant conversation");
+            const errAssistant = await this.conversationService.createAssistantMessage(
+              { project_id: project.id, content: fullContent, model_id: modelConfig.id },
+              userId,
+            );
+            logger.info({ assistantId: errAssistant.id, uuid: errAssistant.uuid }, "Error assistant created, marking as error");
+            await this.conversationService.markError(errAssistant.id, userId);
+            await this.conversationService.markError(userConversation.id, userId);
+            await CacheService.invalidateConversationHistory(project.id);
+            logger.info({ projectId }, "Error conversation persisted successfully");
+          } catch (persistError) {
+            logger.error({ persistError, projectId }, "Failed to persist error conversation in stream");
+          }
+          yield { type: "error", data: { message: errorMessage } };
           return;
         }
       }
@@ -364,7 +378,20 @@ export class GenerationService {
       logger.error({ error, projectId, userId }, "Generation failed");
 
       if (userConversation) {
-        await this.conversationService.markError(userConversation.id, userId);
+        try {
+          const project = await this.projectService.findByUuid(projectId);
+          if (project && !assistantConversation) {
+            const errAssistant = await this.conversationService.createAssistantMessage(
+              { project_id: project.id, content: fullContent },
+              userId,
+            );
+            await this.conversationService.markError(errAssistant.id, userId);
+          }
+          await this.conversationService.markError(userConversation.id, userId);
+          if (project) await CacheService.invalidateConversationHistory(project.id);
+        } catch (persistError) {
+          logger.error({ persistError, projectId }, "Failed to persist error conversation");
+        }
       }
 
       yield {
@@ -436,6 +463,24 @@ export class GenerationService {
           fullTextContent += (event.data as { content: string }).content;
         }
 
+        if (event.type === "error") {
+          try {
+            logger.info({ projectId: project.uuid }, "Agent mode: persisting error conversation before yield");
+            const errAssistant = await this.conversationService.createAssistantMessage(
+              { project_id: project.id, content: fullTextContent, model_id: modelConfig.id },
+              userId,
+            );
+            await this.conversationService.markError(errAssistant.id, userId);
+            await this.conversationService.markError(userConversation.id, userId);
+            await CacheService.invalidateConversationHistory(project.id);
+            logger.info({ projectId: project.uuid }, "Agent mode: error conversation persisted");
+          } catch (persistError) {
+            logger.error({ persistError, projectId: project.uuid }, "Agent mode: failed to persist error conversation");
+          }
+          yield event;
+          return;
+        }
+
         yield event;
       }
 
@@ -466,7 +511,17 @@ export class GenerationService {
       };
     } catch (error) {
       logger.error({ error, projectId: project.uuid, userId }, "Agent mode generation failed");
-      await this.conversationService.markError(userConversation.id, userId);
+      try {
+        const errAssistant = await this.conversationService.createAssistantMessage(
+          { project_id: project.id, content: fullTextContent, model_id: modelConfig.id },
+          userId,
+        );
+        await this.conversationService.markError(errAssistant.id, userId);
+        await this.conversationService.markError(userConversation.id, userId);
+        await CacheService.invalidateConversationHistory(project.id);
+      } catch (persistError) {
+        logger.error({ persistError, projectId: project.uuid }, "Failed to persist error conversation");
+      }
       yield {
         type: "error",
         data: {

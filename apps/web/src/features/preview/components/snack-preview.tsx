@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback } from "react";
 import {
   Loader2,
-  AlertCircle,
   RefreshCw,
   QrCode,
   Monitor,
@@ -11,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/atoms";
+import { Button, InlineBanner } from "@/components/atoms";
 import { useSnackPreview } from "../hooks";
 import type { Platform, PreviewMode } from "../types";
 import { DeviceFrame } from "./device-frame";
@@ -154,27 +153,19 @@ export function SnackPreview({
       )}
 
       {error && (
-        <div className="flex items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span className="flex-1">{error}</span>
-        </div>
+        <InlineBanner
+          variant="error"
+          message={error}
+          className="rounded-none border-x-0 border-t-0"
+        />
       )}
 
       {hasErrors && (
-        <div className="border-b border-yellow-500/20 bg-yellow-500/10 px-4 py-2">
-          <div className="flex items-center gap-2 text-sm text-yellow-600">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>Compilation errors detected</span>
-          </div>
-          <ul className="mt-1 space-y-1 pl-6 text-xs text-yellow-600/80">
-            {errors.slice(0, 3).map((err, i) => (
-              <li key={i}>{err.message}</li>
-            ))}
-            {errors.length > 3 && (
-              <li>...and {errors.length - 3} more errors</li>
-            )}
-          </ul>
-        </div>
+        <InlineBanner
+          variant="warning"
+          message={`Compilation errors detected (${errors.length})`}
+          className="rounded-none border-x-0 border-t-0"
+        />
       )}
 
       <div className="min-h-0 flex-1 overflow-hidden bg-muted/30">

@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { FileCode2, Plus, RefreshCw, Lock, AlertCircle } from "lucide-react";
+import { FileCode2, Plus, RefreshCw, Lock } from "lucide-react";
 import dynamic from "next/dynamic";
 
 import { cn } from "@/lib/utils";
+import { InlineBanner } from "@/components/atoms";
 import { useUIStore, useProjectStore } from "@/stores";
 import { useASTSync } from "@/hooks";
 import { FileTabs } from "./file-tabs";
@@ -67,17 +68,20 @@ export function CodeEditorPanel({ className, readOnly = false }: CodeEditorPanel
       <FileTabs />
 
       {isPlanReadOnly && (
-        <div className="flex h-7 items-center gap-2 border-b border-yellow-500/20 bg-yellow-500/10 px-3 text-xs text-yellow-600">
-          <Lock className="h-3.5 w-3.5" />
-          <span>Free plan: Code editor is read-only. Upgrade to edit code directly.</span>
-        </div>
+        <InlineBanner
+          variant="warning"
+          message="Free plan: Code editor is read-only. Upgrade to edit code directly."
+          icon={Lock}
+          className="rounded-none border-x-0 border-t-0"
+        />
       )}
 
       {parseErrors.length > 0 && (
-        <div className="flex h-7 items-center gap-2 border-b border-destructive/20 bg-destructive/10 px-3 text-xs text-destructive">
-          <AlertCircle className="h-3.5 w-3.5" />
-          <span>{parseErrors[0]?.message}</span>
-        </div>
+        <InlineBanner
+          variant="error"
+          message={parseErrors[0]?.message ?? "Parse error"}
+          className="rounded-none border-x-0 border-t-0"
+        />
       )}
 
       {activeFileTab && breadcrumbs.length > 1 && (
