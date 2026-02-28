@@ -13,3 +13,4 @@ export { ModelSelector } from './model-selector';
 export type { ModelOption } from './model-selector';
 export { DisclosureSection } from './disclosure-section';
 export { EmptyState } from './empty-state';
+export { OrgSwitcher } from './org-switcher';

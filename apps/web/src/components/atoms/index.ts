@@ -129,3 +129,5 @@ export {
   ContextMenuSubTrigger,
   ContextMenuRadioGroup,
 } from './context-menu';
+
+export { PlanBadge } from './plan-badge';

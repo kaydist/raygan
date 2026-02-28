@@ -6,7 +6,7 @@ export { QUERY_KEYS } from "./query-keys";
 export { SHORTCUTS, formatShortcut } from "./keyboard-shortcuts";
 export type { ShortcutKey } from "./keyboard-shortcuts";
 
-export { THEME } from "./theme";
+export { THEME, PLAN_BADGE_COLORS, AVATAR_COLORS } from "./theme";
 
 export {
   DEFAULT_SETTINGS,

@@ -37,6 +37,7 @@ export {
   useVerifyEmail,
   useCurrentUser,
   useUpdateUser,
+  useSwitchOrganization,
   useOrganizations,
   useOrganization,
   useCreateOrganization,

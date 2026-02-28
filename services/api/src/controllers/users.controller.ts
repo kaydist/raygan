@@ -12,6 +12,8 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
     const authReq = req as AuthenticatedRequest;
     const user = authReq.dbUser;
 
+    const orgs = await organizationService.findAllByUserId(user.id);
+
     res.json({
       data: {
         id: user.uuid,
@@ -22,6 +24,19 @@ export async function getProfile(req: Request, res: Response): Promise<void> {
         avatar_url: user.avatar_url,
         onboarding_completed: user.onboarding_completed,
         activated_flag: user.activated_flag,
+        current_organization_id: user.current_organization?.uuid ?? null,
+        organizations: orgs.map((org) => ({
+          id: org.uuid,
+          uuid: org.uuid,
+          name: org.name,
+          slug: org.slug,
+          logo_url: org.logo_url,
+          plan: org.plan,
+          is_personal: org.is_personal,
+          role: org.role,
+          joined_at: org.joined_at,
+          created_on: org.created_on,
+        })),
         created_on: user.created_on,
       },
       error: null,

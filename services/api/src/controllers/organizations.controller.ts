@@ -21,6 +21,7 @@ export async function listOrganizations(
     res.json({
       data: organizations.map((org) => ({
         id: org.uuid,
+        uuid: org.uuid,
         name: org.name,
         slug: org.slug,
         logo_url: org.logo_url,
@@ -28,6 +29,7 @@ export async function listOrganizations(
         is_personal: org.is_personal,
         role: org.role,
         joined_at: org.joined_at,
+        created_on: org.created_on,
       })),
       error: null,
     });

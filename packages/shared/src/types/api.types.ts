@@ -190,6 +190,7 @@ export interface UserProfileResponse {
   avatar_url: string | null;
   activated_flag: boolean;
   onboarding_completed: boolean;
+  current_organization_id: string | null;
   organizations: OrganizationWithRole[];
   created_on: string;
 }
