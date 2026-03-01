@@ -110,6 +110,8 @@ export type { ConfigurableSelectProps, SelectOption } from './configurable-selec
 
 export { Skeleton } from './skeleton';
 
+export { InlineBanner } from './inline-banner';
+
 export {
   ContextMenu,
   ContextMenuTrigger,
@@ -127,3 +129,7 @@ export {
   ContextMenuSubTrigger,
   ContextMenuRadioGroup,
 } from './context-menu';
+
+export { PlanBadge } from './plan-badge';
+
+export { KeyValue } from './key-value';

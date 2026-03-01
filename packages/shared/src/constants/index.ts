@@ -9,6 +9,9 @@ export const ERROR_CODES = {
   INTERNAL_ERROR: "INTERNAL_ERROR",
   SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
   EMAIL_NOT_VERIFIED: "EMAIL_NOT_VERIFIED",
+  BUILD_LIMIT_EXCEEDED: "BUILD_LIMIT_EXCEEDED",
+  BUILD_NOT_FOUND: "BUILD_NOT_FOUND",
+  BUILD_PROVIDER_ERROR: "BUILD_PROVIDER_ERROR",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -36,4 +39,5 @@ export const SOCKET_EVENTS = {
   TERMINAL_OUTPUT: "terminal:output",
   PRESENCE_JOIN: "presence:join",
   PRESENCE_LEAVE: "presence:leave",
+  BUILD_STATUS: "build:status",
 } as const;

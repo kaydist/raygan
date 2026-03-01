@@ -52,4 +52,11 @@ export const queryKeys = {
     all: ["health"] as const,
     check: () => [...queryKeys.health.all, "check"] as const,
   },
+
+  builds: {
+    all: ["builds"] as const,
+    list: (projectId: string) => [...queryKeys.builds.all, "list", projectId] as const,
+    detail: (projectId: string, buildId: string) =>
+      [...queryKeys.builds.all, "detail", projectId, buildId] as const,
+  },
 } as const;

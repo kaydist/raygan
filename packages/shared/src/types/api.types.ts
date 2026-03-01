@@ -3,6 +3,8 @@
  * These types are used for HTTP communication between frontend and backend
  */
 
+import type { ProjectSettings } from "./project-config.types";
+
 // =============================================================================
 // API ENVELOPE
 // =============================================================================
@@ -190,6 +192,7 @@ export interface UserProfileResponse {
   avatar_url: string | null;
   activated_flag: boolean;
   onboarding_completed: boolean;
+  current_organization_id: string | null;
   organizations: OrganizationWithRole[];
   created_on: string;
 }
@@ -216,7 +219,7 @@ export interface UpdateProjectRequest {
   description?: string | null;
   slug?: string;
   framework_version?: string;
-  settings?: Record<string, unknown>;
+  settings?: Partial<ProjectSettings>;
   backend_provider?: string | null;
   backend_config?: string | null;
   default_model_id?: number | null;
@@ -241,7 +244,7 @@ export interface ProjectResponse {
 export interface ProjectDetailResponse extends ProjectResponse {
   ast_snapshot: Record<string, unknown>;
   file_tree: unknown[];
-  settings: Record<string, unknown>;
+  settings: ProjectSettings;
   backend_config: string | null;
   organization: {
     id: number;
@@ -261,8 +264,7 @@ export interface CreateConversationRequest {
 }
 
 export interface ConversationResponse {
-  id: number;
-  uuid: string;
+  id: string;
   project_id: number;
   role: string;
   content: string;

@@ -12,6 +12,15 @@ export interface ToolExecutorContext {
 
 export class ToolExecutor {
   private fileStorageService = new FileStorageService();
+  private projectFilesCache = new Map<number, Awaited<ReturnType<FileStorageService["findByProjectId"]>>>();
+
+  private async getProjectFiles(projectId: number) {
+    const cached = this.projectFilesCache.get(projectId);
+    if (cached) return cached;
+    const files = await this.fileStorageService.findByProjectId(projectId);
+    this.projectFilesCache.set(projectId, files);
+    return files;
+  }
 
   async execute(
     toolCall: AgentToolCall,
@@ -43,6 +52,8 @@ export class ToolExecutor {
           return await this.modifyFile(id, input as { path: string; content: string }, context);
         case "delete_file":
           return await this.deleteFile(id, input as { path: string }, context);
+        case "validate_project":
+          return await this.validateProject(id, context);
         default:
           return {
             tool_use_id: id,
@@ -64,7 +75,7 @@ export class ToolExecutor {
     toolUseId: string,
     context: ToolExecutorContext,
   ): Promise<AgentToolResult> {
-    const files = await this.fileStorageService.findByProjectId(context.projectId);
+    const files = await this.getProjectFiles(context.projectId);
     const listing = files.map((f) => ({
       path: f.path,
       language: f.language || "unknown",
@@ -104,7 +115,7 @@ export class ToolExecutor {
     input: { query: string },
     context: ToolExecutorContext,
   ): Promise<AgentToolResult> {
-    const files = await this.fileStorageService.findByProjectId(context.projectId);
+    const files = await this.getProjectFiles(context.projectId);
     const matches: string[] = [];
     const queryLower = input.query.toLowerCase();
 
@@ -161,6 +172,7 @@ export class ToolExecutor {
       },
       context.userId,
     );
+    this.projectFilesCache.delete(context.projectId);
 
     const sideEffect: AgentSideEffect = {
       type: "file_created",
@@ -191,6 +203,7 @@ export class ToolExecutor {
       },
       context.userId,
     );
+    this.projectFilesCache.delete(context.projectId);
 
     const sideEffect: AgentSideEffect = {
       type: "file_modified",
@@ -215,6 +228,7 @@ export class ToolExecutor {
       input.path,
       context.userId,
     );
+    this.projectFilesCache.delete(context.projectId);
 
     if (!deleted) {
       return {
@@ -233,6 +247,133 @@ export class ToolExecutor {
       tool_use_id: toolUseId,
       content: `File deleted: ${input.path}`,
       side_effects: [sideEffect],
+    };
+  }
+
+  private async validateProject(
+    toolUseId: string,
+    context: ToolExecutorContext,
+  ): Promise<AgentToolResult> {
+    const files = await this.fileStorageService.findByProjectId(context.projectId);
+    const errors: string[] = [];
+
+    const filePaths = new Set(files.map((f) => f.path));
+    const filesByName = new Map<string, string[]>();
+
+    for (const file of files) {
+      const name = file.path.split("/").pop() || file.path;
+      const existing = filesByName.get(name) || [];
+      existing.push(file.path);
+      filesByName.set(name, existing);
+    }
+
+    for (const [name, paths] of filesByName) {
+      if (paths.length > 1) {
+        errors.push(`DUPLICATE: "${name}" exists at multiple paths: ${paths.join(", ")}`);
+      }
+    }
+
+    const codeFiles = files.filter(
+      (f) => f.content && /\.(ts|tsx|js|jsx)$/.test(f.path)
+    );
+
+    for (const file of codeFiles) {
+      if (!file.content) continue;
+
+      const importRegex = /(?:import\s+.*?from\s+|require\s*\(\s*)['"]([^'"]+)['"]/g;
+      let match;
+
+      while ((match = importRegex.exec(file.content)) !== null) {
+        const importPath = match[1]!;
+
+        if (
+          !importPath.startsWith(".") &&
+          !importPath.startsWith("/") &&
+          !importPath.startsWith("@/") &&
+          !importPath.startsWith("src/")
+        ) {
+          continue;
+        }
+
+        if (importPath.startsWith("@/") || importPath.startsWith("src/")) {
+          errors.push(
+            `BAD_IMPORT: "${file.path}" uses alias import "${importPath}" — must use relative imports (./  ../) for Snack compatibility`
+          );
+          continue;
+        }
+
+        const fileDir = file.path.includes("/")
+          ? file.path.substring(0, file.path.lastIndexOf("/"))
+          : "";
+
+        let resolved: string;
+        if (importPath.startsWith("./")) {
+          resolved = fileDir ? `${fileDir}/${importPath.slice(2)}` : importPath.slice(2);
+        } else if (importPath.startsWith("../")) {
+          const parts = fileDir.split("/");
+          let remainder = importPath;
+          while (remainder.startsWith("../")) {
+            parts.pop();
+            remainder = remainder.slice(3);
+          }
+          resolved = parts.length > 0 ? `${parts.join("/")}/${remainder}` : remainder;
+        } else {
+          continue;
+        }
+
+        resolved = resolved.replace(/\.(ts|tsx|js|jsx)$/, "");
+
+        const extensions = [".ts", ".tsx", ".js", ".jsx"];
+        const found =
+          filePaths.has(resolved) ||
+          extensions.some((ext) => filePaths.has(`${resolved}${ext}`)) ||
+          extensions.some((ext) => filePaths.has(`${resolved}/index${ext}`));
+
+        if (!found) {
+          errors.push(
+            `MISSING_IMPORT: "${file.path}" imports "${importPath}" but no matching file found`
+          );
+        }
+      }
+
+      const hasJSX = /<[A-Z]/.test(file.content);
+      if (hasJSX && file.path.endsWith(".ts") && !file.path.endsWith(".d.ts")) {
+        errors.push(
+          `WRONG_EXTENSION: "${file.path}" contains JSX but uses .ts — should be .tsx`
+        );
+      }
+
+      if (file.path.endsWith(".tsx") || file.path.endsWith(".ts")) {
+        if (/:\s*any\b/.test(file.content)) {
+          const lineNum = file.content.substring(0, file.content.search(/:\s*any\b/)).split("\n").length;
+          errors.push(
+            `TYPE_WARNING: "${file.path}:${lineNum}" uses "any" type — use a specific type or "unknown"`
+          );
+        }
+      }
+    }
+
+    const hasAppEntry = filePaths.has("App.tsx") || filePaths.has("App.js");
+    const hasRouterLayout = filePaths.has("app/_layout.tsx") || filePaths.has("app/_layout.js");
+    const hasRouterIndex = filePaths.has("app/index.tsx") || filePaths.has("app/index.js");
+
+    if (!hasAppEntry && !hasRouterLayout && !hasRouterIndex) {
+      errors.push(
+        "MISSING_ENTRY: No App.tsx or app/_layout.tsx found — the app has no entry point and will crash"
+      );
+    }
+
+    if (errors.length === 0) {
+      return {
+        tool_use_id: toolUseId,
+        content: "Validation passed. No issues found.",
+      };
+    }
+
+    return {
+      tool_use_id: toolUseId,
+      content: `Validation found ${errors.length} issue(s):\n\n${errors.join("\n")}\n\nFix these issues before finishing.`,
+      is_error: true,
     };
   }
 

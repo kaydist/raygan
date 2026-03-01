@@ -9,3 +9,9 @@ export * from './ast.types';
 
 // Agent types (agentic tool-use architecture)
 export * from './agent.types';
+
+// Build types (build & publish)
+export * from './build.types';
+
+// Project config types (app.json, env variables)
+export * from './project-config.types';

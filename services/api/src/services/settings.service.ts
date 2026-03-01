@@ -263,8 +263,15 @@ export class SettingsService {
     category: SettingCategory,
     organizationId?: number
   ): Promise<SettingResponse[]> {
-    const settings = await this.repository.findByCategory(category, organizationId);
-    return settings.map((s) => this.toResponse(s));
+    const cacheKey = CACHE_KEYS.settings.byCategory(category, organizationId);
+    return CacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const settings = await this.repository.findByCategory(category, organizationId);
+        return settings.map((s) => this.toResponse(s));
+      },
+      CACHE_TTL.SETTINGS_CATEGORY
+    );
   }
 
   async create(input: CreateSettingInput, userId?: number): Promise<Setting> {

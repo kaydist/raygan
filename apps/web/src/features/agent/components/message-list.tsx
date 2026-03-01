@@ -2,10 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { User, Sparkles, Loader2, AlertCircle, StopCircle } from "lucide-react";
+import { User, Sparkles, Loader2, StopCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/atoms";
+import { ScrollArea, InlineBanner } from "@/components/atoms";
 import type { Message } from "../types";
 import { AgentActivity } from "./agent-activity";
 import { ChangePlan } from "./change-plan";
@@ -15,16 +15,19 @@ interface MessageListProps {
   className?: string;
   onApprovePlan?: (planId: string) => void;
   onRejectPlan?: (planId: string) => void;
+  onRetry?: (messageId: string) => void;
 }
 
 function MessageBubble({
   message,
   onApprovePlan,
   onRejectPlan,
+  onRetry,
 }: {
   message: Message;
   onApprovePlan?: (planId: string) => void;
   onRejectPlan?: (planId: string) => void;
+  onRetry?: (messageId: string) => void;
 }) {
   const isUser = message.role === "user";
 
@@ -161,21 +164,19 @@ function MessageBubble({
         )}
 
         {message.status === "error" && (
-          <div className="flex items-center gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
-            <span className="text-[13px] text-destructive">
-              {message.error || "An error occurred"}
-            </span>
-          </div>
+          <InlineBanner
+            variant="error"
+            message="Response was interrupted. Please try again."
+            action={onRetry ? { label: "Retry", onClick: () => onRetry(message.id) } : undefined}
+          />
         )}
 
         {message.status === "cancelled" && (
-          <div className="flex items-center gap-2 rounded-md bg-muted/60 border border-border/60 px-3 py-2">
-            <StopCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="text-[13px] text-muted-foreground">
-              Generation stopped
-            </span>
-          </div>
+          <InlineBanner
+            variant="warning"
+            message="Generation stopped"
+            icon={StopCircle}
+          />
         )}
       </div>
     </div>
@@ -187,6 +188,7 @@ export function MessageList({
   className,
   onApprovePlan,
   onRejectPlan,
+  onRetry,
 }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -222,6 +224,7 @@ export function MessageList({
             message={message}
             onApprovePlan={onApprovePlan}
             onRejectPlan={onRejectPlan}
+            onRetry={onRetry}
           />
         ))}
       </div>

@@ -2,7 +2,7 @@ export { queryKeys } from "./query-keys";
 
 export { useLogin, useRegister, useGoogleOAuth, useLogout, useForgotPassword, useResetPassword, useResendVerification, useVerifyEmail } from "./use-auth";
 
-export { useCurrentUser, useUpdateUser } from "./use-users";
+export { useCurrentUser, useUpdateUser, useSwitchOrganization } from "./use-users";
 
 export {
   useOrganizations,

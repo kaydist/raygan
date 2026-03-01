@@ -18,6 +18,7 @@ export {
   emitPreviewReload,
 } from "./handlers/generation-sync";
 export { emitASTSnapshot, emitASTError } from "./handlers/ast-sync";
+export { emitBuildStatus } from "./handlers/build-sync";
 
 let io: Server<ClientToServerEvents, ServerToClientEvents> | null = null;
 

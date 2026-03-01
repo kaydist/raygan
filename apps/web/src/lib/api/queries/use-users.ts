@@ -21,3 +21,16 @@ export function useUpdateUser() {
     },
   });
 }
+
+export function useSwitchOrganization() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (organizationId: string) => usersApi.switchOrganization(organizationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.me() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.all });
+    },
+  });
+}

@@ -1,7 +1,11 @@
 "use client";
 
 import { Code, Blocks, X, TerminalSquare } from "lucide-react";
-import { Panel, PanelGroup, ImperativePanelHandle } from "react-resizable-panels";
+import {
+  Panel,
+  PanelGroup,
+  ImperativePanelHandle,
+} from "react-resizable-panels";
 import { useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 
@@ -22,11 +26,12 @@ const TerminalPanel = dynamic(
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     ),
-  }
+  },
 );
 
 function EditorTabs() {
-  const { openFileTabs, activeFileTab, closeFileTab, setActiveFileTab } = useUIStore();
+  const { openFileTabs, activeFileTab, closeFileTab, setActiveFileTab } =
+    useUIStore();
 
   if (openFileTabs.length === 0) {
     return null;
@@ -45,10 +50,13 @@ function EditorTabs() {
               "group flex h-7 items-center gap-1.5 rounded-t-sm px-3 text-sm text-white",
               isActive
                 ? "bg-[#1e1e1e] "
-                : "text-muted-foreground hover:bg-[#2d2d2d]"
+                : "text-muted-foreground hover:bg-[#2d2d2d]",
             )}
           >
-            <button onClick={() => setActiveFileTab(path)} className="truncate max-w-[120px]">
+            <button
+              onClick={() => setActiveFileTab(path)}
+              className="truncate max-w-[120px]"
+            >
               {name}
             </button>
             <button
@@ -113,11 +121,21 @@ function BuilderCanvas() {
         </div>
       </div>
       <div className="flex items-center justify-center gap-2 border-t border-border/50 bg-[#1a1a1a] p-2">
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground"
+        >
           <span className="text-sm">−</span>
         </Button>
-        <span className="min-w-[50px] text-center text-xs text-muted-foreground">75%</span>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
+        <span className="min-w-[50px] text-center text-xs text-muted-foreground">
+          75%
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground"
+        >
           <span className="text-sm">+</span>
         </Button>
       </div>
@@ -154,57 +172,24 @@ function CodeWorkspace() {
 
   return (
     <div className="flex h-full flex-col bg-[#1e1e1e]">
-      <PanelGroup direction="vertical" className="flex-1">
-        <Panel defaultSize={isTerminalOpen ? 70 : 100} minSize={30}>
-          <PanelGroup direction="horizontal" className="h-full">
-            <Panel defaultSize={25} minSize={15} maxSize={40}>
-              <div className="flex h-full flex-col border-r border-border">
-                <div className="flex-1 overflow-hidden">
-                  <FileExplorer />
-                </div>
-              </div>
-            </Panel>
-            <ResizeHandle />
-            <Panel defaultSize={75} minSize={40}>
-              <div className="flex h-full flex-col">
-                <EditorTabs />
-                <div className="flex-1 overflow-hidden">
-                  <EditorPanel />
-                </div>
-              </div>
-            </Panel>
-          </PanelGroup>
+      <PanelGroup direction="horizontal" className="flex-1">
+        <Panel defaultSize={25} minSize={15} maxSize={40}>
+          <div className="flex h-full flex-col border-r border-border">
+            <div className="flex-1 overflow-hidden">
+              <FileExplorer />
+            </div>
+          </div>
         </Panel>
-        <ResizeHandle orientation="horizontal" />
-        <Panel
-          ref={terminalPanelRef}
-          defaultSize={isTerminalOpen ? 30 : 0}
-          minSize={0}
-          collapsible
-          collapsedSize={0}
-          onCollapse={() => {
-            if (isTerminalOpen) toggleTerminal();
-          }}
-          onExpand={() => {
-            if (!isTerminalOpen) toggleTerminal();
-          }}
-        >
-          <TerminalPanel />
+        <ResizeHandle />
+        <Panel defaultSize={75} minSize={40}>
+          <div className="flex h-full flex-col">
+            <EditorTabs />
+            <div className="flex-1 overflow-hidden">
+              <EditorPanel />
+            </div>
+          </div>
         </Panel>
       </PanelGroup>
-      <div className="flex h-6 items-center justify-between border-t border-border bg-[#252526] px-2">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-            onClick={handleToggleTerminal}
-          >
-            <TerminalSquare className="h-3.5 w-3.5" />
-            Terminal
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -4,19 +4,34 @@ import { logger } from "../config";
 export const CACHE_TTL = {
   SETTINGS: 300,
   SETTINGS_PUBLIC: 600,
+  SETTINGS_CATEGORY: 300,
   PROJECT_FILES: 60,
   PROJECT_FILE_TREE: 120,
+  PROJECT_ACCESS: 300,
   AI_MODELS: 3600,
   USER_SESSION: 1800,
+  AUTH_USER: 300,
+  DB_USER: 600,
+  CONVERSATION_HISTORY: 30,
 } as const;
 
 export const CACHE_KEYS = {
+  auth: {
+    supabaseUser: (tokenHash: string) => `auth:supabase:${tokenHash}`,
+    dbUser: (authUserId: string) => `auth:dbuser:${authUserId}`,
+  },
   settings: {
     global: () => "settings:global",
     public: () => "settings:public",
     org: (orgId: number) => `settings:org:${orgId}`,
     bySlug: (slug: string, orgId?: number) =>
       orgId ? `settings:slug:${slug}:org:${orgId}` : `settings:slug:${slug}`,
+    byCategory: (category: string, orgId?: number) =>
+      orgId ? `settings:cat:${category}:org:${orgId}` : `settings:cat:${category}`,
+  },
+  project: {
+    byUuid: (uuid: string) => `project:uuid:${uuid}`,
+    access: (userId: number, projectId: number) => `project:${projectId}:access:${userId}`,
   },
   projectFiles: {
     all: (projectId: number) => `project:${projectId}:files`,
@@ -27,10 +42,16 @@ export const CACHE_KEYS = {
     tree: (projectId: number) => `project:${projectId}:tree`,
     snack: (projectId: number) => `project:${projectId}:snack`,
   },
+  conversation: {
+    history: (projectId: number) => `conversation:history:${projectId}`,
+  },
   aiModels: {
     all: () => "ai:models",
     enabled: () => "ai:models:enabled",
     byProvider: (providerId: number) => `ai:models:provider:${providerId}`,
+    byModelId: (modelId: string) => `ai:models:mid:${modelId}`,
+    byPrimaryId: (id: number) => `ai:models:pid:${id}`,
+    default: () => "ai:models:default",
   },
 } as const;
 
@@ -109,6 +130,7 @@ export class CacheService {
   static async invalidateSettings(orgId?: number): Promise<void> {
     await this.delete(CACHE_KEYS.settings.global());
     await this.delete(CACHE_KEYS.settings.public());
+    await this.deletePattern("settings:cat:*");
 
     if (orgId) {
       await this.delete(CACHE_KEYS.settings.org(orgId));
@@ -118,6 +140,31 @@ export class CacheService {
     }
 
     logger.debug({ orgId }, "Settings cache invalidated");
+  }
+
+  static async invalidateAuthUser(authUserId: string): Promise<void> {
+    await this.delete(CACHE_KEYS.auth.dbUser(authUserId));
+    logger.debug({ authUserId }, "Auth user cache invalidated");
+  }
+
+  static async invalidateProjectAccess(projectId: number): Promise<void> {
+    await this.deletePattern(`project:${projectId}:access:*`);
+    logger.debug({ projectId }, "Project access cache invalidated");
+  }
+
+  static async invalidateUserProjectAccess(userId: number): Promise<void> {
+    await this.deletePattern(`project:*:access:${userId}`);
+    logger.debug({ userId }, "User project access cache invalidated");
+  }
+
+  static async invalidateConversationHistory(projectId: number): Promise<void> {
+    await this.delete(CACHE_KEYS.conversation.history(projectId));
+    logger.debug({ projectId }, "Conversation history cache invalidated");
+  }
+
+  static async invalidateProject(uuid: string): Promise<void> {
+    await this.delete(CACHE_KEYS.project.byUuid(uuid));
+    logger.debug({ uuid }, "Project cache invalidated");
   }
 
   static async invalidateProjectFiles(projectId: number): Promise<void> {
@@ -147,7 +194,10 @@ export class CacheService {
   static async invalidateAIModels(): Promise<void> {
     await this.delete(CACHE_KEYS.aiModels.all());
     await this.delete(CACHE_KEYS.aiModels.enabled());
+    await this.delete(CACHE_KEYS.aiModels.default());
     await this.deletePattern("ai:models:provider:*");
+    await this.deletePattern("ai:models:mid:*");
+    await this.deletePattern("ai:models:pid:*");
 
     logger.debug("AI models cache invalidated");
   }

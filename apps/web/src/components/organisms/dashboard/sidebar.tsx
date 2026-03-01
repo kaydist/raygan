@@ -1,14 +1,8 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import {
-  Clock,
-  FileText,
-  Star,
-  LayoutTemplate,
-  ChevronDown,
-  FolderOpen,
-} from "lucide-react";
+import { Clock, FileText, Star, LayoutTemplate, Archive } from "lucide-react";
+import type { OrganizationWithRole } from "@raygan/shared";
 import { Logo, ScrollArea, Separator } from "@/components/atoms";
 import {
   NavItem,
@@ -16,18 +10,14 @@ import {
   SearchBar,
   CreditDisplay,
   UserMenu,
+  OrgSwitcher,
 } from "@/components/molecules";
 import { cn } from "@/lib/utils";
 
-interface Team {
-  id: string;
-  name: string;
-  isExpanded?: boolean;
-}
-
 interface SidebarProps {
-  teams?: Team[];
-  currentTeamId?: string;
+  organizations: OrganizationWithRole[];
+  currentOrgId?: string;
+  onSwitchOrg: (orgId: string) => void;
   user: {
     name: string;
     email?: string;
@@ -38,16 +28,21 @@ interface SidebarProps {
     used: number;
     total: number;
   };
+  draftCount?: number;
+  archivedCount?: number;
   onSearch?: () => void;
   onLogout?: () => void;
   className?: string;
 }
 
 export function Sidebar({
-  teams = [],
-  currentTeamId: _currentTeamId,
+  organizations,
+  currentOrgId,
+  onSwitchOrg,
   user,
   credits,
+  draftCount,
+  archivedCount,
   onSearch,
   onLogout,
   className,
@@ -71,6 +66,14 @@ export function Sidebar({
       </div>
 
       <div className="px-3">
+        <OrgSwitcher
+          organizations={organizations}
+          currentOrgId={currentOrgId}
+          onSwitch={onSwitchOrg}
+        />
+      </div>
+
+      <div className="px-3 pt-3">
         <SearchBar onFocus={onSearch} />
       </div>
 
@@ -86,7 +89,7 @@ export function Sidebar({
             icon={FileText}
             label="Drafts"
             href="/dashboard/drafts"
-            count={5}
+            count={draftCount}
             isActive={pathname === "/dashboard/drafts"}
           />
           <NavItem
@@ -101,30 +104,14 @@ export function Sidebar({
             href="/dashboard/templates"
             isActive={pathname === "/dashboard/templates"}
           />
+          <NavItem
+            icon={Archive}
+            label="Archived"
+            href="/dashboard/archived"
+            count={archivedCount}
+            isActive={pathname === "/dashboard/archived"}
+          />
         </NavSection>
-
-        <Separator className="my-4" />
-
-        {teams.map((team) => (
-          <NavSection key={team.id}>
-            <div className="flex items-center gap-2 px-3 py-2">
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              <span className="flex-1 text-sm font-medium">{team.name}</span>
-            </div>
-            <NavItem
-              icon={FileText}
-              label="Drafts"
-              href={`/dashboard/team/${team.id}/drafts`}
-              isActive={pathname === `/dashboard/team/${team.id}/drafts`}
-            />
-            <NavItem
-              icon={FolderOpen}
-              label="All projects"
-              href={`/dashboard/team/${team.id}/projects`}
-              isActive={pathname === `/dashboard/team/${team.id}/projects`}
-            />
-          </NavSection>
-        ))}
       </ScrollArea>
 
       <div className="mt-auto space-y-3 p-3">

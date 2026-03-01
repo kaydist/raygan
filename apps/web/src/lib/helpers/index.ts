@@ -36,3 +36,5 @@ export {
   sanitizeInput,
   sanitizeHtml,
 } from "./validation-helpers";
+
+export { getAvatarColor, getOrgUuid } from "./organization-helpers";

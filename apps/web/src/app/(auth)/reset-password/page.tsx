@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, KeyRound, Loader2 } from "lucide-react";
 import { useResetPassword } from "@/lib/api";
-import { Button, Heading, Paragraph } from "@/components/atoms";
+import { Button, Heading, Paragraph, InlineBanner } from "@/components/atoms";
 import { InputField } from "@/components/molecules";
 import { validatePassword } from "@/lib/helpers";
 
@@ -99,9 +99,7 @@ function ResetPasswordContent() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
-        )}
+        {error && <InlineBanner variant="error" message={error} />}
 
         <InputField
           label="New password"

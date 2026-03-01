@@ -39,6 +39,7 @@ export interface Message {
   toolCalls?: ToolCallActivity[];
   plan?: AgentPlanState;
   images?: ImageAttachment[];
+  modelId?: string;
   createdAt: Date;
 }
 

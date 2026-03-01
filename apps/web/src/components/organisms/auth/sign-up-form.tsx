@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { RegisterRequest } from '@raygan/shared';
-import { Button, Heading, Paragraph } from '@/components/atoms';
+import { Button, Heading, Paragraph, InlineBanner } from '@/components/atoms';
 import { GoogleOAuthButton, GitHubOAuthButton, InputField, OrDivider } from '@/components/molecules';
 import { validatePassword } from '@/lib/helpers';
 
@@ -79,11 +79,7 @@ export function SignUpForm({
       <OrDivider />
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
+        {error && <InlineBanner variant="error" message={error} />}
 
         <div className="grid grid-cols-2 gap-4">
           <InputField

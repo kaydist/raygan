@@ -37,13 +37,13 @@ export const spacing = {
 
 ### Create counter screen
 
-\`\`\`tsx filename="App.tsx"
+\`\`\`tsx filename="app/index.tsx"
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { colors, spacing } from "./utils/tokens";
+import { colors, spacing } from "../utils/tokens";
 
-export default function App() {
+export default function HomeScreen() {
   const [count, setCount] = useState(0);
 
   return (
@@ -210,16 +210,16 @@ const styles = StyleSheet.create({
 
 ### Build main App screen
 
-\`\`\`tsx filename="App.tsx"
+\`\`\`tsx filename="app/index.tsx"
 import { useState, useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { TodoItem } from "./components/TodoItem";
-import { colors } from "./utils/tokens";
-import type { Todo } from "./types/todo";
+import { TodoItem } from "../components/TodoItem";
+import { colors } from "../utils/tokens";
+import type { Todo } from "../types/todo";
 
-export default function App() {
+export default function HomeScreen() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [input, setInput] = useState("");
 
@@ -299,7 +299,7 @@ export const CALCULATOR_EXAMPLE: FewShotExample = {
   userMessage: "Build a calculator app",
   assistantResponse: `I'll create a functional calculator app with a clean design.
 
-\`\`\`tsx filename="App.tsx"
+\`\`\`tsx filename="app/index.tsx"
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { StatusBar } from "expo-status-bar";

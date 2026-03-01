@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { useAgentStore } from "@/stores/agent-store";
@@ -33,16 +33,21 @@ export function useGenerate({
     startGeneration,
     stop,
     clearMessages,
+    retry: storeRetry,
     approvePlan,
     rejectPlan,
   } = store;
 
+  const hasLoadedHistory = useRef(false);
+
   useEffect(() => {
+    hasLoadedHistory.current = false;
     setProjectId(projectId);
   }, [projectId, setProjectId]);
 
   useEffect(() => {
-    if (initialMessages.length > 0 && !streamingState.isGenerating) {
+    if (!hasLoadedHistory.current && initialMessages.length > 0 && !streamingState.isGenerating) {
+      hasLoadedHistory.current = true;
       setMessages(initialMessages);
     }
   }, [initialMessages, setMessages, streamingState.isGenerating]);
@@ -54,12 +59,17 @@ export function useGenerate({
     [startGeneration, queryClient],
   );
 
+  const retry = useCallback(() => {
+    storeRetry(queryClient);
+  }, [storeRetry, queryClient]);
+
   return {
     messages,
     streamingState,
     generate,
     stop,
     clearMessages,
+    retry,
     isGenerating: streamingState.isGenerating,
     error: streamingState.error,
     pendingPlan,

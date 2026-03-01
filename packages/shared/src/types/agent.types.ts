@@ -5,7 +5,8 @@ export type AgentToolName =
   | "propose_plan"
   | "create_file"
   | "modify_file"
-  | "delete_file";
+  | "delete_file"
+  | "validate_project";
 
 export type AgentSSEEventType =
   | "text"

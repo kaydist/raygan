@@ -13,6 +13,7 @@ import {
   AIModel,
   CreditUsage,
   Setting,
+  Build,
 } from "./entities";
 
 const baseOptions: DataSourceOptions = {
@@ -31,6 +32,7 @@ const baseOptions: DataSourceOptions = {
     AIModel,
     CreditUsage,
     Setting,
+    Build,
   ],
   migrations: [],
   subscribers: [],

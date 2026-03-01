@@ -4,6 +4,7 @@ export { PanelHeader } from "./panel-header";
 export { RightPanel } from "./right-panel";
 export { StatusBar } from "./status-bar";
 export { BottomPanel } from "./bottom-panel";
+export { ActivityBar } from "./activity-bar";
 export { LAYOUT_STORAGE_KEY, defaultLayout, getStoredLayout, storeLayout } from "./constants";
 export type { LayoutState } from "./constants";
 

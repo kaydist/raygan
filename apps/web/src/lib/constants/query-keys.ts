@@ -20,4 +20,8 @@ export const QUERY_KEYS = {
   backends: ["backends"] as const,
   backendSchema: (projectId: string) =>
     ["project", projectId, "backend", "schema"] as const,
+
+  // Builds
+  builds: (projectId: string) => ["builds", projectId] as const,
+  build: (projectId: string, buildId: string) => ["build", projectId, buildId] as const,
 } as const;

@@ -7,6 +7,7 @@ import { getAIGateway, PromptBuilder, ResponseParser } from "./ai-gateway";
 import { runAgentLoop } from "./ai-gateway/agent-loop";
 import type { CodeBlock } from "./ai-gateway/response-parser";
 import { parseAIResponse } from "./ast-engine";
+import { CacheService, CACHE_KEYS, CACHE_TTL } from "../lib";
 import type { ASTNode, ASTOperation } from "@raygan/shared";
 import type { Project, AIModel } from "../db";
 import type { Message as GatewayMessage, MessageContentBlock } from "./ai-gateway/types";
@@ -125,12 +126,13 @@ export class GenerationService {
 
     try {
       const hasImages = images && images.length > 0;
-      if ((!prompt || prompt.trim().length === 0) && !hasImages) {
+      const safePrompt = prompt || "";
+      if (safePrompt.trim().length === 0 && !hasImages) {
         yield { type: "error", data: { message: "Prompt cannot be empty", code: "INVALID_PROMPT" } };
         return;
       }
 
-      if (prompt.length > 50000) {
+      if (safePrompt.length > 50000) {
         yield { type: "error", data: { message: "Prompt too long (max 50000 characters)", code: "PROMPT_TOO_LONG" } };
         return;
       }
@@ -141,14 +143,15 @@ export class GenerationService {
         return;
       }
 
-      const access = await this.projectService.checkAccess(userId, project.id);
+      const access = await this.projectService.checkAccessWithProject(userId, project);
       if (!access) {
         yield { type: "error", data: { message: "Access denied", code: "FORBIDDEN" } };
         return;
       }
 
+      const conversationContent = safePrompt.trim() || (hasImages ? "[Image attached]" : "");
       userConversation = await this.conversationService.create(
-        { project_id: project.id, content: prompt, role: "user" },
+        { project_id: project.id, content: conversationContent, role: "user" },
         userId
       );
 
@@ -222,8 +225,22 @@ export class GenerationService {
         }
 
         if (chunk.type === "error") {
-          yield { type: "error", data: { message: chunk.error || "Generation failed" } };
-          await this.conversationService.markError(userConversation.id, userId);
+          const errorMessage = chunk.error || "Generation failed";
+          try {
+            logger.info({ projectId, errorMessage }, "Creating error assistant conversation");
+            const errAssistant = await this.conversationService.createAssistantMessage(
+              { project_id: project.id, content: fullContent, model_id: modelConfig.id },
+              userId,
+            );
+            logger.info({ assistantId: errAssistant.id, uuid: errAssistant.uuid }, "Error assistant created, marking as error");
+            await this.conversationService.markError(errAssistant.id, userId);
+            await this.conversationService.markError(userConversation.id, userId);
+            await CacheService.invalidateConversationHistory(project.id);
+            logger.info({ projectId }, "Error conversation persisted successfully");
+          } catch (persistError) {
+            logger.error({ persistError, projectId }, "Failed to persist error conversation in stream");
+          }
+          yield { type: "error", data: { message: errorMessage } };
           return;
         }
       }
@@ -337,6 +354,7 @@ export class GenerationService {
       }
 
       await this.conversationService.markCompleted(userConversation.id, userId);
+      await CacheService.invalidateConversationHistory(project.id);
 
       yield {
         type: "usage",
@@ -360,7 +378,20 @@ export class GenerationService {
       logger.error({ error, projectId, userId }, "Generation failed");
 
       if (userConversation) {
-        await this.conversationService.markError(userConversation.id, userId);
+        try {
+          const project = await this.projectService.findByUuid(projectId);
+          if (project && !assistantConversation) {
+            const errAssistant = await this.conversationService.createAssistantMessage(
+              { project_id: project.id, content: fullContent },
+              userId,
+            );
+            await this.conversationService.markError(errAssistant.id, userId);
+          }
+          await this.conversationService.markError(userConversation.id, userId);
+          if (project) await CacheService.invalidateConversationHistory(project.id);
+        } catch (persistError) {
+          logger.error({ persistError, projectId }, "Failed to persist error conversation");
+        }
       }
 
       yield {
@@ -432,6 +463,24 @@ export class GenerationService {
           fullTextContent += (event.data as { content: string }).content;
         }
 
+        if (event.type === "error") {
+          try {
+            logger.info({ projectId: project.uuid }, "Agent mode: persisting error conversation before yield");
+            const errAssistant = await this.conversationService.createAssistantMessage(
+              { project_id: project.id, content: fullTextContent, model_id: modelConfig.id },
+              userId,
+            );
+            await this.conversationService.markError(errAssistant.id, userId);
+            await this.conversationService.markError(userConversation.id, userId);
+            await CacheService.invalidateConversationHistory(project.id);
+            logger.info({ projectId: project.uuid }, "Agent mode: error conversation persisted");
+          } catch (persistError) {
+            logger.error({ persistError, projectId: project.uuid }, "Agent mode: failed to persist error conversation");
+          }
+          yield event;
+          return;
+        }
+
         yield event;
       }
 
@@ -451,6 +500,7 @@ export class GenerationService {
       );
 
       await this.conversationService.markCompleted(userConversation.id, userId);
+      await CacheService.invalidateConversationHistory(project.id);
 
       yield {
         type: "done",
@@ -461,7 +511,17 @@ export class GenerationService {
       };
     } catch (error) {
       logger.error({ error, projectId: project.uuid, userId }, "Agent mode generation failed");
-      await this.conversationService.markError(userConversation.id, userId);
+      try {
+        const errAssistant = await this.conversationService.createAssistantMessage(
+          { project_id: project.id, content: fullTextContent, model_id: modelConfig.id },
+          userId,
+        );
+        await this.conversationService.markError(errAssistant.id, userId);
+        await this.conversationService.markError(userConversation.id, userId);
+        await CacheService.invalidateConversationHistory(project.id);
+      } catch (persistError) {
+        logger.error({ persistError, projectId: project.uuid }, "Failed to persist error conversation");
+      }
       yield {
         type: "error",
         data: {
@@ -517,17 +577,32 @@ export class GenerationService {
     projectId: number
   ): Promise<Array<{ role: "user" | "assistant"; content: string }>> {
     try {
-      const { items } = await this.conversationService.findAllByProjectId(projectId, {
-        status: "completed",
-        limit: 10,
-      });
+      return await CacheService.getOrSet(
+        CACHE_KEYS.conversation.history(projectId),
+        async () => {
+          const { items } = await this.conversationService.findAllByProjectId(projectId, {
+            status: "completed",
+            limit: 10,
+          });
 
-      return items
-        .filter((msg) => msg.role === "user" || msg.role === "assistant")
-        .map((msg) => ({
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-        }));
+          const filtered = items
+            .filter((msg) => (msg.role === "user" || msg.role === "assistant") && msg.content?.trim());
+
+          const deduped: typeof filtered = [];
+          for (const msg of filtered) {
+            if (deduped.length > 0 && deduped[deduped.length - 1]!.role === msg.role) {
+              continue;
+            }
+            deduped.push(msg);
+          }
+
+          return deduped.map((msg) => ({
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+          }));
+        },
+        CACHE_TTL.CONVERSATION_HISTORY
+      );
     } catch (error) {
       logger.warn({ error, projectId }, "Failed to fetch conversation history");
       return [];

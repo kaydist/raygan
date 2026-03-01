@@ -12,6 +12,7 @@ export {
   organizationsApi,
   settingsApi,
   healthApi,
+  buildsApi,
 } from "./routes";
 
 export type {
@@ -37,6 +38,7 @@ export {
   useVerifyEmail,
   useCurrentUser,
   useUpdateUser,
+  useSwitchOrganization,
   useOrganizations,
   useOrganization,
   useCreateOrganization,

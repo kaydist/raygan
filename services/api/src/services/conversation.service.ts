@@ -1,5 +1,6 @@
 import { AppDataSource, Conversation, OrganizationMember, Project } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
+import { CacheService } from "../lib";
 import type { ConversationStatus } from "../db/entities/conversation.entity";
 
 export class ConversationService {
@@ -41,10 +42,12 @@ export class ConversationService {
     data: { project_id: number; content: string; role?: "user" | "assistant" | "system" },
     createdBy: number
   ) {
-    return this.conversations.create(
+    const result = await this.conversations.create(
       { ...data, role: data.role ?? "user", status: "active" as ConversationStatus },
       createdBy
     );
+    await CacheService.invalidateConversationHistory(data.project_id);
+    return result;
   }
 
   async createAssistantMessage(
@@ -60,10 +63,12 @@ export class ConversationService {
     },
     createdBy: number
   ) {
-    return this.conversations.create(
+    const result = await this.conversations.create(
       { ...data, role: "assistant", status: "completed" as ConversationStatus },
       createdBy
     );
+    await CacheService.invalidateConversationHistory(data.project_id);
+    return result;
   }
 
   async update(id: number, data: Partial<Conversation>, updatedBy?: number) {

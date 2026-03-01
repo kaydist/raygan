@@ -3,6 +3,7 @@ import { createApp } from "./app";
 import { env, logger, initializeRedis, closeRedis } from "./config";
 import { initializeDatabase, closeDatabase } from "./db";
 import { setupSocketServer, closeSocketServer } from "./socket";
+import { startBuildWorker, closeBuildWorker, closeQueues } from "./jobs";
 
 async function main() {
   await initializeDatabase();
@@ -12,6 +13,7 @@ async function main() {
   const httpServer = createServer(app);
 
   setupSocketServer(httpServer);
+  startBuildWorker();
 
   httpServer.listen(env.PORT, env.BIND_HOST, () => {
     logger.info(
@@ -24,6 +26,8 @@ async function main() {
   const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}, shutting down gracefully...`);
     await closeSocketServer();
+    await closeBuildWorker();
+    await closeQueues();
     await closeRedis();
     await closeDatabase();
     process.exit(0);

@@ -25,3 +25,13 @@ export {
   type SettingVisibility,
   type SettingValueType,
 } from "./setting.entity";
+
+// Build & Publish
+export {
+  Build,
+  type BuildStatusType,
+  type BuildPlatformType,
+  type BuildProfileType,
+  type BuildDistributionType,
+  type BuildProviderType,
+} from "./build.entity";

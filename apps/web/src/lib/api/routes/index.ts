@@ -35,3 +35,5 @@ export type { HealthCheckResponse } from "./health";
 
 export { exportsApi } from "./exports";
 export type { ExportOptions } from "./exports";
+
+export { buildsApi } from "./builds";

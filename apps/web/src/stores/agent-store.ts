@@ -35,6 +35,7 @@ interface AgentActions {
   ) => void;
   stop: () => void;
   clearMessages: () => void;
+  retry: (queryClient: QueryClient) => void;
   approvePlan: (planId: string) => Promise<void>;
   rejectPlan: (planId: string) => Promise<void>;
 }
@@ -70,11 +71,15 @@ export const useAgentStore = create<AgentState & AgentActions>()(
     },
 
     setMessages: (messages) => {
-      if (!get().streamingState.isGenerating) {
-        set((s) => {
-          s.messages = messages;
-        });
-      }
+      const state = get();
+      if (state.streamingState.isGenerating) return;
+      const hasSessionMessages = state.messages.some(
+        (m) => m.status === "error" || m.status === "streaming" || m.status === "cancelled",
+      );
+      if (hasSessionMessages) return;
+      set((s) => {
+        s.messages = messages;
+      });
     },
 
     startGeneration: (prompt, modelId, queryClient, images) => {
@@ -86,6 +91,7 @@ export const useAgentStore = create<AgentState & AgentActions>()(
         role: "user",
         content: prompt,
         images: images && images.length > 0 ? images : undefined,
+        modelId,
         createdAt: new Date(),
       };
 
@@ -306,6 +312,39 @@ export const useAgentStore = create<AgentState & AgentActions>()(
         s.pendingPlan = null;
       });
       streamingMessageId = null;
+    },
+
+    retry: (queryClient) => {
+      const { messages, startGeneration } = get();
+      const lastErrorIdx = [...messages]
+        .reverse()
+        .findIndex((m) => m.role === "assistant" && m.status === "error");
+      if (lastErrorIdx === -1) return;
+
+      const errorIdx = messages.length - 1 - lastErrorIdx;
+      const erroredMsg = messages[errorIdx];
+
+      let userMsg: Message | undefined;
+      for (let i = errorIdx - 1; i >= 0; i--) {
+        const msg = messages[i];
+        if (msg && msg.role === "user") {
+          userMsg = msg;
+          break;
+        }
+      }
+      if (!userMsg) return;
+
+      set((s) => {
+        s.messages.splice(errorIdx, 1);
+        s.streamingState.error = null;
+      });
+
+      startGeneration(
+        userMsg.content,
+        userMsg.modelId || erroredMsg?.modelId,
+        queryClient,
+        userMsg.images,
+      );
     },
 
     clearMessages: () => {
