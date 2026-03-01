@@ -102,7 +102,7 @@ export function DeployActions({
           </div>
           <div className="px-6 py-4">
             <BuildHistory
-              builds={builds}
+              builds={builds.splice(0, 3)}
               onCancel={onCancelBuild}
               cancellingBuildId={cancellingBuildId}
               isLoading={isLoadingBuilds}
