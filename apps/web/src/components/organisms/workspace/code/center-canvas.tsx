@@ -1,13 +1,7 @@
 "use client";
 
-import { Code, Blocks, X, TerminalSquare } from "lucide-react";
-import {
-  Panel,
-  PanelGroup,
-  ImperativePanelHandle,
-} from "react-resizable-panels";
-import { useRef, useCallback } from "react";
-import dynamic from "next/dynamic";
+import { Code, Blocks, X } from "lucide-react";
+import { Panel, PanelGroup } from "react-resizable-panels";
 
 import { useUIStore, useProjectStore } from "@/stores";
 import { Button } from "@/components/atoms";
@@ -16,18 +10,6 @@ import { cn } from "@/lib/utils";
 
 import { FileExplorer } from "./file-explorer";
 import { ResizeHandle } from "../resize-handle";
-
-const TerminalPanel = dynamic(
-  () => import("@/features/terminal").then((mod) => mod.TerminalPanel),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full items-center justify-center bg-[#1e1e1e]">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    ),
-  },
-);
 
 function EditorTabs() {
   const { openFileTabs, activeFileTab, closeFileTab, setActiveFileTab } =
@@ -154,22 +136,6 @@ function FileExplorerPanel() {
 }
 
 function CodeWorkspace() {
-  const terminalPanelRef = useRef<ImperativePanelHandle>(null);
-  const isTerminalOpen = useUIStore((s) => s.isTerminalOpen);
-  const toggleTerminal = useUIStore((s) => s.toggleTerminal);
-
-  const handleToggleTerminal = useCallback(() => {
-    const panel = terminalPanelRef.current;
-    if (!panel) return;
-
-    if (isTerminalOpen) {
-      panel.collapse();
-    } else {
-      panel.expand();
-    }
-    toggleTerminal();
-  }, [isTerminalOpen, toggleTerminal]);
-
   return (
     <div className="flex h-full flex-col bg-[#1e1e1e]">
       <PanelGroup direction="horizontal" className="flex-1">
