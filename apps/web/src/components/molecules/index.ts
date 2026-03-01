@@ -14,3 +14,6 @@ export type { ModelOption } from './model-selector';
 export { DisclosureSection } from './disclosure-section';
 export { EmptyState } from './empty-state';
 export { OrgSwitcher } from './org-switcher';
+export { ImageUpload } from './image-upload';
+export type { ImageUploadProps } from './image-upload';
+export { ACCEPTED_IMAGE_TYPES, MAX_FILE_SIZE } from './image-upload';

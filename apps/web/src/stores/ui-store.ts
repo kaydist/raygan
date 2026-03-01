@@ -35,6 +35,7 @@ export interface Modals {
   commandPalette: ModalState;
   shortcuts: ModalState;
   confirm: ModalState & { title?: string; message?: string; onConfirm?: () => void };
+  buildHistory: ModalState;
 }
 
 interface UIState {
@@ -117,6 +118,7 @@ const defaultModals: Modals = {
   commandPalette: { isOpen: false },
   shortcuts: { isOpen: false },
   confirm: { isOpen: false },
+  buildHistory: { isOpen: false },
 };
 
 const initialState: UIState = {

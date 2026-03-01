@@ -4,7 +4,7 @@ import { use } from "react";
 
 import { WorkspaceLayout, WorkspaceToolbar } from "@/components/organisms";
 import { useASTSocketSync } from "@/hooks";
-import { BuildModal } from "@/features/deploy";
+import { BuildModal, BuildHistoryModal } from "@/features/deploy";
 import { ProjectConfigModal } from "@/features/project";
 
 interface WorkspacePageProps {
@@ -18,13 +18,10 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
 
   return (
     <>
-      <WorkspaceToolbar
-        projectName={`Project ${projectId}`}
-        isConnected={isConnected}
-        isSyncing={isSyncing}
-      />
+      <WorkspaceToolbar isConnected={isConnected} isSyncing={isSyncing} />
       <WorkspaceLayout projectId={projectId} />
       <BuildModal />
+      <BuildHistoryModal />
       <ProjectConfigModal />
     </>
   );

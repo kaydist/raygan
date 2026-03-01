@@ -131,3 +131,5 @@ export {
 } from './context-menu';
 
 export { PlanBadge } from './plan-badge';
+
+export { KeyValue } from './key-value';

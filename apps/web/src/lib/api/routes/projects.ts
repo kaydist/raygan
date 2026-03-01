@@ -43,17 +43,13 @@ export const projectsApi = {
     await axiosInstance.delete(`/api/v1/projects/${uuid}`);
   },
 
-  archive: async (uuid: string): Promise<ProjectResponse> => {
-    const response = await axiosInstance.patch(`/api/v1/projects/${uuid}`, {
-      status: "archived" as ProjectStatus,
-    });
+  archive: async (uuid: string): Promise<{ success: boolean }> => {
+    const response = await axiosInstance.post(`/api/v1/projects/${uuid}/archive`);
     return extractData(response);
   },
 
-  unarchive: async (uuid: string): Promise<ProjectResponse> => {
-    const response = await axiosInstance.patch(`/api/v1/projects/${uuid}`, {
-      status: "draft" as ProjectStatus,
-    });
+  unarchive: async (uuid: string): Promise<{ success: boolean }> => {
+    const response = await axiosInstance.post(`/api/v1/projects/${uuid}/unarchive`);
     return extractData(response);
   },
 

@@ -12,3 +12,6 @@ export * from './agent.types';
 
 // Build types (build & publish)
 export * from './build.types';
+
+// Project config types (app.json, env variables)
+export * from './project-config.types';

@@ -19,7 +19,7 @@ interface WorkspaceLayoutProps {
 }
 
 export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
-  const { activeMode, canvasZoom } = useUIStore();
+  const { activeMode } = useUIStore();
   const [mounted, setMounted] = useState(false);
   const [layout, setLayout] = useState<LayoutState>(defaultLayout);
 
@@ -65,11 +65,10 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
     );
   }
 
-  const zoom = Math.round(canvasZoom * 100);
 
   return (
     <div className="flex min-h-0 flex-1 flex-row">
-      <ActivityBar zoom={zoom} />
+      <ActivityBar />
 
       <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
         {activeMode === "agent" && (

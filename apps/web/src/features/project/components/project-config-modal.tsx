@@ -1,19 +1,24 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import type { DragEvent, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Settings,
   Plus,
   Trash2,
-  Upload,
-  Sparkles,
   ClipboardCopy,
-  Image as ImageIcon,
   X,
+  Loader2,
 } from "lucide-react";
+import type { ProjectAppConfig, ProjectEnvVariable, ProjectSettings } from "@raygan/shared";
 
 import { useUIStore, useProjectStore } from "@/stores";
+import {
+  useUpdateProject,
+  useArchiveProject,
+  useUnarchiveProject,
+  useDeleteProject,
+} from "@/lib/api/queries";
 import {
   Dialog,
   DialogContent,
@@ -36,10 +41,72 @@ import {
   ScrollArea,
   Textarea,
 } from "@/components/atoms";
-import { cn } from "@/lib/utils";
+import { ImageUpload } from "@/components/molecules";
 
-const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+interface DeleteConfirmDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  projectName: string;
+  isDeleting: boolean;
+}
+
+function DeleteConfirmDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  projectName,
+  isDeleting,
+}: DeleteConfirmDialogProps) {
+  const [confirmText, setConfirmText] = useState("");
+  const isMatch = confirmText === projectName;
+
+  useEffect(() => {
+    if (isOpen) setConfirmText("");
+  }, [isOpen]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-destructive">Delete Project</DialogTitle>
+          <DialogDescription>
+            This action is permanent and cannot be undone. All project data,
+            files, builds, and environment variables will be deleted.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-3 py-2">
+          <p className="text-sm text-muted-foreground">
+            Type <span className="font-semibold text-foreground">{projectName}</span> to confirm.
+          </p>
+          <Input
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder={projectName}
+            className="h-9 text-sm"
+            autoFocus
+          />
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onConfirm}
+            disabled={!isMatch || isDeleting}
+          >
+            {isDeleting && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+            Delete Project
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 interface EnvVariable {
   id: string;
@@ -61,155 +128,39 @@ interface AppConfig {
   packageName: string;
 }
 
-interface ImageUploadProps {
-  label: string;
-  preview: string | null;
-  onFileSelect: (file: File) => void;
-  onClear: () => void;
-  description: string;
-  id: string;
+interface GeneralTabProps {
+  config: AppConfig;
+  onUpdateField: (field: keyof AppConfig, value: string | null) => void;
+  onArchive: () => void;
+  onDelete: () => void;
+  isArchiving: boolean;
+  isDeleting: boolean;
+  isArchived: boolean;
+  projectName: string;
 }
 
-function ImageUpload({
-  label,
-  preview,
-  onFileSelect,
-  onClear,
-  description,
-  id,
-}: ImageUploadProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleFile = useCallback(
-    (file: File) => {
-      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) return;
-      if (file.size > MAX_FILE_SIZE) return;
-      onFileSelect(file);
-    },
-    [onFileSelect],
-  );
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      setIsDragging(false);
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
-    },
-    [handleFile],
-  );
-
-  const handleChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) handleFile(file);
-      if (inputRef.current) inputRef.current.value = "";
-    },
-    [handleFile],
-  );
-
-  return (
-    <FormField id={id} label={label} description={description}>
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        className={cn(
-          "flex flex-col items-center gap-3 rounded-lg border border-dashed border-border p-4 transition-colors sm:flex-row sm:gap-4",
-          isDragging && "border-primary bg-primary/5",
-        )}
-      >
-        {preview ? (
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
-            <img
-              src={preview}
-              alt={label}
-              className="h-full w-full object-cover"
-            />
-            <button
-              onClick={onClear}
-              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-border bg-muted">
-            <ImageIcon className="h-6 w-6 text-muted-foreground/50" />
-          </div>
-        )}
-
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1.5 text-xs"
-              onClick={() => inputRef.current?.click()}
-            >
-              <Upload className="h-3 w-3" />
-              {preview ? "Change" : "Upload"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5 text-xs text-muted-foreground"
-            >
-              <Sparkles className="h-3 w-3" />
-              Generate
-            </Button>
-          </div>
-          <p className="text-[10px] text-muted-foreground">
-            Drag & drop or click to upload
-          </p>
-        </div>
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPTED_IMAGE_TYPES.join(",")}
-          onChange={handleChange}
-          className="hidden"
-        />
-      </div>
-    </FormField>
-  );
-}
-
-function GeneralTab() {
-  const currentProject = useProjectStore((s) => s.currentProject);
-
-  const [config, setConfig] = useState<AppConfig>({
-    name: currentProject?.name ?? "My App",
-    slug: currentProject?.slug ?? "my-app",
-    version: "1.0.0",
-    sdkVersion: currentProject?.framework_version ?? "51.0.0",
-    orientation: "portrait",
-    iconPreview: null,
-    splashPreview: null,
-    scheme: currentProject?.slug ?? "",
-    bundleIdentifier: "",
-    packageName: "",
-  });
-
-  const updateField = (field: keyof AppConfig, value: string | null) => {
-    setConfig((prev) => ({ ...prev, [field]: value }));
-  };
-
+function GeneralTab({
+  config,
+  onUpdateField,
+  onArchive,
+  onDelete,
+  isArchiving,
+  isDeleting,
+  isArchived,
+  projectName,
+}: GeneralTabProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const handleImageSelect =
     (field: "iconPreview" | "splashPreview") => (file: File) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        updateField(field, e.target?.result as string);
+        onUpdateField(field, e.target?.result as string);
       };
       reader.readAsDataURL(file);
     };
 
   return (
+    <>
     <ScrollArea className="h-[min(420px,60vh)]">
       <div className="flex flex-col gap-5 p-1 pr-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -221,7 +172,7 @@ function GeneralTab() {
             <Input
               id="project-name"
               value={config.name}
-              onChange={(e) => updateField("name", e.target.value)}
+              onChange={(e) => onUpdateField("name", e.target.value)}
               className="h-8 text-sm"
               placeholder="My App"
             />
@@ -235,7 +186,7 @@ function GeneralTab() {
             <Input
               id="project-slug"
               value={config.slug}
-              onChange={(e) => updateField("slug", e.target.value)}
+              onChange={(e) => onUpdateField("slug", e.target.value)}
               className="h-8 text-sm"
               placeholder="my-app"
             />
@@ -251,7 +202,7 @@ function GeneralTab() {
             <Input
               id="ios-bundle"
               value={config.bundleIdentifier}
-              onChange={(e) => updateField("bundleIdentifier", e.target.value)}
+              onChange={(e) => onUpdateField("bundleIdentifier", e.target.value)}
               className="h-8 text-sm font-mono"
               placeholder="com.example.myapp"
             />
@@ -265,7 +216,7 @@ function GeneralTab() {
             <Input
               id="android-package"
               value={config.packageName}
-              onChange={(e) => updateField("packageName", e.target.value)}
+              onChange={(e) => onUpdateField("packageName", e.target.value)}
               className="h-8 text-sm font-mono"
               placeholder="com.example.myapp"
             />
@@ -279,7 +230,7 @@ function GeneralTab() {
           label="App Icon"
           preview={config.iconPreview}
           onFileSelect={handleImageSelect("iconPreview")}
-          onClear={() => updateField("iconPreview", null)}
+          onClear={() => onUpdateField("iconPreview", null)}
           description="Auto-resized to 1024px to fit iOS & Android requirements."
         />
 
@@ -288,7 +239,7 @@ function GeneralTab() {
           label="Splash Screen"
           preview={config.splashPreview}
           onFileSelect={handleImageSelect("splashPreview")}
-          onClear={() => updateField("splashPreview", null)}
+          onClear={() => onUpdateField("splashPreview", null)}
           description="Recommended size: 1284x2778px. Displayed during app launch."
         />
 
@@ -299,7 +250,7 @@ function GeneralTab() {
             <Input
               id="app-version"
               value={config.version}
-              onChange={(e) => updateField("version", e.target.value)}
+              onChange={(e) => onUpdateField("version", e.target.value)}
               className="h-8 text-sm"
               placeholder="1.0.0"
             />
@@ -308,7 +259,7 @@ function GeneralTab() {
           <FormField id="orientation" label="Orientation">
             <Select
               value={config.orientation}
-              onValueChange={(v) => updateField("orientation", v)}
+              onValueChange={(v) => onUpdateField("orientation", v)}
             >
               <SelectTrigger id="orientation" className="h-8 text-sm">
                 <SelectValue />
@@ -330,7 +281,7 @@ function GeneralTab() {
           <Input
             id="url-scheme"
             value={config.scheme}
-            onChange={(e) => updateField("scheme", e.target.value)}
+            onChange={(e) => onUpdateField("scheme", e.target.value)}
             className="h-8 text-sm"
             placeholder="myapp"
           />
@@ -342,14 +293,19 @@ function GeneralTab() {
           <span className="text-sm font-medium">Archive Project</span>
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <p className="text-xs text-muted-foreground">
-              Archiving hides the project from your dashboard. You can restore it later.
+              {isArchived
+                ? "This project is archived. Unarchive to restore it to your dashboard."
+                : "Archiving hides the project from your dashboard. You can restore it later."}
             </p>
             <Button
               variant="outline"
               size="sm"
               className="w-full shrink-0 text-xs sm:w-auto"
+              onClick={onArchive}
+              disabled={isArchiving}
             >
-              Archive
+              {isArchiving && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+              {isArchived ? "Unarchive" : "Archive"}
             </Button>
           </div>
         </div>
@@ -367,6 +323,7 @@ function GeneralTab() {
               variant="destructive"
               size="sm"
               className="w-full shrink-0 text-xs sm:w-auto"
+              onClick={() => setShowDeleteConfirm(true)}
             >
               Delete
             </Button>
@@ -374,6 +331,15 @@ function GeneralTab() {
         </div>
       </div>
     </ScrollArea>
+
+    <DeleteConfirmDialog
+      isOpen={showDeleteConfirm}
+      onClose={() => setShowDeleteConfirm(false)}
+      onConfirm={onDelete}
+      projectName={projectName}
+      isDeleting={isDeleting}
+    />
+    </>
   );
 }
 
@@ -393,24 +359,22 @@ function bulkTextToVariables(text: string): EnvVariable[] {
     });
 }
 
-function EnvVariablesTab() {
-  const [variables, setVariables] = useState<EnvVariable[]>([
-    { id: "1", key: "", value: "", isSecret: false },
-    { id: "2", key: "", value: "", isSecret: false },
-  ]);
+interface EnvVariablesTabProps {
+  variables: EnvVariable[];
+  onSetVariables: (vars: EnvVariable[]) => void;
+}
+
+function EnvVariablesTab({ variables, onSetVariables }: EnvVariablesTabProps) {
   const [isBulkEdit, setIsBulkEdit] = useState(false);
   const [bulkText, setBulkText] = useState("");
 
   const addVariable = () => {
     const id = crypto.randomUUID();
-    setVariables((prev) => [
-      ...prev,
-      { id, key: "", value: "", isSecret: false },
-    ]);
+    onSetVariables([...variables, { id, key: "", value: "", isSecret: false }]);
   };
 
   const removeVariable = (id: string) => {
-    setVariables((prev) => prev.filter((v) => v.id !== id));
+    onSetVariables(variables.filter((v) => v.id !== id));
   };
 
   const updateVariable = (
@@ -418,8 +382,8 @@ function EnvVariablesTab() {
     field: keyof EnvVariable,
     value: string | boolean,
   ) => {
-    setVariables((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, [field]: value } : v)),
+    onSetVariables(
+      variables.map((v) => (v.id === id ? { ...v, [field]: value } : v)),
     );
   };
 
@@ -428,9 +392,9 @@ function EnvVariablesTab() {
     setIsBulkEdit(true);
   };
 
-  const saveBulkEdit = () => {
-    setVariables(bulkTextToVariables(bulkText));
-    setIsBulkEdit(false);
+  const handleBulkChange = (text: string) => {
+    setBulkText(text);
+    onSetVariables(bulkTextToVariables(text));
   };
 
   if (isBulkEdit) {
@@ -447,15 +411,10 @@ function EnvVariablesTab() {
         </div>
         <Textarea
           value={bulkText}
-          onChange={(e) => setBulkText(e.target.value)}
+          onChange={(e) => handleBulkChange(e.target.value)}
           placeholder={"KEY=value\nANOTHER_KEY=another_value"}
           className="min-h-0 flex-1 resize-none bg-zinc-950 font-mono text-xs leading-relaxed text-zinc-300 placeholder:text-zinc-600"
         />
-        <div className="flex justify-end">
-          <Button size="sm" className="h-8 text-xs" onClick={saveBulkEdit}>
-            Save
-          </Button>
-        </div>
       </div>
     );
   }
@@ -514,7 +473,9 @@ function EnvVariablesTab() {
                   </button>
                 </div>
               </div>
-              <p className="px-3 pb-2 text-[10px] text-muted-foreground">Server-side only</p>
+              {!variable.key.startsWith("EXPO_PUBLIC_") && variable.key.length > 0 && (
+                <p className="px-3 pb-2 text-[10px] text-muted-foreground">Server-side only</p>
+              )}
             </div>
           ))}
 
@@ -539,11 +500,151 @@ function EnvVariablesTab() {
   );
 }
 
+function buildInitialConfig(
+  project: { name: string; slug: string; framework_version: string; settings?: ProjectSettings } | null,
+): AppConfig {
+  const appConfig = project?.settings?.app_config;
+  return {
+    name: project?.name ?? "My App",
+    slug: project?.slug ?? "my-app",
+    version: appConfig?.version ?? "1.0.0",
+    sdkVersion: project?.framework_version ?? "51.0.0",
+    orientation: appConfig?.orientation ?? "portrait",
+    iconPreview: appConfig?.icon_url ?? null,
+    splashPreview: appConfig?.splash_url ?? null,
+    scheme: appConfig?.scheme ?? project?.slug ?? "",
+    bundleIdentifier: appConfig?.bundle_identifier ?? "",
+    packageName: appConfig?.package_name ?? "",
+  };
+}
+
+function buildInitialEnvVars(
+  project: { settings?: ProjectSettings } | null,
+): EnvVariable[] {
+  const envVars = project?.settings?.env_variables;
+  if (envVars && envVars.length > 0) {
+    return envVars.map((v) => ({
+      id: crypto.randomUUID(),
+      key: v.key,
+      value: v.value,
+      isSecret: v.is_secret,
+    }));
+  }
+  return [{ id: crypto.randomUUID(), key: "", value: "", isSecret: false }];
+}
+
 export function ProjectConfigModal() {
+  const router = useRouter();
   const { modals, closeModal } = useUIStore();
+  const currentProject = useProjectStore((s) => s.currentProject);
+  const updateProjectStore = useProjectStore((s) => s.updateProject);
+
   const isOpen = modals.projectConfig.isOpen;
   const modalData = modals.projectConfig.data as { tab?: string } | undefined;
   const defaultTab = modalData?.tab === "env" ? "env" : "general";
+
+  const [config, setConfig] = useState<AppConfig>(() => buildInitialConfig(currentProject));
+  const [envVariables, setEnvVariables] = useState<EnvVariable[]>(() => buildInitialEnvVars(currentProject));
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const updateMutation = useUpdateProject();
+  const archiveMutation = useArchiveProject();
+  const unarchiveMutation = useUnarchiveProject();
+  const deleteMutation = useDeleteProject();
+
+  useEffect(() => {
+    if (isOpen) {
+      setConfig(buildInitialConfig(currentProject));
+      setEnvVariables(buildInitialEnvVars(currentProject));
+      setSaveError(null);
+    }
+  }, [isOpen, currentProject]);
+
+  const updateField = (field: keyof AppConfig, value: string | null) => {
+    setConfig((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = () => {
+    if (!currentProject) return;
+    setSaveError(null);
+
+    const appConfigPayload: Partial<ProjectAppConfig> = {
+      version: config.version,
+      orientation: config.orientation as ProjectAppConfig["orientation"],
+      scheme: config.scheme,
+      bundle_identifier: config.bundleIdentifier,
+      package_name: config.packageName,
+      icon_url: config.iconPreview,
+      splash_url: config.splashPreview,
+    };
+
+    const envPayload: ProjectEnvVariable[] = envVariables
+      .filter((v) => v.key.trim().length > 0)
+      .map((v) => ({
+        key: v.key.trim(),
+        value: v.value,
+        is_secret: v.isSecret,
+      }));
+
+    updateMutation.mutate(
+      {
+        uuid: currentProject.uuid,
+        data: {
+          name: config.name,
+          slug: config.slug,
+          settings: {
+            app_config: appConfigPayload as ProjectAppConfig,
+            env_variables: envPayload,
+          },
+        },
+      },
+      {
+        onSuccess: (updated) => {
+          updateProjectStore(currentProject.uuid, {
+            name: updated.name,
+            slug: updated.slug,
+          });
+          closeModal("projectConfig");
+        },
+        onError: (error) => {
+          setSaveError(error instanceof Error ? error.message : "Failed to save");
+        },
+      },
+    );
+  };
+
+  const handleArchive = () => {
+    if (!currentProject) return;
+    const isArchived = currentProject.status === "archived";
+
+    if (isArchived) {
+      unarchiveMutation.mutate(currentProject.uuid, {
+        onSuccess: () => {
+          updateProjectStore(currentProject.uuid, { status: "draft" });
+          closeModal("projectConfig");
+        },
+      });
+    } else {
+      archiveMutation.mutate(currentProject.uuid, {
+        onSuccess: () => {
+          updateProjectStore(currentProject.uuid, { status: "archived" });
+          closeModal("projectConfig");
+          router.push("/dashboard/drafts");
+        },
+      });
+    }
+  };
+
+  const handleDelete = () => {
+    if (!currentProject) return;
+
+    deleteMutation.mutate(currentProject.uuid, {
+      onSuccess: () => {
+        closeModal("projectConfig");
+        router.push("/dashboard/drafts");
+      },
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={() => closeModal("projectConfig")}>
@@ -569,14 +670,41 @@ export function ProjectConfigModal() {
           </TabsList>
 
           <TabsContent value="general">
-            <GeneralTab />
+            <GeneralTab
+              config={config}
+              onUpdateField={updateField}
+              onArchive={handleArchive}
+              onDelete={handleDelete}
+              isArchiving={archiveMutation.isPending || unarchiveMutation.isPending}
+              isDeleting={deleteMutation.isPending}
+              isArchived={currentProject?.status === "archived"}
+              projectName={currentProject?.name ?? ""}
+            />
           </TabsContent>
           <TabsContent value="env">
-            <EnvVariablesTab />
+            <EnvVariablesTab
+              variables={envVariables}
+              onSetVariables={setEnvVariables}
+            />
           </TabsContent>
         </Tabs>
 
-        <Button className="w-full">Save Changes</Button>
+        {saveError && (
+          <div className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {saveError}
+          </div>
+        )}
+
+        <Button
+          className="w-full"
+          onClick={handleSave}
+          disabled={updateMutation.isPending || !currentProject}
+        >
+          {updateMutation.isPending && (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          )}
+          {updateMutation.isPending ? "Saving..." : "Save Changes"}
+        </Button>
       </DialogContent>
     </Dialog>
   );
