@@ -14,9 +14,15 @@ export interface ProjectEnvVariable {
   is_secret: boolean;
 }
 
+export interface ProjectBuildConfig {
+  expo_access_token?: string;
+  expo_account_name?: string;
+}
+
 export interface ProjectSettings {
   app_config: ProjectAppConfig;
   env_variables: ProjectEnvVariable[];
+  build_config?: ProjectBuildConfig;
 }
 
 export interface UpdateProjectConfigRequest {

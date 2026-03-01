@@ -1,4 +1,5 @@
 import type { Job } from "bullmq";
+import type { ProjectBuildConfig, ProjectAppConfig } from "@raygan/shared";
 
 import { logger } from "../../config";
 import { Build } from "../../db/entities";
@@ -71,7 +72,14 @@ export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
     throw new Error(`Project ${project_id} not found`);
   }
 
-  const provider = getBuildProvider();
+  const settings = project.settings as {
+    app_config?: ProjectAppConfig;
+    build_config?: ProjectBuildConfig;
+  } | undefined;
+  const appConfig = settings?.app_config;
+  const buildConfig = settings?.build_config;
+
+  const provider = getBuildProvider(buildConfig);
 
   try {
     await updateBuildStatus(build, "provisioning");
@@ -81,6 +89,7 @@ export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
       const projectResult = await provider.createProject({
         name: project.name,
         slug: project.slug,
+        account_name: buildConfig?.expo_account_name,
       });
       providerProjectId = projectResult.provider_project_id;
       await buildRepository.update(build.id, {
@@ -96,20 +105,21 @@ export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
     });
 
     const sdkVersion = project.framework_version || "52.0.0";
+    const appVersion = appConfig?.version || "1.0.0";
     const buildResult = await provider.triggerBuild({
       provider_project_id: providerProjectId,
       platform,
       profile,
       distribution,
       sdk_version: sdkVersion,
-      app_version: "1.0.0",
+      app_version: appVersion,
     });
 
     await updateBuildStatus(build, "building", {
       provider_build_id: buildResult.provider_build_id,
       logs_url: buildResult.logs_url || null,
       sdk_version: sdkVersion,
-      app_version: "1.0.0",
+      app_version: appVersion,
       started_at: new Date(),
     } as Partial<Build>);
 

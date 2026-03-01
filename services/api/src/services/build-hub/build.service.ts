@@ -1,7 +1,8 @@
 import type { FindOptionsWhere, ObjectLiteral } from "typeorm";
+import type { ProjectBuildConfig } from "@raygan/shared";
 
 import { env, logger } from "../../config";
-import { Build } from "../../db/entities";
+import { Build, Project } from "../../db/entities";
 import type { BuildStatusType, BuildPlatformType, BuildProfileType, BuildDistributionType } from "../../db/entities";
 import { BaseRepository } from "../../db/repositories";
 import { CacheService } from "../../lib";
@@ -14,30 +15,34 @@ import type { BuildJobData } from "../../jobs/types";
 
 const MAX_CONCURRENT_BUILDS = 2;
 
-let buildProvider: BuildProvider | null = null;
-
-export function getBuildProvider(): BuildProvider {
-  if (buildProvider) return buildProvider;
-
-  const accessToken = env.EXPO_ACCESS_TOKEN;
+export function getBuildProvider(projectBuildConfig?: ProjectBuildConfig): BuildProvider {
+  const accessToken = projectBuildConfig?.expo_access_token || env.EXPO_ACCESS_TOKEN;
   if (!accessToken) {
-    throw new Error("EXPO_ACCESS_TOKEN is required for build functionality");
+    throw new Error("EXPO_ACCESS_TOKEN is required for build functionality. Configure it in project settings or server environment.");
   }
 
-  buildProvider = new EASAdapter({
+  const accountName = projectBuildConfig?.expo_account_name || env.EXPO_ACCOUNT_NAME;
+
+  return new EASAdapter({
     access_token: accessToken,
-    account_name: env.EXPO_ACCOUNT_NAME,
+    account_name: accountName,
     webhook_secret: env.EAS_WEBHOOK_SECRET,
   });
-
-  return buildProvider;
 }
 
 export class BuildService {
   private buildRepository: BaseRepository<Build & ObjectLiteral>;
+  private projectRepository: BaseRepository<Project & ObjectLiteral>;
 
   constructor() {
     this.buildRepository = new BaseRepository(Build);
+    this.projectRepository = new BaseRepository(Project);
+  }
+
+  private async getProjectBuildConfig(projectId: number): Promise<ProjectBuildConfig | undefined> {
+    const project = await this.projectRepository.findById(projectId);
+    const settings = project?.settings as { build_config?: ProjectBuildConfig } | undefined;
+    return settings?.build_config;
   }
 
   async triggerBuild(
@@ -137,7 +142,8 @@ export class BuildService {
 
     if (build.provider_build_id) {
       try {
-        const provider = getBuildProvider();
+        const buildConfig = await this.getProjectBuildConfig(build.project_id);
+        const provider = getBuildProvider(buildConfig);
         await provider.cancelBuild(build.provider_build_id);
       } catch (err) {
         logger.error({ err, buildId: build.id }, "Failed to cancel build with provider");

@@ -9,8 +9,10 @@ import {
   ClipboardCopy,
   X,
   Loader2,
+  Wrench,
+  ExternalLink,
 } from "lucide-react";
-import type { ProjectAppConfig, ProjectEnvVariable, ProjectSettings } from "@raygan/shared";
+import type { ProjectAppConfig, ProjectEnvVariable, ProjectSettings, ProjectBuildConfig } from "@raygan/shared";
 
 import { useUIStore, useProjectStore } from "@/stores";
 import {
@@ -500,6 +502,98 @@ function EnvVariablesTab({ variables, onSetVariables }: EnvVariablesTabProps) {
   );
 }
 
+interface BuildConfigTabProps {
+  buildConfig: ProjectBuildConfig;
+  onUpdate: (config: ProjectBuildConfig) => void;
+}
+
+function BuildConfigTab({ buildConfig, onUpdate }: BuildConfigTabProps) {
+  const updateField = (field: keyof ProjectBuildConfig, value: string) => {
+    onUpdate({ ...buildConfig, [field]: value || undefined });
+  };
+
+  return (
+    <ScrollArea className="h-[min(420px,60vh)]">
+      <div className="flex flex-col gap-5 p-1 pr-4">
+        <div className="rounded-lg border border-border bg-muted/30 p-3">
+          <div className="flex items-center gap-2 pb-2">
+            <Wrench className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">EAS Build Credentials</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Configure per-project Expo credentials. If left empty, the platform
+            defaults will be used.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <p className="pb-2 text-xs font-medium text-foreground">
+            How to get your Expo Access Token
+          </p>
+          <ol className="flex list-inside list-decimal flex-col gap-1.5 text-[11px] text-muted-foreground">
+            <li>
+              Go to{" "}
+              <a
+                href="https://expo.dev/accounts/[account]/settings/access-tokens"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 text-primary hover:underline"
+              >
+                expo.dev &rarr; Account Settings &rarr; Access Tokens
+                <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            </li>
+            <li>Click <span className="font-medium text-foreground">Create Token</span></li>
+            <li>Give it a name (e.g. &quot;Raygan Build&quot;) and copy the token</li>
+            <li>Paste it in the field below</li>
+          </ol>
+          <p className="pt-2 text-[10px] text-muted-foreground/70">
+            Your account name is the slug shown at expo.dev/accounts/<span className="font-medium text-muted-foreground">your-account</span>
+          </p>
+        </div>
+
+        <FormField
+          id="expo-access-token"
+          label="Expo Access Token"
+          description="Personal or robot access token from expo.dev."
+        >
+          <Input
+            id="expo-access-token"
+            type="password"
+            value={buildConfig.expo_access_token ?? ""}
+            onChange={(e) => updateField("expo_access_token", e.target.value)}
+            className="h-8 text-sm"
+            placeholder="Leave empty to use platform default"
+          />
+        </FormField>
+
+        <FormField
+          id="expo-account-name"
+          label="Expo Account Name"
+          description="The Expo account or organization slug that owns this project."
+        >
+          <Input
+            id="expo-account-name"
+            value={buildConfig.expo_account_name ?? ""}
+            onChange={(e) => updateField("expo_account_name", e.target.value)}
+            className="h-8 text-sm"
+            placeholder="Leave empty to use platform default"
+          />
+        </FormField>
+      </div>
+    </ScrollArea>
+  );
+}
+
+function buildInitialBuildConfig(
+  project: { settings?: ProjectSettings } | null,
+): ProjectBuildConfig {
+  return {
+    expo_access_token: project?.settings?.build_config?.expo_access_token,
+    expo_account_name: project?.settings?.build_config?.expo_account_name,
+  };
+}
+
 function buildInitialConfig(
   project: { name: string; slug: string; framework_version: string; settings?: ProjectSettings } | null,
 ): AppConfig {
@@ -541,10 +635,12 @@ export function ProjectConfigModal() {
 
   const isOpen = modals.projectConfig.isOpen;
   const modalData = modals.projectConfig.data as { tab?: string } | undefined;
-  const defaultTab = modalData?.tab === "env" ? "env" : "general";
+  const tabMap: Record<string, string> = { env: "env", build: "build" };
+  const defaultTab = tabMap[modalData?.tab ?? ""] ?? "general";
 
   const [config, setConfig] = useState<AppConfig>(() => buildInitialConfig(currentProject));
   const [envVariables, setEnvVariables] = useState<EnvVariable[]>(() => buildInitialEnvVars(currentProject));
+  const [buildConfig, setBuildConfig] = useState<ProjectBuildConfig>(() => buildInitialBuildConfig(currentProject));
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const updateMutation = useUpdateProject();
@@ -556,6 +652,7 @@ export function ProjectConfigModal() {
     if (isOpen) {
       setConfig(buildInitialConfig(currentProject));
       setEnvVariables(buildInitialEnvVars(currentProject));
+      setBuildConfig(buildInitialBuildConfig(currentProject));
       setSaveError(null);
     }
   }, [isOpen, currentProject]);
@@ -595,6 +692,7 @@ export function ProjectConfigModal() {
           settings: {
             app_config: appConfigPayload as ProjectAppConfig,
             env_variables: envPayload,
+            build_config: buildConfig,
           },
         },
       },
@@ -667,6 +765,9 @@ export function ProjectConfigModal() {
             <TabsTrigger value="env" className="flex-1 text-xs">
               Environment
             </TabsTrigger>
+            <TabsTrigger value="build" className="flex-1 text-xs">
+              Build
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
@@ -685,6 +786,12 @@ export function ProjectConfigModal() {
             <EnvVariablesTab
               variables={envVariables}
               onSetVariables={setEnvVariables}
+            />
+          </TabsContent>
+          <TabsContent value="build">
+            <BuildConfigTab
+              buildConfig={buildConfig}
+              onUpdate={setBuildConfig}
             />
           </TabsContent>
         </Tabs>

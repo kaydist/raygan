@@ -13,6 +13,7 @@ import {
   LogOut,
   Hammer,
   Radio,
+  Wrench,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -73,6 +74,12 @@ const CONFIG_ITEMS = [
     icon: KeyRound,
     label: "Environment Variables",
     description: "Manage keys and secrets",
+  },
+  {
+    id: "build" as const,
+    icon: Wrench,
+    label: "Build Configuration",
+    description: "EAS credentials and build settings",
   },
 ];
 
