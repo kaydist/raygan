@@ -24,6 +24,10 @@ const envSchema = z.object({
   // Frontend app URL (for redirects)
   APP_URL: z.string().default("http://localhost:3000"),
 
+  // Bull Board Admin
+  BULL_BOARD_USERNAME: z.string(),
+  BULL_BOARD_PASSWORD: z.string(),
+
   // EAS Build
   EXPO_ACCESS_TOKEN: z.string().optional(),
   EXPO_ACCOUNT_NAME: z.string().optional(),

@@ -1,9 +1,10 @@
 import cors from "cors";
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 
 import { env, logger } from "./config";
+import { createBullBoardMiddleware } from "./jobs";
 import { errorHandler, notFoundHandler, requestContext } from "./middleware";
 import { v1Routes } from "./routes/v1";
 import { webhooksRoutes } from "./routes/v1/webhooks.routes";
@@ -46,6 +47,38 @@ export function createApp(): Express {
 
   // API routes
   app.use("/api/v1", v1Routes);
+
+  // Bull Board admin UI (Basic Auth protected)
+  if (env.REDIS_URL) {
+    app.use(
+      "/admin/queues",
+      (req: Request, res: Response, next: NextFunction) => {
+        const auth = req.headers.authorization;
+        if (!auth || !auth.startsWith("Basic ")) {
+          res.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
+          res.status(401).send("Authentication required");
+          return;
+        }
+
+        const [username, password] = Buffer.from(auth.slice(6), "base64")
+          .toString()
+          .split(":");
+
+        if (
+          username !== env.BULL_BOARD_USERNAME ||
+          password !== env.BULL_BOARD_PASSWORD
+        ) {
+          res.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
+          res.status(401).send("Invalid credentials");
+          return;
+        }
+
+        next();
+      },
+      createBullBoardMiddleware().getRouter()
+    );
+    logger.info("Bull Board mounted at /admin/queues");
+  }
 
   // 404 handler
   app.use(notFoundHandler);

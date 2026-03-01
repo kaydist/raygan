@@ -90,13 +90,21 @@ export class BaseRepository<T extends BaseEntity & ObjectLiteral> {
   }
 
   async count(options?: FindManyOptions<T>): Promise<number> {
-    return this.repository.count({
-      ...options,
-      where: {
+    let where: FindOptionsWhere<T> | FindOptionsWhere<T>[];
+
+    if (Array.isArray(options?.where)) {
+      where = options.where.map((w) => ({
+        ...w,
+        deleted_flag: false,
+      })) as FindOptionsWhere<T>[];
+    } else {
+      where = {
         ...(options?.where as FindOptionsWhere<T>),
         deleted_flag: false,
-      } as FindOptionsWhere<T>,
-    });
+      } as FindOptionsWhere<T>;
+    }
+
+    return this.repository.count({ ...options, where });
   }
 
   async exists(where: FindOptionsWhere<T>): Promise<boolean> {

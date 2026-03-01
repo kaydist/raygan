@@ -22,6 +22,8 @@
     "@babel/parser": "^7.29.0",
     "@babel/traverse": "^7.29.0",
     "@babel/types": "^7.29.0",
+    "@bull-board/api": "^6.20.3",
+    "@bull-board/express": "^6.20.3",
     "@google/generative-ai": "^0.24.1",
     "@raygan/shared": "workspace:*",
     "@supabase/supabase-js": "^2.95.3",
