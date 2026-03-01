@@ -8,6 +8,7 @@ import {
   organizationsApi,
   settingsApi,
   healthApi,
+  buildsApi,
 } from "./routes";
 
 export const api = {
@@ -34,4 +35,5 @@ export const api = {
   organizations: organizationsApi,
   settings: settingsApi,
   health: healthApi,
+  builds: buildsApi,
 };

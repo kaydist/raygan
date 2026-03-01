@@ -6,6 +6,7 @@ import pinoHttp from "pino-http";
 import { env, logger } from "./config";
 import { errorHandler, notFoundHandler, requestContext } from "./middleware";
 import { v1Routes } from "./routes/v1";
+import { webhooksRoutes } from "./routes/v1/webhooks.routes";
 
 export function createApp(): Express {
   const app = express();
@@ -32,6 +33,9 @@ export function createApp(): Express {
       },
     })
   );
+
+  // Webhook routes (before JSON parsing to preserve raw body for HMAC)
+  app.use("/api/v1", webhooksRoutes);
 
   // Body parsing
   app.use(express.json({ limit: "75mb" }));

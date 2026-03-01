@@ -23,6 +23,11 @@ const envSchema = z.object({
 
   // Frontend app URL (for redirects)
   APP_URL: z.string().default("http://localhost:3000"),
+
+  // EAS Build
+  EXPO_ACCESS_TOKEN: z.string().optional(),
+  EXPO_ACCOUNT_NAME: z.string().optional(),
+  EAS_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

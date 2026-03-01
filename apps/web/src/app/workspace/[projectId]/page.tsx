@@ -4,6 +4,8 @@ import { use } from "react";
 
 import { WorkspaceLayout, WorkspaceToolbar } from "@/components/organisms";
 import { useASTSocketSync } from "@/hooks";
+import { BuildModal } from "@/features/deploy";
+import { ProjectConfigModal } from "@/features/project";
 
 interface WorkspacePageProps {
   params: Promise<{ projectId: string }>;
@@ -22,6 +24,8 @@ export default function WorkspacePage({ params }: WorkspacePageProps) {
         isSyncing={isSyncing}
       />
       <WorkspaceLayout projectId={projectId} />
+      <BuildModal />
+      <ProjectConfigModal />
     </>
   );
 }

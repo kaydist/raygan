@@ -31,6 +31,7 @@ export interface Modals {
   projectSettings: ModalState;
   connectBackend: ModalState;
   deployProject: ModalState;
+  projectConfig: ModalState;
   commandPalette: ModalState;
   shortcuts: ModalState;
   confirm: ModalState & { title?: string; message?: string; onConfirm?: () => void };
@@ -112,6 +113,7 @@ const defaultModals: Modals = {
   projectSettings: { isOpen: false },
   connectBackend: { isOpen: false },
   deployProject: { isOpen: false },
+  projectConfig: { isOpen: false },
   commandPalette: { isOpen: false },
   shortcuts: { isOpen: false },
   confirm: { isOpen: false },

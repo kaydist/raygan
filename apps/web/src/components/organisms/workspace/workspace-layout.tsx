@@ -10,7 +10,7 @@ import { ResizeHandle } from "./resize-handle";
 import { AgentPanel } from "./agent";
 import { CenterCanvas } from "./code";
 import { RightPanel } from "./right-panel";
-import { BottomPanel } from "./bottom-panel";
+import { ActivityBar } from "./activity-bar";
 import { BuilderLeftPanel, BuilderCanvas, BuilderInspector } from "./builder";
 import { defaultLayout, type LayoutState } from "./constants";
 
@@ -68,8 +68,10 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
   const zoom = Math.round(canvasZoom * 100);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-row">
+      <ActivityBar zoom={zoom} />
+
+      <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
         {activeMode === "agent" && (
           <PanelGroup
             key="agent-layout"
@@ -150,8 +152,6 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
           </PanelGroup>
         )}
       </div>
-
-      <BottomPanel zoom={zoom} />
     </div>
   );
 }

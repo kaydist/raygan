@@ -15,6 +15,7 @@ import {
   Download,
   Loader2,
   Github,
+  Smartphone,
 } from "lucide-react";
 
 import { cn, downloadBlob } from "@/lib/utils";
@@ -52,7 +53,7 @@ export function WorkspaceToolbar({
   isSyncing = false,
 }: WorkspaceToolbarProps) {
   const router = useRouter();
-  const { activeMode, setActiveMode } = useUIStore();
+  const { activeMode, setActiveMode, openModal, setBottomPanelOpen } = useUIStore();
   const currentProject = useProjectStore((state) => state.currentProject);
   const logout = useLogout();
   const [isExporting, setIsExporting] = React.useState(false);
@@ -94,9 +95,15 @@ export function WorkspaceToolbar({
           <span className="text-sm">Drafts</span>
         </Button>
         <span className="text-muted-foreground">/</span>
-        <span className="max-w-[150px] truncate text-sm font-medium">
-          {projectName}
-        </span>
+        <button
+          onClick={() => {
+            setBottomPanelOpen(true);
+            openModal("projectConfig");
+          }}
+          className="max-w-[150px] truncate text-sm font-medium hover:text-primary transition-colors"
+        >
+          {currentProject?.name ?? currentProject?.uuid}
+        </button>
       </div>
 
       <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
@@ -173,6 +180,13 @@ export function WorkspaceToolbar({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem
+              onClick={() => openModal("deployProject")}
+              disabled={!currentProject}
+            >
+              <Smartphone className="h-3.5 w-3.5 mr-2" />
+              Build APK
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleExport}
               disabled={isExporting || !currentProject}

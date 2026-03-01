@@ -12,6 +12,7 @@ export {
   organizationsApi,
   settingsApi,
   healthApi,
+  buildsApi,
 } from "./routes";
 
 export type {

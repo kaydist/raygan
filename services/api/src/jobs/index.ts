@@ -1,3 +1,3 @@
-// BullMQ job processors will be added here
-// export { generateQueue } from "./queues";
-// export { generateProcessor } from "./processors";
+export { getBuildQueue, closeQueues } from "./queues";
+export { startBuildWorker, closeBuildWorker } from "./workers/build.worker";
+export type { BuildJobData } from "./types";

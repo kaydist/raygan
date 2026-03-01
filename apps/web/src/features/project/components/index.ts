@@ -1,2 +1,1 @@
-// Project feature components (TODO)
-export {};
+export { ProjectConfigModal } from "./project-config-modal";
