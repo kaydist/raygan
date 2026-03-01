@@ -15,6 +15,20 @@ import {
   Setting,
   Build,
 } from "./entities";
+import { InitialSchema1707696000000 } from "./migrations/1707696000000-InitialSchema";
+import { CreateAITables1707782400000 } from "./migrations/1707782400000-CreateAITables";
+import { AddCurrentOrganizationToUser1707868800000 } from "./migrations/1707868800000-AddCurrentOrganizationToUser";
+import { CreateProjectFilesTable1708041600000 } from "./migrations/1708041600000-CreateProjectFilesTable";
+import { CreateSettingsTable1708128000000 } from "./migrations/1708128000000-CreateSettingsTable";
+import { AddRowLevelSecurityPolicies1708214400000 } from "./migrations/1708214400000-AddRowLevelSecurityPolicies";
+import { AddOpenAIProvider1708300800000 } from "./migrations/1708300800000-AddOpenAIProvider";
+import { AddXAIProvider1708300900000 } from "./migrations/1708300900000-AddXAIProvider";
+import { AddGoogleProvider1708301000000 } from "./migrations/1708301000000-AddGoogleProvider";
+import { CreateCreditUsageTable1708301100000 } from "./migrations/1708301100000-CreateCreditUsageTable";
+import { AddProviderLogoUrl1708301200000 } from "./migrations/1708301200000-AddProviderLogoUrl";
+import { MakeCurrentOrganizationNullable1708301300000 } from "./migrations/1708301300000-MakeCurrentOrganizationNullable";
+import { AddProjectStatusColumn1708400000000 } from "./migrations/1708400000000-AddProjectStatusColumn";
+import { CreateBuildsTable1708500000000 } from "./migrations/1708500000000-CreateBuildsTable";
 
 const baseOptions: DataSourceOptions = {
   type: "postgres",
@@ -34,7 +48,22 @@ const baseOptions: DataSourceOptions = {
     Setting,
     Build,
   ],
-  migrations: [],
+  migrations: [
+    InitialSchema1707696000000,
+    CreateAITables1707782400000,
+    AddCurrentOrganizationToUser1707868800000,
+    CreateProjectFilesTable1708041600000,
+    CreateSettingsTable1708128000000,
+    AddRowLevelSecurityPolicies1708214400000,
+    AddOpenAIProvider1708300800000,
+    AddXAIProvider1708300900000,
+    AddGoogleProvider1708301000000,
+    CreateCreditUsageTable1708301100000,
+    AddProviderLogoUrl1708301200000,
+    MakeCurrentOrganizationNullable1708301300000,
+    AddProjectStatusColumn1708400000000,
+    CreateBuildsTable1708500000000,
+  ],
   subscribers: [],
   extra: {
     // Connection pool settings
