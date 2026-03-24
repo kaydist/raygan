@@ -33,7 +33,7 @@ class TokenRateTracker {
     return this.entries.reduce((sum, e) => sum + e.tokens, 0);
   }
 
-  async waitIfNeeded(estimatedNextTokens: number): Promise<void> {
+  async waitIfNeeded(estimatedNextTokens: number, signal?: AbortSignal): Promise<void> {
     this.pruneOld();
     const currentUsage = this.getTokensInWindow();
     const projected = currentUsage + estimatedNextTokens;
@@ -43,14 +43,20 @@ class TokenRateTracker {
     if (this.entries.length === 0) return;
 
     const oldestInWindow = this.entries[0]!.timestamp;
-    const waitMs = oldestInWindow + RATE_LIMIT_WINDOW_MS - Date.now() + 500;
+    const waitMs = Math.min(oldestInWindow + RATE_LIMIT_WINDOW_MS - Date.now() + 500, RATE_LIMIT_WINDOW_MS);
 
     if (waitMs > 0) {
       logger.info(
         { currentUsage, projected, limit: this.limitPerMinute, waitMs },
         "Rate limit pacing: waiting before next agent turn",
       );
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(() => resolve(), waitMs);
+        if (signal) {
+          const onAbort = () => { clearTimeout(timer); resolve(); };
+          signal.addEventListener("abort", onAbort, { once: true });
+        }
+      });
       this.pruneOld();
     }
   }
@@ -141,7 +147,7 @@ export async function* runAgentLoop(
     const toolUseCalls: AgentToolCall[] = [];
 
     const estimatedInputTokens = estimateMessageTokens(messages, systemPrompt);
-    await rateTracker.waitIfNeeded(estimatedInputTokens);
+    await rateTracker.waitIfNeeded(estimatedInputTokens, signal);
 
     const stream = gateway.streamWithTools({
       provider: providerSlug as "anthropic",

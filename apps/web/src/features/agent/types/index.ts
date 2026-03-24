@@ -38,6 +38,7 @@ export interface Message {
   astOperations?: unknown[];
   toolCalls?: ToolCallActivity[];
   plan?: AgentPlanState;
+  segments?: ContentSegment[];
   images?: ImageAttachment[];
   modelId?: string;
   createdAt: Date;
@@ -71,9 +72,20 @@ export interface TextSegment {
   content: string;
 }
 
+export interface ToolCallSegment {
+  type: "tool_call";
+  toolCallId: string;
+}
+
+export interface PlanSegment {
+  type: "plan";
+}
+
 export interface TaskListSegment {
   type: "task_list";
   tasks: AgentTask[];
 }
+
+export type ContentSegment = TextSegment | ToolCallSegment | PlanSegment;
 
 export type MessageSegment = TextSegment | TaskListSegment;

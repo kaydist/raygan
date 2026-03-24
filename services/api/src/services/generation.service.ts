@@ -143,27 +143,29 @@ export class GenerationService {
         return;
       }
 
-      const access = await this.projectService.checkAccessWithProject(userId, project);
+      const conversationContent = safePrompt.trim() || (hasImages ? "[Image attached]" : "");
+
+      const [access, userConv, initialModel] = await Promise.all([
+        this.projectService.checkAccessWithProject(userId, project),
+        this.conversationService.create(
+          { project_id: project.id, content: conversationContent, role: "user" },
+          userId
+        ),
+        modelId
+          ? (!isNaN(Number(modelId))
+              ? this.providerService.getModelByPrimaryId(Number(modelId))
+              : this.providerService.getModelById(modelId))
+          : Promise.resolve(null),
+      ]);
+
+      userConversation = userConv;
+
       if (!access) {
         yield { type: "error", data: { message: "Access denied", code: "FORBIDDEN" } };
         return;
       }
 
-      const conversationContent = safePrompt.trim() || (hasImages ? "[Image attached]" : "");
-      userConversation = await this.conversationService.create(
-        { project_id: project.id, content: conversationContent, role: "user" },
-        userId
-      );
-
-      let modelConfig = null;
-      if (modelId) {
-        const parsedModelId = Number(modelId);
-        if (!isNaN(parsedModelId)) {
-          modelConfig = await this.providerService.getModelByPrimaryId(parsedModelId);
-        } else {
-          modelConfig = await this.providerService.getModelById(modelId);
-        }
-      }
+      let modelConfig = initialModel;
       if (!modelConfig && project.default_model_id) {
         modelConfig = await this.providerService.getModelByPrimaryId(project.default_model_id);
       }
@@ -248,24 +250,17 @@ export class GenerationService {
       const generationTimeMs = Date.now() - startTime;
       const costUsd = this.calculateCost(modelConfig, totalInputTokens, totalOutputTokens);
 
-      // Parse the full content to extract code blocks and AST operations
-      const parsed = parser.parse(fullContent);
+      const [parsed, astParsed] = await Promise.all([
+        Promise.resolve(parser.parse(fullContent)),
+        Promise.resolve(parseAIResponse(fullContent)),
+      ]);
 
-      if (parsed.warnings && parsed.warnings.length > 0) {
+      if (parsed.warnings.length > 0 || astParsed.errors.length > 0) {
         logger.warn({
-          warnings: parsed.warnings,
+          parserWarnings: parsed.warnings,
+          astErrors: astParsed.errors,
           projectId: project.id,
-        }, "Response parser warnings");
-      }
-
-      // Also parse with AST engine for proper AST operations
-      const astParsed = parseAIResponse(fullContent);
-
-      if (astParsed.errors.length > 0) {
-        logger.warn({
-          errors: astParsed.errors,
-          projectId: project.id,
-        }, "AST parser errors");
+        }, "Parse warnings/errors");
       }
 
       logger.info({
@@ -273,7 +268,6 @@ export class GenerationService {
         astOperationsFound: astParsed.operations.length,
         parsedNodesCount: astParsed.parsedNodes.length,
         filenames: parsed.codeBlocks.map(b => b.filename),
-        warningCount: (parsed.warnings?.length || 0) + astParsed.warnings.length,
       }, "Final parse complete");
 
       if (parsed.codeBlocks.length === 0 && fullContent.length > 0) {
@@ -283,7 +277,6 @@ export class GenerationService {
         }, "AI response contained no valid code blocks");
       }
 
-      // Collect files to persist from code blocks
       for (const block of parsed.codeBlocks) {
         if (block.filename && block.content) {
           const hasImports = block.content.includes("import ");
@@ -298,22 +291,24 @@ export class GenerationService {
         }
       }
 
-      // Create assistant conversation first to get the conversation ID for file tracking
-      assistantConversation = await this.conversationService.createAssistantMessage(
-        {
-          project_id: project.id,
-          content: fullContent,
-          model_id: modelConfig.id,
-          tokens_in: totalInputTokens,
-          tokens_out: totalOutputTokens,
-          generation_time_ms: generationTimeMs,
-          cost_usd: costUsd,
-          ast_diff: astParsed.operations.length > 0 ? { operations: astParsed.operations } : undefined,
-        },
-        userId
-      );
+      const [assistantConv] = await Promise.all([
+        this.conversationService.createAssistantMessage(
+          {
+            project_id: project.id,
+            content: fullContent,
+            model_id: modelConfig.id,
+            tokens_in: totalInputTokens,
+            tokens_out: totalOutputTokens,
+            generation_time_ms: generationTimeMs,
+            cost_usd: costUsd,
+            ast_diff: astParsed.operations.length > 0 ? { operations: astParsed.operations } : undefined,
+          },
+          userId
+        ),
+        this.conversationService.markCompleted(userConversation.id, userId),
+      ]);
+      assistantConversation = assistantConv;
 
-      // Persist files to database
       if (filesToPersist.length > 0) {
         try {
           await this.fileStorageService.bulkCreateOrUpdate(
@@ -322,17 +317,11 @@ export class GenerationService {
             userId,
             assistantConversation.id
           );
-          logger.info({
-            projectId: project.id,
-            fileCount: filesToPersist.length,
-            paths: filesToPersist.map(f => f.path),
-          }, "Files persisted to database");
         } catch (fileError) {
           logger.error({ fileError, projectId: project.id }, "Failed to persist files to database");
         }
       }
 
-      // Emit file update events
       for (const file of filesToPersist) {
         yield {
           type: "file_update",
@@ -344,16 +333,10 @@ export class GenerationService {
         };
       }
 
-      // Emit proper AST operations from AST engine parser
       for (const operation of astParsed.operations) {
-        logger.info({
-          type: operation.type,
-          operationType: operation.type,
-        }, "Emitting ast_operation");
         yield { type: "ast_operation", data: operation };
       }
 
-      await this.conversationService.markCompleted(userConversation.id, userId);
       await CacheService.invalidateConversationHistory(project.id);
 
       yield {
@@ -486,20 +469,22 @@ export class GenerationService {
 
       const generationTimeMs = Date.now() - startTime;
 
-      const assistantConversation = await this.conversationService.createAssistantMessage(
-        {
-          project_id: project.id,
-          content: fullTextContent,
-          model_id: modelConfig.id,
-          tokens_in: 0,
-          tokens_out: 0,
-          generation_time_ms: generationTimeMs,
-          cost_usd: 0,
-        },
-        userId,
-      );
+      const [assistantConversation] = await Promise.all([
+        this.conversationService.createAssistantMessage(
+          {
+            project_id: project.id,
+            content: fullTextContent,
+            model_id: modelConfig.id,
+            tokens_in: 0,
+            tokens_out: 0,
+            generation_time_ms: generationTimeMs,
+            cost_usd: 0,
+          },
+          userId,
+        ),
+        this.conversationService.markCompleted(userConversation.id, userId),
+      ]);
 
-      await this.conversationService.markCompleted(userConversation.id, userId);
       await CacheService.invalidateConversationHistory(project.id);
 
       yield {
@@ -560,12 +545,15 @@ export class GenerationService {
       });
     }
 
-    const conversationHistory = await this.getConversationHistory(project.id);
+    const [conversationHistory, existingFiles] = await Promise.all([
+      this.getConversationHistory(project.id),
+      this.getExistingFiles(project.id),
+    ]);
+
     if (conversationHistory.length > 0) {
       builder.setConversationHistory(conversationHistory);
     }
 
-    const existingFiles = await this.getExistingFiles(project.id);
     if (existingFiles.size > 0) {
       builder.setExistingFiles(existingFiles);
     }

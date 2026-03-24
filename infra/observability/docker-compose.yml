@@ -7,6 +7,7 @@ services:
       - GF_SERVER_ROOT_URL=${SERVICE_FQDN_GRAFANA_3000}
     volumes:
       - grafana-data:/var/lib/grafana
+      - grafana-datasources:/etc/grafana/provisioning/datasources
     ports:
       - "3000"
     depends_on:
@@ -22,6 +23,7 @@ services:
     command: -config.file=/etc/loki/loki-config.yml
     volumes:
       - loki-data:/loki
+      - loki-config:/etc/loki
     ports:
       - "3100"
     healthcheck:
@@ -36,9 +38,13 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - promtail-config:/etc/promtail
     depends_on:
       - loki
 
 volumes:
   grafana-data:
+  grafana-datasources:
   loki-data:
+  loki-config:
+  promtail-config:

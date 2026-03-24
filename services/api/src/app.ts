@@ -50,34 +50,39 @@ export function createApp(): Express {
 
   // Bull Board admin UI (Basic Auth protected)
   if (env.REDIS_URL) {
-    app.use(
-      "/admin/queues",
-      (req: Request, res: Response, next: NextFunction) => {
-        const auth = req.headers.authorization;
-        if (!auth || !auth.startsWith("Basic ")) {
-          res.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
-          res.status(401).send("Authentication required");
-          return;
-        }
+    try {
+      const boardMiddleware = createBullBoardMiddleware();
+      app.use(
+        "/admin/queues",
+        (req: Request, res: Response, next: NextFunction) => {
+          const auth = req.headers.authorization;
+          if (!auth || !auth.startsWith("Basic ")) {
+            res.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
+            res.status(401).send("Authentication required");
+            return;
+          }
 
-        const [username, password] = Buffer.from(auth.slice(6), "base64")
-          .toString()
-          .split(":");
+          const [username, password] = Buffer.from(auth.slice(6), "base64")
+            .toString()
+            .split(":");
 
-        if (
-          username !== env.BULL_BOARD_USERNAME ||
-          password !== env.BULL_BOARD_PASSWORD
-        ) {
-          res.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
-          res.status(401).send("Invalid credentials");
-          return;
-        }
+          if (
+            username !== env.BULL_BOARD_USERNAME ||
+            password !== env.BULL_BOARD_PASSWORD
+          ) {
+            res.setHeader("WWW-Authenticate", 'Basic realm="Bull Board"');
+            res.status(401).send("Invalid credentials");
+            return;
+          }
 
-        next();
-      },
-      createBullBoardMiddleware().getRouter()
-    );
-    logger.info("Bull Board mounted at /admin/queues");
+          next();
+        },
+        boardMiddleware.getRouter()
+      );
+      logger.info("Bull Board mounted at /admin/queues");
+    } catch (err) {
+      logger.warn("Bull Board not mounted: Redis unavailable");
+    }
   }
 
   // 404 handler

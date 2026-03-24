@@ -34,7 +34,7 @@ const baseOptions: DataSourceOptions = {
   type: "postgres",
   url: env.DATABASE_URL,
   synchronize: false,
-  logging: env.isDev,
+  logging: ["error"],
   entities: [
     User,
     Organization,

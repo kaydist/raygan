@@ -3,9 +3,11 @@ import { env } from "./env";
 import { logger } from "./logger";
 
 let redisClient: Redis | null = null;
+let redisDisabled = false;
+let errorLogged = false;
 
 export function getRedisClient(): Redis | null {
-  if (!env.REDIS_URL) {
+  if (!env.REDIS_URL || redisDisabled) {
     return null;
   }
 
@@ -17,34 +19,40 @@ export function getRedisClient(): Redis | null {
 }
 
 function createRedisClient(): Redis {
-  const isUpstash = env.REDIS_URL?.includes("upstash.io");
-
   const client = new Redis(env.REDIS_URL!, {
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: 1,
+    lazyConnect: true,
+    connectTimeout: 3000,
     retryStrategy(times) {
       if (times > 3) {
-        logger.error("Redis connection failed after 3 retries");
+        logger.warn("Redis unavailable after 3 retries, disabling cache");
+        redisDisabled = true;
+        redisClient = null;
         return null;
       }
-      return Math.min(times * 200, 2000);
+      return Math.min(times * 200, 1000);
     },
-    ...(isUpstash && {
+    ...(env.REDIS_URL?.includes("upstash.io") && {
       tls: { rejectUnauthorized: false },
       enableReadyCheck: false,
-      lazyConnect: true,
     }),
   });
 
   client.on("connect", () => {
     logger.info("Redis client connected");
+    errorLogged = false;
   });
 
   client.on("ready", () => {
     logger.info("Redis client ready");
+    redisDisabled = false;
   });
 
   client.on("error", (err) => {
-    logger.error({ err }, "Redis client error");
+    if (!errorLogged) {
+      logger.error({ err }, "Redis client error");
+      errorLogged = true;
+    }
   });
 
   client.on("close", () => {
@@ -64,11 +72,14 @@ export async function initializeRedis(): Promise<boolean> {
     const client = getRedisClient();
     if (!client) return false;
 
+    await client.connect();
     await client.ping();
     logger.info("Redis connection verified");
     return true;
   } catch (err) {
-    logger.error({ err }, "Failed to connect to Redis");
+    logger.warn("Redis unavailable, continuing without cache");
+    redisDisabled = true;
+    redisClient = null;
     return false;
   }
 }

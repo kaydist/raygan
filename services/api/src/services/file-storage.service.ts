@@ -208,17 +208,23 @@ export class FileStorageService {
     userId: number,
     conversationId?: number
   ): Promise<ProjectFile[]> {
+    const BATCH_SIZE = 5;
     const results: ProjectFile[] = [];
 
-    for (const file of files) {
-      const result = await this.createOrUpdate({
-        project_id: projectId,
-        path: file.path,
-        content: file.content,
-        language: file.language,
-        conversation_id: conversationId,
-      }, userId);
-      results.push(result);
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+      const batch = files.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map((file) =>
+          this.createOrUpdate({
+            project_id: projectId,
+            path: file.path,
+            content: file.content,
+            language: file.language,
+            conversation_id: conversationId,
+          }, userId)
+        )
+      );
+      results.push(...batchResults);
     }
 
     await CacheService.invalidateProjectFiles(projectId);

@@ -29,6 +29,8 @@ const VALID_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".json", ".css", ".md", 
 export class ResponseParser {
   private buffer: string = "";
   private parsedBlocks: CodeBlock[] = [];
+  private parsedBlockKeys = new Set<string>();
+  private parseOffset: number = 0;
   private warnings: string[] = [];
 
   parse(content: string): ParsedResponse {
@@ -152,27 +154,38 @@ export class ResponseParser {
     const completeBlocks: CodeBlock[] = [];
     let partialBlock: string | null = null;
 
-    const openIndex = this.buffer.lastIndexOf("```");
-    if (openIndex !== -1) {
-      const afterOpen = this.buffer.substring(openIndex);
-      const closeMatch = afterOpen.match(/```[\s\S]*?```/);
+    const searchFrom = Math.max(0, this.parseOffset - 3);
+    const openIndex = this.buffer.indexOf("```", searchFrom);
+    if (openIndex === -1) {
+      return { newBlocks: completeBlocks, partialBlock };
+    }
 
-      if (closeMatch) {
-        const fullContent = this.buffer;
-        const newBlocks = this.extractCodeBlocks(fullContent);
+    const afterOpen = this.buffer.substring(openIndex);
+    const closeMatch = afterOpen.match(/```[\s\S]*?```/);
 
-        for (const block of newBlocks) {
-          const alreadyParsed = this.parsedBlocks.some(
-            (b) => b.startIndex === block.startIndex && b.content === block.content
-          );
-          if (!alreadyParsed) {
-            completeBlocks.push(block);
-            this.parsedBlocks.push(block);
-          }
+    if (closeMatch) {
+      const newBlocks = this.extractCodeBlocks(this.buffer.substring(searchFrom));
+
+      for (const block of newBlocks) {
+        const adjustedBlock = {
+          ...block,
+          startIndex: block.startIndex + searchFrom,
+          endIndex: block.endIndex + searchFrom,
+        };
+        const key = `${adjustedBlock.startIndex}:${adjustedBlock.content.length}`;
+        if (!this.parsedBlockKeys.has(key)) {
+          this.parsedBlockKeys.add(key);
+          completeBlocks.push(adjustedBlock);
+          this.parsedBlocks.push(adjustedBlock);
         }
-      } else {
-        partialBlock = afterOpen;
       }
+
+      if (this.parsedBlocks.length > 0) {
+        const lastBlock = this.parsedBlocks[this.parsedBlocks.length - 1]!;
+        this.parseOffset = lastBlock.endIndex;
+      }
+    } else {
+      partialBlock = afterOpen;
     }
 
     return { newBlocks: completeBlocks, partialBlock };
@@ -181,6 +194,8 @@ export class ResponseParser {
   reset(): void {
     this.buffer = "";
     this.parsedBlocks = [];
+    this.parsedBlockKeys.clear();
+    this.parseOffset = 0;
     this.warnings = [];
   }
 
@@ -284,36 +299,28 @@ export class ResponseParser {
     const normalizedLang = language?.toLowerCase() || "javascript";
     const ext = langToExt[normalizedLang] || ".js";
 
-    const isReactCode = ["tsx", "jsx", "javascript", "js", "typescript", "ts"].includes(normalizedLang);
+    if (!["tsx", "jsx", "javascript", "js", "typescript", "ts"].includes(normalizedLang)) {
+      return null;
+    }
 
-    if (isReactCode) {
-      const hasDefaultExport = /export\s+default\s+/.test(code);
-      const hasAppComponent = /(?:function|const)\s+App\s*[=(]/.test(code);
-      const hasReactImport = /import\s+.*\s+from\s+['"]react['"]/.test(code);
-      const hasReactNativeImport = /import\s+.*\s+from\s+['"]react-native['"]/.test(code);
+    if (/(?:function|const)\s+App\s*[=(]/.test(code)) {
+      return `App${ext}`;
+    }
 
-      if (hasAppComponent || (hasReactNativeImport && hasDefaultExport)) {
-        return `App${ext}`;
-      }
+    const componentMatch = code.match(/(?:export\s+(?:default\s+)?)?(?:function|const)\s+(\w+)/);
+    if (componentMatch?.[1]) {
+      const name = componentMatch[1];
+      if (name === "App") return `App${ext}`;
+      if (name.endsWith("Screen")) return `screens/${name}${ext}`;
+      if (/^[A-Z]/.test(name)) return `components/${name}${ext}`;
+    }
 
-      const componentMatch = code.match(/(?:export\s+(?:default\s+)?)?(?:function|const)\s+(\w+)/);
-      if (componentMatch?.[1]) {
-        const name = componentMatch[1];
+    if (/import\s+.*\s+from\s+['"]react-native['"]/.test(code) && /export\s+default\s+/.test(code)) {
+      return `App${ext}`;
+    }
 
-        if (name === "App") {
-          return `App${ext}`;
-        }
-        if (name.endsWith("Screen")) {
-          return `screens/${name}${ext}`;
-        }
-        if (/^[A-Z]/.test(name)) {
-          return `components/${name}${ext}`;
-        }
-      }
-
-      if ((hasReactImport || hasReactNativeImport) && hasDefaultExport) {
-        return `App${ext}`;
-      }
+    if (/import\s+.*\s+from\s+['"]react['"]/.test(code) && /export\s+default\s+/.test(code)) {
+      return `App${ext}`;
     }
 
     return null;

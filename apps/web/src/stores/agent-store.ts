@@ -105,6 +105,7 @@ export const useAgentStore = create<AgentState & AgentActions>()(
         status: "streaming",
         isStreaming: true,
         toolCalls: [],
+        segments: [],
         createdAt: new Date(),
       };
 
@@ -145,7 +146,16 @@ export const useAgentStore = create<AgentState & AgentActions>()(
             set((s) => {
               s.streamingState.currentContent += content;
               const msg = s.messages.find((m) => m.id === assistantMessageId);
-              if (msg) msg.content += content;
+              if (msg) {
+                msg.content += content;
+                if (!msg.segments) msg.segments = [];
+                const lastSegment = msg.segments[msg.segments.length - 1];
+                if (lastSegment && lastSegment.type === "text") {
+                  lastSegment.content += content;
+                } else {
+                  msg.segments.push({ type: "text", content });
+                }
+              }
             });
           },
           onToolCall: (toolCall) => {
@@ -161,6 +171,8 @@ export const useAgentStore = create<AgentState & AgentActions>()(
               if (msg) {
                 if (!msg.toolCalls) msg.toolCalls = [];
                 msg.toolCalls.push(activity);
+                if (!msg.segments) msg.segments = [];
+                msg.segments.push({ type: "tool_call", toolCallId: toolCall.id });
               }
             });
           },
@@ -189,7 +201,11 @@ export const useAgentStore = create<AgentState & AgentActions>()(
             set((s) => {
               s.pendingPlan = planState;
               const msg = s.messages.find((m) => m.id === assistantMessageId);
-              if (msg) msg.plan = planState;
+              if (msg) {
+                msg.plan = planState;
+                if (!msg.segments) msg.segments = [];
+                msg.segments.push({ type: "plan" });
+              }
             });
           },
           onPlanApproved: (data) => {

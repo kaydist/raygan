@@ -3,7 +3,12 @@ import type { ProjectBuildConfig } from "@raygan/shared";
 
 import { env, logger } from "../../config";
 import { Build, Project } from "../../db/entities";
-import type { BuildStatusType, BuildPlatformType, BuildProfileType, BuildDistributionType } from "../../db/entities";
+import type {
+  BuildStatusType,
+  BuildPlatformType,
+  BuildProfileType,
+  BuildDistributionType,
+} from "../../db/entities";
 import { BaseRepository } from "../../db/repositories";
 import { CacheService } from "../../lib";
 import { getBuildQueue } from "../../jobs/queues";
@@ -15,13 +20,20 @@ import type { BuildJobData } from "../../jobs/types";
 
 const MAX_CONCURRENT_BUILDS = 2;
 
-export function getBuildProvider(projectBuildConfig?: ProjectBuildConfig): BuildProvider {
-  const accessToken = projectBuildConfig?.expo_access_token || env.EXPO_ACCESS_TOKEN;
+export function getBuildProvider(
+  projectBuildConfig?: ProjectBuildConfig,
+): BuildProvider {
+  console.log({ projectBuildConfig });
+  const accessToken =
+    projectBuildConfig?.expo_access_token || env.EXPO_ACCESS_TOKEN;
   if (!accessToken) {
-    throw new Error("EXPO_ACCESS_TOKEN is required for build functionality. Configure it in project settings or server environment.");
+    throw new Error(
+      "EXPO_ACCESS_TOKEN is required for build functionality. Configure it in project settings or server environment.",
+    );
   }
 
-  const accountName = projectBuildConfig?.expo_account_name || env.EXPO_ACCOUNT_NAME;
+  const accountName =
+    projectBuildConfig?.expo_account_name || env.EXPO_ACCOUNT_NAME;
 
   return new EASAdapter({
     access_token: accessToken,
@@ -39,9 +51,13 @@ export class BuildService {
     this.projectRepository = new BaseRepository(Project);
   }
 
-  private async getProjectBuildConfig(projectId: number): Promise<ProjectBuildConfig | undefined> {
+  private async getProjectBuildConfig(
+    projectId: number,
+  ): Promise<ProjectBuildConfig | undefined> {
     const project = await this.projectRepository.findById(projectId);
-    const settings = project?.settings as { build_config?: ProjectBuildConfig } | undefined;
+    const settings = project?.settings as
+      | { build_config?: ProjectBuildConfig }
+      | undefined;
     return settings?.build_config;
   }
 
@@ -114,13 +130,17 @@ export class BuildService {
 
     const [builds, total] = await Promise.all([
       this.buildRepository.findAll({
-        where: { project_id: projectId } as FindOptionsWhere<Build & ObjectLiteral>,
+        where: { project_id: projectId } as FindOptionsWhere<
+          Build & ObjectLiteral
+        >,
         order: { created_on: "DESC" } as Record<string, "ASC" | "DESC">,
         skip,
         take: limit,
       }),
       this.buildRepository.count({
-        where: { project_id: projectId } as FindOptionsWhere<Build & ObjectLiteral>,
+        where: { project_id: projectId } as FindOptionsWhere<
+          Build & ObjectLiteral
+        >,
       }),
     ]);
 
@@ -135,7 +155,11 @@ export class BuildService {
     const build = await this.buildRepository.findByUuid(buildUuid);
     if (!build) return null;
 
-    const activeStatuses: BuildStatusType[] = ["queued", "provisioning", "building"];
+    const activeStatuses: BuildStatusType[] = [
+      "queued",
+      "provisioning",
+      "building",
+    ];
     if (!activeStatuses.includes(build.status)) {
       return build;
     }
@@ -146,7 +170,10 @@ export class BuildService {
         const provider = getBuildProvider(buildConfig);
         await provider.cancelBuild(build.provider_build_id);
       } catch (err) {
-        logger.error({ err, buildId: build.id }, "Failed to cancel build with provider");
+        logger.error(
+          { err, buildId: build.id },
+          "Failed to cancel build with provider",
+        );
       }
     }
 
@@ -189,7 +216,10 @@ export class BuildService {
     });
 
     if (!build) {
-      logger.warn({ providerBuildId: payload.provider_build_id }, "Webhook for unknown build");
+      logger.warn(
+        { providerBuildId: payload.provider_build_id },
+        "Webhook for unknown build",
+      );
       return;
     }
 
@@ -200,18 +230,23 @@ export class BuildService {
     } as Partial<Build>;
 
     if (payload.artifact_url) {
-      (updateData as Record<string, unknown>).artifact_url = payload.artifact_url;
+      (updateData as Record<string, unknown>).artifact_url =
+        payload.artifact_url;
     }
     if (payload.logs_url) {
       (updateData as Record<string, unknown>).logs_url = payload.logs_url;
     }
     if (payload.error_message) {
-      (updateData as Record<string, unknown>).error_message = payload.error_message;
+      (updateData as Record<string, unknown>).error_message =
+        payload.error_message;
     }
-    if (status === "completed" || status === "failed" || status === "cancelled") {
-      (updateData as Record<string, unknown>).completed_at = payload.completed_at
-        ? new Date(payload.completed_at)
-        : new Date();
+    if (
+      status === "completed" ||
+      status === "failed" ||
+      status === "cancelled"
+    ) {
+      (updateData as Record<string, unknown>).completed_at =
+        payload.completed_at ? new Date(payload.completed_at) : new Date();
     }
 
     await this.buildRepository.update(build.id, updateData);
@@ -242,9 +277,18 @@ export class BuildService {
 
     const count = await this.buildRepository.count({
       where: [
-        { organization_id: organizationId, status: "queued" as BuildStatusType },
-        { organization_id: organizationId, status: "provisioning" as BuildStatusType },
-        { organization_id: organizationId, status: "building" as BuildStatusType },
+        {
+          organization_id: organizationId,
+          status: "queued" as BuildStatusType,
+        },
+        {
+          organization_id: organizationId,
+          status: "provisioning" as BuildStatusType,
+        },
+        {
+          organization_id: organizationId,
+          status: "building" as BuildStatusType,
+        },
       ] as FindOptionsWhere<Build & ObjectLiteral>[],
     });
 

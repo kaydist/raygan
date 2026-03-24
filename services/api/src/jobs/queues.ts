@@ -11,9 +11,14 @@ export function createBullMQConnection(): Redis | undefined {
   return new Redis(env.REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    lazyConnect: true,
+    connectTimeout: 3000,
+    retryStrategy(times) {
+      if (times > 3) return null;
+      return Math.min(times * 200, 1000);
+    },
     ...(env.REDIS_URL.includes("upstash.io") && {
       tls: { rejectUnauthorized: false },
-      lazyConnect: true,
     }),
   });
 }

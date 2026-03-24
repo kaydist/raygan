@@ -55,8 +55,44 @@ export const CACHE_KEYS = {
   },
 } as const;
 
+const OPERATION_TIMEOUT_MS = 2000;
+const CIRCUIT_BREAKER_THRESHOLD = 3;
+const CIRCUIT_BREAKER_RESET_MS = 30000;
+
+let consecutiveFailures = 0;
+let circuitOpenUntil = 0;
+
+function isCircuitOpen(): boolean {
+  if (consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD) return false;
+  if (Date.now() >= circuitOpenUntil) {
+    consecutiveFailures = 0;
+    return false;
+  }
+  return true;
+}
+
+function recordSuccess(): void {
+  consecutiveFailures = 0;
+}
+
+function recordFailure(): void {
+  consecutiveFailures++;
+  if (consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
+    circuitOpenUntil = Date.now() + CIRCUIT_BREAKER_RESET_MS;
+    logger.warn("Cache circuit breaker opened, skipping Redis for 30s");
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), OPERATION_TIMEOUT_MS)),
+  ]);
+}
+
 export class CacheService {
   private static isAvailable(): boolean {
+    if (isCircuitOpen()) return false;
     return getRedisClient() !== null;
   }
 
@@ -65,12 +101,14 @@ export class CacheService {
 
     try {
       const redis = getRedisClient()!;
-      const value = await redis.get(key);
+      const value = await withTimeout(redis.get(key), null as string | null);
 
       if (!value) return null;
 
+      recordSuccess();
       return JSON.parse(value) as T;
     } catch (err) {
+      recordFailure();
       logger.error({ err, key }, "Cache get failed");
       return null;
     }
@@ -84,13 +122,15 @@ export class CacheService {
       const serialized = JSON.stringify(value);
 
       if (ttlSeconds) {
-        await redis.setex(key, ttlSeconds, serialized);
+        await withTimeout(redis.setex(key, ttlSeconds, serialized), null);
       } else {
-        await redis.set(key, serialized);
+        await withTimeout(redis.set(key, serialized), null);
       }
 
+      recordSuccess();
       return true;
     } catch (err) {
+      recordFailure();
       logger.error({ err, key }, "Cache set failed");
       return false;
     }
@@ -101,9 +141,11 @@ export class CacheService {
 
     try {
       const redis = getRedisClient()!;
-      await redis.del(key);
+      await withTimeout(redis.del(key), null);
+      recordSuccess();
       return true;
     } catch (err) {
+      recordFailure();
       logger.error({ err, key }, "Cache delete failed");
       return false;
     }
@@ -114,14 +156,16 @@ export class CacheService {
 
     try {
       const redis = getRedisClient()!;
-      const keys = await redis.keys(pattern);
+      const keys = await withTimeout(redis.keys(pattern), [] as string[]);
 
       if (keys.length === 0) return 0;
 
-      const deleted = await redis.del(...keys);
+      const deleted = await withTimeout(redis.del(...keys), 0);
+      recordSuccess();
       logger.debug({ pattern, deleted }, "Cache pattern delete");
-      return deleted;
+      return deleted ?? 0;
     } catch (err) {
+      recordFailure();
       logger.error({ err, pattern }, "Cache pattern delete failed");
       return 0;
     }
@@ -224,8 +268,9 @@ export class CacheService {
 
     try {
       const redis = getRedisClient()!;
-      const values = await redis.mget(...keys);
+      const values = await withTimeout(redis.mget(...keys), [] as (string | null)[]);
 
+      recordSuccess();
       return values.map((v) => {
         if (!v) return null;
         try {
@@ -235,6 +280,7 @@ export class CacheService {
         }
       });
     } catch (err) {
+      recordFailure();
       logger.error({ err }, "Cache mget failed");
       return keys.map(() => null);
     }
@@ -258,9 +304,11 @@ export class CacheService {
         }
       }
 
-      await pipeline.exec();
+      await withTimeout(pipeline.exec(), null);
+      recordSuccess();
       return true;
     } catch (err) {
+      recordFailure();
       logger.error({ err }, "Cache mset failed");
       return false;
     }
@@ -271,9 +319,11 @@ export class CacheService {
 
     try {
       const redis = getRedisClient()!;
-      const result = await redis.exists(key);
+      const result = await withTimeout(redis.exists(key), 0);
+      recordSuccess();
       return result === 1;
     } catch (err) {
+      recordFailure();
       logger.error({ err, key }, "Cache exists check failed");
       return false;
     }
@@ -284,8 +334,11 @@ export class CacheService {
 
     try {
       const redis = getRedisClient()!;
-      return await redis.ttl(key);
+      const result = await withTimeout(redis.ttl(key), -2);
+      recordSuccess();
+      return result;
     } catch (err) {
+      recordFailure();
       logger.error({ err, key }, "Cache TTL check failed");
       return -2;
     }

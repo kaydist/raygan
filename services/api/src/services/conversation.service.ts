@@ -1,11 +1,10 @@
 import { AppDataSource, Conversation, OrganizationMember, Project } from "../db";
 import { BaseRepository } from "../db/repositories/base.repository";
-import { CacheService } from "../lib";
+import { CacheService, CACHE_KEYS, CACHE_TTL } from "../lib";
 import type { ConversationStatus } from "../db/entities/conversation.entity";
 
 export class ConversationService {
   private conversations = new BaseRepository(Conversation);
-  private projects = new BaseRepository(Project);
 
   async findById(id: number) {
     return this.conversations.findById(id);
@@ -91,26 +90,54 @@ export class ConversationService {
     const conversation = await this.findById(conversationId);
     if (!conversation) return null;
 
-    const project = await this.projects.findById(conversation.project_id);
-    if (!project) return null;
-
-    const membership = await AppDataSource.getRepository(OrganizationMember).findOne({
-      where: { organization_id: project.organization_id, user_id: userId, deleted_flag: false },
-    });
-
-    if (!membership) return null;
-    return { conversation, role: membership.role };
+    const role = await this.resolveProjectRole(userId, conversation.project_id);
+    if (!role) return null;
+    return { conversation, role };
   }
 
   async checkProjectAccess(userId: number, projectId: string): Promise<{ project: Project; role: string } | null> {
-    const project = await this.projects.findByUuid(projectId);
-    if (!project) return null;
+    const result = await AppDataSource.getRepository(Project)
+      .createQueryBuilder("p")
+      .innerJoin(OrganizationMember, "om", "om.organization_id = p.organization_id AND om.user_id = :userId AND om.deleted_flag = false", {
+        userId,
+      })
+      .where("p.uuid = :projectId", { projectId })
+      .andWhere("p.deleted_flag = false")
+      .select(["p", "om.role"])
+      .getRawAndEntities();
 
-    const membership = await AppDataSource.getRepository(OrganizationMember).findOne({
-      where: { organization_id: project.organization_id, user_id: userId, deleted_flag: false },
-    });
+    if (!result.entities[0]) return null;
 
-    if (!membership) return null;
-    return { project, role: membership.role };
+    const project = result.entities[0];
+    const role = result.raw[0]?.om_role as string;
+
+    await CacheService.set(
+      CACHE_KEYS.project.access(userId, project.id),
+      role,
+      CACHE_TTL.PROJECT_ACCESS
+    );
+
+    return { project, role };
+  }
+
+  private async resolveProjectRole(userId: number, projectId: number): Promise<string | null> {
+    const cacheKey = CACHE_KEYS.project.access(userId, projectId);
+    const cached = await CacheService.get<string>(cacheKey);
+    if (cached) return cached;
+
+    const result = await AppDataSource.getRepository(OrganizationMember)
+      .createQueryBuilder("om")
+      .innerJoin(Project, "p", "p.id = :projectId AND p.organization_id = om.organization_id AND p.deleted_flag = false", {
+        projectId,
+      })
+      .where("om.user_id = :userId", { userId })
+      .andWhere("om.deleted_flag = false")
+      .select("om.role", "role")
+      .getRawOne<{ role: string }>();
+
+    if (!result) return null;
+
+    await CacheService.set(cacheKey, result.role, CACHE_TTL.PROJECT_ACCESS);
+    return result.role;
   }
 }
