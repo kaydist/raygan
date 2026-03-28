@@ -3,7 +3,7 @@ import { createApp } from "./app";
 import { env, logger, initializeRedis, closeRedis } from "./config";
 import { initializeDatabase, closeDatabase } from "./db";
 import { setupSocketServer, closeSocketServer } from "./socket";
-import { startBuildWorker, closeBuildWorker, closeQueues } from "./jobs";
+import { startBuildWorker, startBuildPollWorker, closeBuildWorker, closeQueues, getBuildPollQueue } from "./jobs";
 
 async function main() {
   await initializeDatabase();
@@ -14,6 +14,8 @@ async function main() {
 
   setupSocketServer(httpServer);
   startBuildWorker();
+  startBuildPollWorker();
+  getBuildPollQueue(); // initializes the repeatable poll schedule
 
   httpServer.listen(env.PORT, env.BIND_HOST, () => {
     logger.info(

@@ -168,7 +168,8 @@ export class BuildService {
       try {
         const buildConfig = await this.getProjectBuildConfig(build.project_id);
         const provider = getBuildProvider(buildConfig);
-        await provider.cancelBuild(build.provider_build_id);
+        const project = await this.projectRepository.findById(build.project_id);
+        await provider.cancelBuild(build.provider_build_id, build.provider_project_id || undefined, project?.slug);
       } catch (err) {
         logger.error(
           { err, buildId: build.id },

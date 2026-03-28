@@ -1,6 +1,7 @@
 export interface BuildProviderConfig {
   access_token: string;
   account_name?: string;
+  account_id?: string;
   webhook_secret?: string;
   timeout_ms?: number;
   max_retries?: number;
@@ -33,6 +34,7 @@ export interface TriggerBuildInput {
   distribution: "internal" | "store";
   sdk_version: string;
   app_version?: string;
+  project_dir: string;
 }
 
 export interface TriggerBuildResult {
@@ -74,9 +76,9 @@ export interface BuildProvider {
 
   triggerBuild(input: TriggerBuildInput): Promise<TriggerBuildResult>;
 
-  getBuildStatus(providerBuildId: string): Promise<BuildStatusResult>;
+  getBuildStatus(providerBuildId: string, providerProjectId?: string, projectSlug?: string): Promise<BuildStatusResult>;
 
-  cancelBuild(providerBuildId: string): Promise<CancelBuildResult>;
+  cancelBuild(providerBuildId: string, providerProjectId?: string, projectSlug?: string): Promise<CancelBuildResult>;
 
   verifyWebhook(signature: string, body: Buffer): boolean;
 

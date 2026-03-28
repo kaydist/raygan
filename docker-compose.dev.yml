@@ -1,0 +1,67 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Redis
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # API (Express) — hot reload via tsx watch
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev.api
+    tty: true
+    stdin_open: true
+    ports:
+      - "4000:4000"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    volumes:
+      - ./services/api/src:/app/services/api/src
+      - ./packages/shared/src:/app/packages/shared/src
+    env_file:
+      - ./services/api/.env
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Web (Next.js) — hot reload via next dev --turbo
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev.web
+    tty: true
+    stdin_open: true
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/public:/app/apps/web/public
+      - ./packages/shared/src:/app/packages/shared/src
+    env_file:
+      - ./apps/web/.env.local
+    environment:
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  redisdata:

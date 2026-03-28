@@ -1,3 +1,6 @@
+import fs from "fs/promises";
+import path from "path";
+
 import type { Job } from "bullmq";
 import type { ProjectBuildConfig, ProjectAppConfig } from "@raygan/shared";
 
@@ -43,18 +46,23 @@ async function updateBuildStatus(
   return updated;
 }
 
-async function generateArchiveBuffer(projectId: number): Promise<Buffer> {
-  const project = await projectService.findById(projectId);
-  if (!project) throw new Error(`Project ${projectId} not found`);
+async function writeProjectToDir(
+  projectId: number,
+  projectSlug: string,
+): Promise<string> {
+  const files = await exportService.getProjectFiles(projectId);
 
-  const { stream } = await exportService.exportProject(project.id);
+  const tmpBase = path.join("/tmp", "raygan-builds");
+  await fs.mkdir(tmpBase, { recursive: true });
+  const projectDir = await fs.mkdtemp(path.join(tmpBase, `${projectSlug}-`));
 
-  return new Promise<Buffer>((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    stream.on("data", (chunk: Buffer) => chunks.push(chunk));
-    stream.on("end", () => resolve(Buffer.concat(chunks)));
-    stream.on("error", reject);
-  });
+  for (const [filePath, content] of files) {
+    const fullPath = path.join(projectDir, filePath);
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
+    await fs.writeFile(fullPath, content);
+  }
+
+  return projectDir;
 }
 
 export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
@@ -80,9 +88,13 @@ export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
   const buildConfig = settings?.build_config;
 
   const provider = getBuildProvider(buildConfig);
+  let projectDir: string | null = null;
 
   try {
     await updateBuildStatus(build, "provisioning");
+
+    projectDir = await writeProjectToDir(project.id, project.slug);
+    logger.info({ projectDir, buildId: build_id }, "Project files written to temp directory");
 
     let providerProjectId = build.provider_project_id;
     if (!providerProjectId) {
@@ -97,15 +109,9 @@ export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
       } as Partial<Build>);
     }
 
-    const archive = await generateArchiveBuffer(project.id);
-
-    await provider.uploadArchive({
-      provider_project_id: providerProjectId,
-      archive,
-    });
-
     const sdkVersion = project.framework_version || "52.0.0";
     const appVersion = appConfig?.version || "1.0.0";
+
     const buildResult = await provider.triggerBuild({
       provider_project_id: providerProjectId,
       platform,
@@ -113,6 +119,7 @@ export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
       distribution,
       sdk_version: sdkVersion,
       app_version: appVersion,
+      project_dir: projectDir,
     });
 
     await updateBuildStatus(build, "building", {
@@ -125,7 +132,7 @@ export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
 
     logger.info(
       { buildId: build_id, providerBuildId: buildResult.provider_build_id },
-      "Build submitted to provider",
+      "Build submitted to provider — status updates via EAS webhook",
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown build error";
@@ -137,5 +144,11 @@ export async function processBuildJob(job: Job<BuildJobData>): Promise<void> {
     } as Partial<Build>);
 
     throw error;
+  } finally {
+    if (projectDir) {
+      await fs.rm(projectDir, { recursive: true, force: true }).catch((err) => {
+        logger.warn({ err, projectDir }, "Failed to clean up temp build directory");
+      });
+    }
   }
 }

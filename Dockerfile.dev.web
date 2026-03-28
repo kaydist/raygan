@@ -1,0 +1,41 @@
+# =============================================================================
+# Raygan Web - Development Dockerfile (hot reload via next dev --turbo)
+# =============================================================================
+FROM node:22-alpine
+
+# Fix TLS 1.3 handshake failure with Cloudflare-fronted hosts in Docker Desktop
+ENV NODE_OPTIONS="--dns-result-order=ipv4first --tls-max-v1.2"
+
+RUN corepack enable
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy workspace config
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
+
+# Copy package.json files for dependency resolution
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY packages/tsconfig/ ./packages/tsconfig/
+COPY apps/web/package.json ./apps/web/
+
+# Install all dependencies (dev included)
+RUN pnpm install --frozen-lockfile
+
+# Copy source code (will be overridden by volume mounts for hot reload)
+COPY packages/shared ./packages/shared
+COPY apps/web ./apps/web
+
+# Copy entrypoint
+COPY docker-entrypoint.dev.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 3000
+
+ENV HOSTNAME=0.0.0.0
+
+WORKDIR /app/apps/web
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["/app/apps/web/node_modules/.bin/next", "dev", "--turbo", "--hostname", "0.0.0.0"]

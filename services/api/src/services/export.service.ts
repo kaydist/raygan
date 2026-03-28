@@ -60,6 +60,14 @@ export class ExportService {
     };
   }
 
+  async getProjectFiles(projectId: number): Promise<Map<string, string>> {
+    const project = await this.projectService.findById(projectId);
+    if (!project) {
+      throw new Error(`Project with id ${projectId} not found`);
+    }
+    return this.generateProjectFiles(project, {});
+  }
+
   private async generateProjectFiles(
     project: Project,
     _options: ExportOptions
@@ -110,6 +118,52 @@ export class ExportService {
 
     if (!files.has("README.md")) {
       files.set("README.md", this.generateReadme(project));
+    }
+
+    // Strip icon/splash asset references from app.json if the files don't exist.
+    // EAS prebuild fails if app.json references missing asset files.
+    if (files.has("app.json")) {
+      try {
+        const appJson = JSON.parse(files.get("app.json")!) as Record<string, unknown>;
+        const expo = (appJson.expo || appJson) as Record<string, unknown>;
+
+        const stripMissingAsset = (obj: Record<string, unknown>, key: string): void => {
+          const val = obj[key];
+          if (typeof val === "string" && !files.has(val.replace(/^\.\//, ""))) {
+            delete obj[key];
+          }
+        };
+
+        // Top-level icon/splash
+        stripMissingAsset(expo, "icon");
+
+        if (expo.splash && typeof expo.splash === "object") {
+          stripMissingAsset(expo.splash as Record<string, unknown>, "image");
+        }
+
+        // Android adaptive icon
+        if (expo.android && typeof expo.android === "object") {
+          const android = expo.android as Record<string, unknown>;
+          if (android.adaptiveIcon && typeof android.adaptiveIcon === "object") {
+            const adaptiveIcon = android.adaptiveIcon as Record<string, unknown>;
+            stripMissingAsset(adaptiveIcon, "foregroundImage");
+            stripMissingAsset(adaptiveIcon, "backgroundImage");
+            if (Object.keys(adaptiveIcon).length === 0) {
+              delete android.adaptiveIcon;
+            }
+          }
+        }
+
+        // iOS icon
+        if (expo.ios && typeof expo.ios === "object") {
+          stripMissingAsset(expo.ios as Record<string, unknown>, "icon");
+        }
+
+        if (appJson.expo) appJson.expo = expo;
+        files.set("app.json", JSON.stringify(appJson, null, 2));
+      } catch {
+        // If app.json isn't valid JSON, leave it as-is
+      }
     }
   }
 

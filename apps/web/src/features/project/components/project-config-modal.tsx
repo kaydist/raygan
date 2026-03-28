@@ -69,7 +69,7 @@ function DeleteConfirmDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="text-destructive">Delete Project</DialogTitle>
           <DialogDescription>
@@ -163,7 +163,7 @@ function GeneralTab({
 
   return (
     <>
-    <ScrollArea className="h-[min(420px,60vh)]">
+    <ScrollArea className="h-[min(560px,70vh)]">
       <div className="flex flex-col gap-5 p-1 pr-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <FormField
@@ -401,7 +401,7 @@ function EnvVariablesTab({ variables, onSetVariables }: EnvVariablesTabProps) {
 
   if (isBulkEdit) {
     return (
-      <div className="flex h-[min(420px,60vh)] flex-col gap-3">
+      <div className="flex h-[min(560px,70vh)] flex-col gap-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Bulk Edit Environment Variables</span>
           <button
@@ -422,7 +422,7 @@ function EnvVariablesTab({ variables, onSetVariables }: EnvVariablesTabProps) {
   }
 
   return (
-    <div className="flex h-[min(420px,60vh)] flex-col">
+    <div className="flex h-[min(560px,70vh)] flex-col">
       <div className="flex items-center justify-end pb-3">
         <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs" onClick={enterBulkEdit}>
           <ClipboardCopy className="h-3.5 w-3.5" />
@@ -513,7 +513,7 @@ function BuildConfigTab({ buildConfig, onUpdate }: BuildConfigTabProps) {
   };
 
   return (
-    <ScrollArea className="h-[min(420px,60vh)]">
+    <ScrollArea className="h-[min(560px,70vh)]">
       <div className="flex flex-col gap-5 p-1 pr-4">
         <div className="rounded-lg border border-border bg-muted/30 p-3">
           <div className="flex items-center gap-2 pb-2">
@@ -746,7 +746,7 @@ export function ProjectConfigModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={() => closeModal("projectConfig")}>
-      <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-lg">
+      <DialogContent size="2xl" className="max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
