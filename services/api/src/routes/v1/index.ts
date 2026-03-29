@@ -11,6 +11,7 @@ import { generateRoutes } from "./generate.routes";
 import { exportsRoutes } from "./exports.routes";
 import { settingsRoutes } from "./settings.routes";
 import { buildsRoutes } from "./builds.routes";
+import { storeReleasesRoutes } from "./store-releases.routes";
 
 const router = Router();
 
@@ -25,5 +26,6 @@ router.use(generateRoutes);
 router.use(exportsRoutes);
 router.use(settingsRoutes);
 router.use(buildsRoutes);
+router.use(storeReleasesRoutes);
 
 export const v1Routes: IRouter = router;

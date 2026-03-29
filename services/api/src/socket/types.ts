@@ -1,5 +1,5 @@
 import type { Socket } from "socket.io";
-import type { ASTNode, ASTOperation, BuildStatusEvent } from "@raygan/shared";
+import type { ASTNode, ASTOperation, BuildStatusEvent, ReleaseStatusEvent } from "@raygan/shared";
 
 export interface SocketUser {
   id: number;
@@ -24,6 +24,7 @@ export interface ServerToClientEvents {
   "user:joined": (data: UserJoinedEvent) => void;
   "user:left": (data: UserLeftEvent) => void;
   "build:status": (data: BuildStatusEvent) => void;
+  "release:status": (data: ReleaseStatusEvent) => void;
 }
 
 export interface ClientToServerEvents {

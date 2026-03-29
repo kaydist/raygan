@@ -11,6 +11,7 @@ import {
   Ban,
   Hammer,
   Server,
+  Rocket,
 } from "lucide-react";
 import type { BuildResponse, BuildStatus } from "@raygan/shared";
 
@@ -26,6 +27,7 @@ import {
 interface BuildStatusCardProps {
   build: BuildResponse;
   onCancel?: (buildUuid: string) => void;
+  onRelease?: (buildUuid: string) => void;
   isCancelling?: boolean;
 }
 
@@ -122,7 +124,9 @@ function formatDuration(start: string, end: string): string {
   return `${min}m ${sec}s`;
 }
 
-export function BuildStatusCard({ build, onCancel, isCancelling }: BuildStatusCardProps) {
+export function BuildStatusCard({ build, onCancel, onRelease, isCancelling }: BuildStatusCardProps) {
+  const isProductionComplete =
+    build.status === "completed" && build.profile === "production" && build.artifact_url;
   const config = STATUS_CONFIG[build.status];
   const StatusIcon = config.icon;
   const active = isActive(build.status);
@@ -204,6 +208,21 @@ export function BuildStatusCard({ build, onCancel, isCancelling }: BuildStatusCa
 
       <TooltipProvider delayDuration={200}>
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          {isProductionComplete && onRelease && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 rounded-md p-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => onRelease(build.uuid)}
+                >
+                  <Rocket className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Release to Store</TooltipContent>
+            </Tooltip>
+          )}
           {build.artifact_url && (
             <Tooltip>
               <TooltipTrigger asChild>

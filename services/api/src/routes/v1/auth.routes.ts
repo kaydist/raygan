@@ -3,6 +3,8 @@ import { authenticate } from "../../middleware/auth";
 import {
   register,
   login,
+  oauthRedirect,
+  oauthSession,
   oauthLogin,
   refreshToken,
   logout,
@@ -17,6 +19,9 @@ const router = Router();
 
 router.post("/auth/register", register);
 router.post("/auth/login", login);
+router.get("/auth/google", oauthRedirect);
+router.get("/auth/github", oauthRedirect);
+router.post("/auth/oauth/session", oauthSession);
 router.post("/auth/oauth", oauthLogin);
 router.post("/auth/refresh", refreshToken);
 router.post("/auth/forgot-password", forgotPassword);

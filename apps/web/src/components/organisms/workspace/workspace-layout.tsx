@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Panel, PanelGroup } from "react-resizable-panels";
+import { Panel, Group as PanelGroup } from "react-resizable-panels";
 
 import { useUIStore } from "@/stores";
 import { useProjectFilesSync } from "@/hooks";
@@ -32,7 +32,8 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
     setMounted(true);
   }, []);
 
-  const handleAgentLayoutChange = useCallback((sizes: number[]) => {
+  const handleAgentLayoutChange = useCallback((layout: Record<string, number>) => {
+    const sizes = Object.values(layout);
     setLayout((prev) => ({
       ...prev,
       leftSize: sizes[0] ?? prev.leftSize,
@@ -40,7 +41,8 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
     }));
   }, []);
 
-  const handleBuilderLayoutChange = useCallback((sizes: number[]) => {
+  const handleBuilderLayoutChange = useCallback((layout: Record<string, number>) => {
+    const sizes = Object.values(layout);
     setLayout((prev) => ({
       ...prev,
       leftSize: sizes[0] ?? prev.leftSize,
@@ -49,7 +51,8 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
     }));
   }, []);
 
-  const handleCodeLayoutChange = useCallback((sizes: number[]) => {
+  const handleCodeLayoutChange = useCallback((layout: Record<string, number>) => {
+    const sizes = Object.values(layout);
     setLayout((prev) => ({
       ...prev,
       centerSize: sizes[0] ?? prev.centerSize,
@@ -74,23 +77,25 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
         {activeMode === "agent" && (
           <PanelGroup
             key="agent-layout"
-            direction="horizontal"
-            onLayout={handleAgentLayoutChange}
+            orientation="horizontal"
+            onLayoutChange={handleAgentLayoutChange}
             className="h-full"
           >
             <Panel
-              defaultSize={layout.leftSize}
-              minSize={30}
-              maxSize={35}
+              id="agent-left"
+              defaultSize={`${layout.leftSize}%`}
+              minSize="30%"
+              maxSize="35%"
               className="border-r border-border bg-background"
             >
               <AgentPanel projectId={projectId} />
             </Panel>
             <ResizeHandle />
             <Panel
-              defaultSize={layout.rightSize}
-              minSize={40}
-              maxSize={70}
+              id="agent-right"
+              defaultSize={`${layout.rightSize}%`}
+              minSize="40%"
+              maxSize="70%"
               className="bg-background"
             >
               <RightPanel projectId={projectId} />
@@ -101,27 +106,29 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
         {activeMode === "builder" && (
           <PanelGroup
             key="builder-layout"
-            direction="horizontal"
-            onLayout={handleBuilderLayoutChange}
+            orientation="horizontal"
+            onLayoutChange={handleBuilderLayoutChange}
             className="h-full"
           >
             <Panel
-              defaultSize={20}
-              minSize={15}
-              maxSize={25}
+              id="builder-left"
+              defaultSize="20%"
+              minSize="15%"
+              maxSize="25%"
               className="border-r border-border bg-background"
             >
               <BuilderLeftPanel />
             </Panel>
             <ResizeHandle />
-            <Panel defaultSize={55} minSize={35}>
+            <Panel id="builder-center" defaultSize="55%" minSize="35%">
               <BuilderCanvas />
             </Panel>
             <ResizeHandle />
             <Panel
-              defaultSize={25}
-              minSize={18}
-              maxSize={35}
+              id="builder-right"
+              defaultSize="25%"
+              minSize="18%"
+              maxSize="35%"
               className="border-l border-border bg-background"
             >
               <BuilderInspector />
@@ -132,18 +139,19 @@ export function WorkspaceLayout({ projectId }: WorkspaceLayoutProps) {
         {activeMode === "code-editor" && (
           <PanelGroup
             key="code-layout"
-            direction="horizontal"
-            onLayout={handleCodeLayoutChange}
+            orientation="horizontal"
+            onLayoutChange={handleCodeLayoutChange}
             className="h-full"
           >
-            <Panel defaultSize={layout.centerSize} minSize={30}>
+            <Panel id="code-center" defaultSize={`${layout.centerSize}%`} minSize="30%">
               <CenterCanvas />
             </Panel>
             <ResizeHandle />
             <Panel
-              defaultSize={layout.rightSize}
-              minSize={15}
-              maxSize={40}
+              id="code-right"
+              defaultSize={`${layout.rightSize}%`}
+              minSize="15%"
+              maxSize="40%"
               className="border-l border-border bg-background"
             >
               <RightPanel projectId={projectId} />

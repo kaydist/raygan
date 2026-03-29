@@ -22,16 +22,16 @@ vi.mock("react-resizable-panels", () => ({
       {children}
     </div>
   ),
-  PanelGroup: ({
+  Group: ({
     children,
-    direction,
+    orientation,
     className,
   }: {
     children: React.ReactNode;
-    direction: string;
+    orientation?: string;
     className?: string;
   }) => (
-    <div data-testid="panel-group" data-direction={direction} className={className}>
+    <div data-testid="panel-group" data-orientation={orientation} className={className}>
       {children}
     </div>
   ),

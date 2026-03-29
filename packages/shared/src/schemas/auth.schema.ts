@@ -5,7 +5,7 @@ import { emailSchema } from "./common.schema";
 // OAUTH SCHEMAS
 // =============================================================================
 
-export const oauthProviderSchema = z.enum(["google", "apple"]);
+export const oauthProviderSchema = z.enum(["google", "apple", "github"]);
 
 export const oauthLoginSchema = z.object({
   provider: oauthProviderSchema,

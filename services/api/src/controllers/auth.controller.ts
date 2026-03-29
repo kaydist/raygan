@@ -195,6 +195,162 @@ export async function login(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function oauthRedirect(req: Request, res: Response): Promise<void> {
+  try {
+    const pathSegments = req.path.split("/");
+    const provider = pathSegments[pathSegments.length - 1] as "google" | "github";
+    const redirectUri = req.query.redirect_uri as string | undefined;
+
+    const frontendCallbackUrl = redirectUri || `${env.APP_URL}/callback`;
+    const scopes = provider === "github" ? "user:email" : undefined;
+    const url = supabaseAuth.getOAuthUrl(provider, frontendCallbackUrl, scopes);
+    res.redirect(url);
+  } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
+      res.status(503).json({
+        data: null,
+        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    logger.error({ err }, "OAuth redirect failed");
+    res.status(500).json({
+      data: null,
+      error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },
+    });
+  }
+}
+
+export async function oauthSession(req: Request, res: Response): Promise<void> {
+  try {
+    const { access_token, refresh_token } = req.body;
+
+    if (!access_token) {
+      res.status(400).json({
+        data: null,
+        error: { code: ERROR_CODES.BAD_REQUEST, message: "access_token is required" },
+      });
+      return;
+    }
+
+    const { user: authUser } = await supabaseAuth.getUserByToken(access_token);
+
+    if (!authUser) {
+      res.status(401).json({
+        data: null,
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Invalid token" },
+      });
+      return;
+    }
+
+    let user = await userService.findByAuthIdWithCurrentOrg(authUser.id);
+    let isNewUser = false;
+    let currentOrg;
+
+    if (!user) {
+      isNewUser = true;
+      const metadata = authUser.user_metadata || {};
+      const email = authUser.email || "";
+      const firstName = metadata.full_name?.split(" ")[0] || metadata.name?.split(" ")[0] || metadata.user_name || "User";
+      const lastName = metadata.full_name?.split(" ").slice(1).join(" ") || "";
+
+      const result = await AppDataSource.transaction(async () => {
+        const newUser = await userService.create({
+          auth_user_id: authUser.id,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          display_name: metadata.full_name || metadata.name || metadata.user_name || email.split("@")[0],
+          avatar_url: metadata.avatar_url || metadata.picture || null,
+        });
+
+        const newOrg = await organizationService.create(
+          { name: `${firstName}'s Workspace`, slug: `${newUser.uuid}-personal`, is_personal: true },
+          newUser.id
+        );
+
+        await userService.setCurrentOrganization(newUser.id, newOrg.id);
+
+        return { user: newUser, org: newOrg };
+      });
+
+      user = result.user;
+      currentOrg = result.org;
+    } else {
+      if (user.deleted_flag) {
+        res.status(401).json({
+          data: null,
+          error: { code: ERROR_CODES.UNAUTHORIZED, message: "Account is deactivated" },
+        });
+        return;
+      }
+
+      if (!user.current_organization) {
+        logger.warn({ userId: user.id }, "OAuth session for user without organization");
+        res.status(401).json({
+          data: null,
+          error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication failed" },
+        });
+        return;
+      }
+
+      currentOrg = user.current_organization;
+    }
+
+    const organizations = await organizationService.findAllByUserId(user.id);
+
+    res.json({
+      data: {
+        user: {
+          id: user.uuid,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          display_name: user.display_name,
+          avatar_url: user.avatar_url,
+          onboarding_completed: user.onboarding_completed,
+        },
+        organizations: organizations.map((org) => ({
+          id: org.uuid,
+          name: org.name,
+          slug: org.slug,
+          role: org.role,
+        })),
+        current_organization: {
+          id: currentOrg.uuid,
+          name: currentOrg.name,
+          slug: currentOrg.slug,
+          plan: currentOrg.plan,
+        },
+        access_token,
+        refresh_token: refresh_token || null,
+        is_new_user: isNewUser,
+      },
+      error: null,
+    });
+  } catch (err) {
+    if (err instanceof SupabaseUnavailableError) {
+      res.status(503).json({
+        data: null,
+        error: { code: ERROR_CODES.SERVICE_UNAVAILABLE, message: "Service temporarily unavailable" },
+      });
+      return;
+    }
+    if (err instanceof SupabaseAuthError) {
+      res.status(401).json({
+        data: null,
+        error: { code: ERROR_CODES.UNAUTHORIZED, message: "Authentication failed" },
+      });
+      return;
+    }
+    logger.error({ err }, "OAuth session failed");
+    res.status(500).json({
+      data: null,
+      error: { code: ERROR_CODES.INTERNAL_ERROR, message: "An error occurred" },
+    });
+  }
+}
+
 export async function oauthLogin(req: Request, res: Response): Promise<void> {
   try {
     const { provider, id_token, access_token, nonce } = req.body;

@@ -8,3 +8,4 @@ export { StepIndicator } from "./step-indicator";
 export { StepAppInfo } from "./step-app-info";
 export { StepBuildConfig } from "./step-build-config";
 export { StepReview } from "./step-review";
+export { ReleaseWizard, ReleaseStatusBadge } from "./release";

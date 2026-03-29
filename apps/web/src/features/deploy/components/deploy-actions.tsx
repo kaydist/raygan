@@ -5,22 +5,26 @@ import { BuildHistory } from "./build-history";
 
 interface DeployActionsProps {
   onBuildClick: () => void;
+  onReleaseClick: (buildUuid?: string) => void;
   onExport: () => void;
   isExporting: boolean;
   builds: BuildResponse[];
   isLoadingBuilds: boolean;
   onCancelBuild: (buildUuid: string) => void;
   cancellingBuildId: string | null;
+  hasCompletedProductionBuild: boolean;
 }
 
 export function DeployActions({
   onBuildClick,
+  onReleaseClick,
   onExport,
   isExporting,
   builds,
   isLoadingBuilds,
   onCancelBuild,
   cancellingBuildId,
+  hasCompletedProductionBuild,
 }: DeployActionsProps) {
   return (
     <>
@@ -65,14 +69,15 @@ export function DeployActions({
 
         <button
           type="button"
-          disabled
-          className="flex items-center gap-3 rounded-lg px-1 py-3 text-left opacity-40"
+          onClick={() => onReleaseClick()}
+          disabled={!hasCompletedProductionBuild}
+          className="flex items-center gap-3 rounded-lg px-1 py-3 text-left transition-colors hover:bg-accent/40 disabled:opacity-40 disabled:hover:bg-transparent"
         >
           <span className="flex-1 text-[13px] font-medium text-foreground">
-            GitHub
+            Release to Store
           </span>
-          <span className="rounded-md border border-border/50 px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground">
-            COMING SOON
+          <span className="text-[11px] font-medium tracking-wide text-muted-foreground">
+            {hasCompletedProductionBuild ? "GOOGLE PLAY" : "BUILD FIRST"}
           </span>
         </button>
 
@@ -102,8 +107,9 @@ export function DeployActions({
           </div>
           <div className="px-6 py-4">
             <BuildHistory
-              builds={builds.splice(0, 3)}
+              builds={builds.slice(0, 3)}
               onCancel={onCancelBuild}
+              onRelease={(buildUuid: string) => onReleaseClick(buildUuid)}
               cancellingBuildId={cancellingBuildId}
               isLoading={isLoadingBuilds}
             />

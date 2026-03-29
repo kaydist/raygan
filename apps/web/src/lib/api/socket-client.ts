@@ -1,5 +1,5 @@
 import { io, type Socket } from "socket.io-client";
-import type { ASTNode, ASTOperation, BuildStatusEvent } from "@raygan/shared";
+import type { ASTNode, ASTOperation, BuildStatusEvent, ReleaseStatusEvent } from "@raygan/shared";
 import { logger } from "../utils";
 
 const getSocketUrl = (): string => {
@@ -21,6 +21,7 @@ export interface ServerToClientEvents {
   "user:joined": (data: UserJoinedEvent) => void;
   "user:left": (data: UserLeftEvent) => void;
   "build:status": (data: BuildStatusEvent) => void;
+  "release:status": (data: ReleaseStatusEvent) => void;
 }
 
 export interface ClientToServerEvents {
@@ -326,5 +327,10 @@ export const socketClient = {
   onBuildStatus(handler: (data: BuildStatusEvent) => void): () => void {
     socket?.on("build:status", handler);
     return () => socket?.off("build:status", handler);
+  },
+
+  onReleaseStatus(handler: (data: ReleaseStatusEvent) => void): () => void {
+    socket?.on("release:status", handler);
+    return () => socket?.off("release:status", handler);
   },
 };

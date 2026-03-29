@@ -10,6 +10,7 @@ import { BuildStatusCard } from "./build-status-card";
 interface BuildHistoryProps {
   builds: BuildResponse[];
   onCancel?: (buildUuid: string) => void;
+  onRelease?: (buildUuid: string) => void;
   cancellingBuildId?: string | null;
   isLoading?: boolean;
 }
@@ -36,6 +37,7 @@ function BuildHistorySkeleton() {
 export function BuildHistory({
   builds,
   onCancel,
+  onRelease,
   cancellingBuildId,
   isLoading,
 }: BuildHistoryProps) {
@@ -62,6 +64,7 @@ export function BuildHistory({
             key={build.uuid}
             build={build}
             onCancel={onCancel}
+            onRelease={onRelease}
             isCancelling={cancellingBuildId === build.uuid}
           />
         ))}

@@ -30,3 +30,4 @@ export {
 export * from "./ai-gateway";
 export { ExportService, type ExportOptions, type ExportResult } from "./export.service";
 export * from "./build-hub";
+export * from "./store-release";

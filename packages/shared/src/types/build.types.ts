@@ -31,6 +31,8 @@ export interface BuildResponse {
   app_version: string | null;
   started_at: string | null;
   completed_at: string | null;
+  auto_release: boolean;
+  release_track: string | null;
   created_on: string;
   updated_on: string;
 }
@@ -46,6 +48,8 @@ export interface TriggerBuildRequest {
   platform: BuildPlatform;
   profile?: BuildProfile;
   distribution?: BuildDistribution;
+  auto_release?: boolean;
+  release_track?: "internal" | "alpha" | "beta" | "production";
 }
 
 export interface BuildStatusEvent {

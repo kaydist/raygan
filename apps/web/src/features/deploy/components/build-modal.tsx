@@ -5,7 +5,7 @@ import { Smartphone, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { BuildProfile, ProjectAppConfig } from "@raygan/shared";
 
-import { useUIStore, useProjectStore } from "@/stores";
+import { useUIStore, useProjectStore, type DeployModalData } from "@/stores";
 import { buildsApi, exportsApi } from "@/lib/api/routes";
 import { queryKeys, useUpdateProject } from "@/lib/api/queries";
 import {
@@ -17,7 +17,7 @@ import {
   Button,
 } from "@/components/atoms";
 import { cn, downloadBlob } from "@/lib/utils";
-import { useBuilds, useBuildStatus } from "../hooks";
+import { useBuilds, useBuildStatus, useReleaseStatus } from "../hooks";
 import type { WizardStep, ModalView, AppInfo } from "./build-modal.types";
 import { DeployActions } from "./deploy-actions";
 import { PlatformPicker } from "./platform-picker";
@@ -25,6 +25,7 @@ import { StepIndicator } from "./step-indicator";
 import { StepAppInfo } from "./step-app-info";
 import { StepBuildConfig } from "./step-build-config";
 import { StepReview } from "./step-review";
+import { ReleaseWizard } from "./release";
 
 export function BuildModal() {
   const { modals, closeModal } = useUIStore();
@@ -47,6 +48,9 @@ export function BuildModal() {
     string | null
   >(null);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [releasePreSelectedBuild, setReleasePreSelectedBuild] = React.useState<
+    string | undefined
+  >(undefined);
 
   const queryClient = useQueryClient();
   const updateProjectMutation = useUpdateProject();
@@ -68,14 +72,21 @@ export function BuildModal() {
 
   React.useEffect(() => {
     if (isOpen) {
-      setView("history");
+      const modalData = modals.deployProject.data as DeployModalData | undefined;
+      if (modalData?.view === "release" && modalData?.buildUuid) {
+        setReleasePreSelectedBuild(modalData.buildUuid);
+        setView("release");
+      } else {
+        setView("history");
+      }
       resetWizard();
     }
-  }, [isOpen, resetWizard]);
+  }, [isOpen, resetWizard, modals.deployProject.data]);
 
   const { data: buildsData, isLoading: isLoadingBuilds } =
     useBuilds(projectId);
   useBuildStatus(projectId);
+  useReleaseStatus(projectId);
 
   const triggerMutation = useMutation({
     mutationFn: () =>
@@ -176,6 +187,32 @@ export function BuildModal() {
   };
 
   const builds = buildsData?.builds ?? [];
+  const hasCompletedProductionBuild = builds.some(
+    (b) => b.status === "completed" && b.profile === "production" && b.artifact_url,
+  );
+
+  if (view === "release") {
+    return (
+      <Dialog open={isOpen} onOpenChange={() => closeModal("deployProject")}>
+        <DialogContent className="max-w-md gap-0 overflow-hidden p-0">
+          <ReleaseWizard
+            projectId={projectId}
+            projectName={currentProject?.name ?? ""}
+            builds={builds}
+            preSelectedBuildUuid={releasePreSelectedBuild}
+            onBack={() => {
+              setReleasePreSelectedBuild(undefined);
+              setView("history");
+            }}
+            onComplete={() => {
+              setReleasePreSelectedBuild(undefined);
+              setView("history");
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (view === "history") {
     return (
@@ -183,12 +220,17 @@ export function BuildModal() {
         <DialogContent className="max-w-[440px] gap-0 overflow-hidden p-0">
           <DeployActions
             onBuildClick={() => setView("platform")}
+            onReleaseClick={(buildUuid) => {
+              setReleasePreSelectedBuild(buildUuid);
+              setView("release");
+            }}
             onExport={handleExport}
             isExporting={isExporting}
             builds={builds}
             isLoadingBuilds={isLoadingBuilds}
             onCancelBuild={handleCancel}
             cancellingBuildId={cancellingBuildId}
+            hasCompletedProductionBuild={hasCompletedProductionBuild}
           />
         </DialogContent>
       </Dialog>

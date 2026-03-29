@@ -390,3 +390,15 @@ pnpm --filter=api migration:generate
 - White-label mode
 - avoid adding comments except when necessary or code complexity is high
 - always refer to the projects Frontend_Architecture_Spec_v1.3.md for frontend architecture. This is means useing components if existing or creating the ones that does not exist.
+
+## Post-Implementation Testing
+
+After completing any implementation (feature, bug fix, refactor), you MUST spin up a subagent to test the implementation before considering the task done. The subagent should:
+
+1. **Use Playwright MCP** to launch a browser and manually test the feature end-to-end against the running dev server (`http://localhost:3000`)
+2. **Log in** using the test credentials: Email: `kayodeoseni@ymail.com`, Password: `Testing$1`
+3. **Navigate** to the relevant page/feature and exercise all user flows (happy path, error states, edge cases)
+4. **Verify** both success and failure scenarios including form validation, API error handling, and UI state transitions
+5. **Screenshot** key states for evidence
+6. **Report** any bugs found, with the specific file and line number
+7. **Clean up** all Playwright artifacts (screenshots, `.playwright-mcp/`, `playwright-report/`, `test-results/`) before finishing

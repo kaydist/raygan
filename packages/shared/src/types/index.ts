@@ -15,3 +15,6 @@ export * from './build.types';
 
 // Project config types (app.json, env variables)
 export * from './project-config.types';
+
+// Store release types (store submission, project settings)
+export * from './store-release.types';

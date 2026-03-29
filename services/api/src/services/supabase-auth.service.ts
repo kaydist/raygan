@@ -1,5 +1,6 @@
 import type { Session, User as SupabaseUser, Provider } from "@supabase/supabase-js";
 import { getSupabaseClient } from "../config/supabase";
+import { env } from "../config/env";
 
 export interface FormattedSession {
   access_token: string;
@@ -74,6 +75,40 @@ export class SupabaseAuthService {
     return {
       user: data.user,
       session: this.formatSession(data.session),
+    };
+  }
+
+  getOAuthUrl(provider: Provider, redirectTo: string, scopes?: string): string {
+    this.getClient();
+
+    if (!env.SUPABASE_URL) {
+      throw new SupabaseUnavailableError();
+    }
+
+    const params = new URLSearchParams({
+      provider: provider as string,
+      redirect_to: redirectTo,
+    });
+
+    if (scopes) {
+      params.set("scopes", scopes);
+    }
+
+    return `${env.SUPABASE_URL}/auth/v1/authorize?${params.toString()}`;
+  }
+
+  async getUserByToken(accessToken: string): Promise<OAuthSignInResult> {
+    const client = this.getClient();
+
+    const { data: { user }, error } = await client.auth.getUser(accessToken);
+
+    if (error) {
+      throw new SupabaseAuthError(error.message);
+    }
+
+    return {
+      user,
+      session: null,
     };
   }
 

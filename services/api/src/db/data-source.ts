@@ -14,6 +14,9 @@ import {
   CreditUsage,
   Setting,
   Build,
+  ProjectSetting,
+  StoreListing,
+  StoreRelease,
 } from "./entities";
 import { InitialSchema1707696000000 } from "./migrations/1707696000000-InitialSchema";
 import { CreateAITables1707782400000 } from "./migrations/1707782400000-CreateAITables";
@@ -29,6 +32,7 @@ import { AddProviderLogoUrl1708301200000 } from "./migrations/1708301200000-AddP
 import { MakeCurrentOrganizationNullable1708301300000 } from "./migrations/1708301300000-MakeCurrentOrganizationNullable";
 import { AddProjectStatusColumn1708400000000 } from "./migrations/1708400000000-AddProjectStatusColumn";
 import { CreateBuildsTable1708500000000 } from "./migrations/1708500000000-CreateBuildsTable";
+import { CreateStoreReleaseTables1708600000000 } from "./migrations/1708600000000-CreateStoreReleaseTables";
 
 const baseOptions: DataSourceOptions = {
   type: "postgres",
@@ -47,6 +51,9 @@ const baseOptions: DataSourceOptions = {
     CreditUsage,
     Setting,
     Build,
+    ProjectSetting,
+    StoreListing,
+    StoreRelease,
   ],
   migrations: [
     InitialSchema1707696000000,
@@ -63,6 +70,7 @@ const baseOptions: DataSourceOptions = {
     MakeCurrentOrganizationNullable1708301300000,
     AddProjectStatusColumn1708400000000,
     CreateBuildsTable1708500000000,
+    CreateStoreReleaseTables1708600000000
   ],
   subscribers: [],
   extra: {

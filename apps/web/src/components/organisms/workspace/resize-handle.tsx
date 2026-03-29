@@ -1,4 +1,4 @@
-import { PanelResizeHandle } from "react-resizable-panels";
+import { Separator } from "react-resizable-panels";
 
 import { cn } from "@/lib/utils";
 
@@ -14,7 +14,7 @@ export function ResizeHandle({
   const isVertical = orientation === "vertical";
 
   return (
-    <PanelResizeHandle
+    <Separator
       className={cn(
         "group relative flex items-center justify-center bg-border transition-colors hover:bg-primary/20 data-[resize-handle-active]:bg-primary/40",
         isVertical ? "w-1" : "h-1",
@@ -27,6 +27,6 @@ export function ResizeHandle({
           isVertical ? "h-8 w-0.5" : "h-0.5 w-8"
         )}
       />
-    </PanelResizeHandle>
+    </Separator>
   );
 }

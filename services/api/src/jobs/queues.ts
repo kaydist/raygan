@@ -5,6 +5,8 @@ import { env, logger } from "../config";
 
 let buildQueue: Queue | null = null;
 let buildPollQueue: Queue | null = null;
+let submitQueue: Queue | null = null;
+let submitPollQueue: Queue | null = null;
 
 export function createBullMQConnection(): Redis | undefined {
   if (!env.REDIS_URL) return undefined;
@@ -72,6 +74,53 @@ export function getBuildPollQueue(): Queue {
   return buildPollQueue;
 }
 
+export function getSubmitQueue(): Queue {
+  if (submitQueue) return submitQueue;
+
+  const connection = createBullMQConnection();
+  if (!connection) {
+    throw new Error("Redis is not available, cannot create submit queue");
+  }
+
+  submitQueue = new Queue("store-submit", {
+    connection,
+    defaultJobOptions: {
+      attempts: 1,
+      removeOnComplete: { count: 100 },
+      removeOnFail: { count: 50 },
+    },
+  });
+
+  logger.info("Store submit queue initialized");
+  return submitQueue;
+}
+
+export function getSubmitPollQueue(): Queue {
+  if (submitPollQueue) return submitPollQueue;
+
+  const connection = createBullMQConnection();
+  if (!connection) {
+    throw new Error("Redis is not available, cannot create submit poll queue");
+  }
+
+  submitPollQueue = new Queue("submit-status-poll", {
+    connection,
+    defaultJobOptions: {
+      removeOnComplete: { count: 10 },
+      removeOnFail: { count: 10 },
+    },
+  });
+
+  submitPollQueue.upsertJobScheduler(
+    "poll-active-submissions",
+    { every: 60_000 },
+    { name: "poll-active-submissions" },
+  );
+
+  logger.info("Submit status poll queue initialized (every 60s)");
+  return submitPollQueue;
+}
+
 export async function closeQueues(): Promise<void> {
   if (buildQueue) {
     await buildQueue.close();
@@ -82,5 +131,15 @@ export async function closeQueues(): Promise<void> {
     await buildPollQueue.close();
     buildPollQueue = null;
     logger.info("Build poll queue closed");
+  }
+  if (submitQueue) {
+    await submitQueue.close();
+    submitQueue = null;
+    logger.info("Submit queue closed");
+  }
+  if (submitPollQueue) {
+    await submitPollQueue.close();
+    submitPollQueue = null;
+    logger.info("Submit poll queue closed");
   }
 }

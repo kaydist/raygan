@@ -59,4 +59,25 @@ export const queryKeys = {
     detail: (projectId: string, buildId: string) =>
       [...queryKeys.builds.all, "detail", projectId, buildId] as const,
   },
+
+  storeReleases: {
+    all: ["storeReleases"] as const,
+    list: (projectId: string) => [...queryKeys.storeReleases.all, "list", projectId] as const,
+    detail: (projectId: string, releaseId: string) =>
+      [...queryKeys.storeReleases.all, "detail", projectId, releaseId] as const,
+  },
+
+  projectSettings: {
+    all: ["projectSettings"] as const,
+    byCategory: (projectId: string, category: string) =>
+      [...queryKeys.projectSettings.all, projectId, category] as const,
+    bySlug: (projectId: string, category: string, slug: string) =>
+      [...queryKeys.projectSettings.all, projectId, category, slug] as const,
+  },
+
+  storeListings: {
+    all: ["storeListings"] as const,
+    byStore: (projectId: string, store: string) =>
+      [...queryKeys.storeListings.all, projectId, store] as const,
+  },
 } as const;

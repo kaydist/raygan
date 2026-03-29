@@ -19,6 +19,7 @@ export type {
   CanvasOffset,
   ModalState,
   Modals,
+  DeployModalData,
 } from "./ui-store";
 
 export { useASTStore } from "./ast-store";

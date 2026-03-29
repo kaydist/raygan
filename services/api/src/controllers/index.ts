@@ -8,3 +8,4 @@ export * from "./generate.controller";
 export * from "./exports.controller";
 export * from "./settings.controller";
 export * from "./builds.controller";
+export * from "./store-releases.controller";

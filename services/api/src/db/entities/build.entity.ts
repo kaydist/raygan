@@ -72,6 +72,12 @@ export class Build extends BaseEntity {
   @Column({ type: "timestamptz", nullable: true })
   completed_at!: Date | null;
 
+  @Column({ type: "boolean", default: false })
+  auto_release!: boolean;
+
+  @Column({ type: "varchar", length: 30, nullable: true })
+  release_track!: "internal" | "alpha" | "beta" | "production" | null;
+
   @ManyToOne("Project", "builds")
   @JoinColumn({ name: "project_id" })
   project!: Project;

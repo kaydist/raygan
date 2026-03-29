@@ -1,7 +1,7 @@
 "use client";
 
 import { Code, Blocks, X } from "lucide-react";
-import { Panel, PanelGroup } from "react-resizable-panels";
+import { Panel, Group as PanelGroup } from "react-resizable-panels";
 
 import { useUIStore, useProjectStore } from "@/stores";
 import { Button } from "@/components/atoms";
@@ -138,8 +138,8 @@ function FileExplorerPanel() {
 function CodeWorkspace() {
   return (
     <div className="flex h-full flex-col bg-[#1e1e1e]">
-      <PanelGroup direction="horizontal" className="flex-1">
-        <Panel defaultSize={25} minSize={15} maxSize={40}>
+      <PanelGroup orientation="horizontal" className="flex-1">
+        <Panel id="file-explorer" defaultSize="25%" minSize="15%" maxSize="40%">
           <div className="flex h-full flex-col border-r border-border">
             <div className="flex-1 overflow-hidden">
               <FileExplorer />
@@ -147,7 +147,7 @@ function CodeWorkspace() {
           </div>
         </Panel>
         <ResizeHandle />
-        <Panel defaultSize={75} minSize={40}>
+        <Panel id="code-editor" defaultSize="75%" minSize="40%">
           <div className="flex h-full flex-col">
             <EditorTabs />
             <div className="flex-1 overflow-hidden">

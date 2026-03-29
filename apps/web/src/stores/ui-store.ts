@@ -25,6 +25,11 @@ export interface ModalState {
   data?: unknown;
 }
 
+export interface DeployModalData {
+  view?: "history" | "release";
+  buildUuid?: string;
+}
+
 export interface Modals {
   createProject: ModalState;
   deleteProject: ModalState;

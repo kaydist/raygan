@@ -37,3 +37,5 @@ export { exportsApi } from "./exports";
 export type { ExportOptions } from "./exports";
 
 export { buildsApi } from "./builds";
+
+export { storeReleasesApi } from "./store-releases";
